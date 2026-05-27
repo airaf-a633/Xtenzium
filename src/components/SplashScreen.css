@@ -1,0 +1,155 @@
+/* ============================================
+   SplashScreen.css — Cinematic Logo Reveal
+   ============================================ */
+
+/* Full viewport overlay */
+.splash-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: #f8faff;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+
+/* ---- Particle Background ---- */
+.splash-particle-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.splash-particle {
+  position: absolute;
+  border-radius: 50%;
+  animation: splashFloatUp linear infinite;
+}
+
+@keyframes splashFloatUp {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-30px);
+  }
+}
+
+/* ---- Splash Content ---- */
+.splash-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+/* ---- Logo Row: X icon + TENZIUM text ---- */
+.splash-logo-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16px;
+  height: 130px;
+}
+
+/* X icon wrapper — clips the right side of the full logo image */
+.splash-x-icon-wrapper {
+  width: 130px;
+  height: 130px;
+  overflow: hidden;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.splash-x-icon-wrapper img {
+  width: 320px;
+  height: auto;
+  display: block;
+}
+
+/* TENZIUM letters container */
+.splash-tenzium-letters {
+  display: flex;
+  flex-direction: row;
+  gap: 0;
+  align-items: center;
+}
+
+.splash-tenzium-letter {
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+  font-size: 96px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  background: linear-gradient(90deg, #00BFFF, #0057FF);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1;
+  display: inline-block;
+}
+
+/* ---- DIGITAL AGENCY row ---- */
+.splash-agency-row {
+  display: flex;
+  flex-direction: row;
+  margin-top: 14px;
+  justify-content: center;
+}
+
+.splash-agency-letter {
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  color: #7a8a99;
+  letter-spacing: 0.55em;
+  text-transform: uppercase;
+  line-height: 1;
+  display: inline-block;
+}
+
+/* ---- Gradient Line ---- */
+.splash-gradient-line {
+  width: 440px;
+  height: 2px;
+  margin-top: 20px;
+  background: linear-gradient(90deg, #00E5FF, #2979FF);
+  transform-origin: left;
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 768px) {
+  .splash-tenzium-letter {
+    font-size: 52px;
+  }
+
+  .splash-x-icon-wrapper {
+    width: 70px;
+    height: 70px;
+  }
+
+  .splash-x-icon-wrapper img {
+    width: 180px;
+  }
+
+  .splash-gradient-line {
+    width: 260px;
+  }
+
+  .splash-agency-letter {
+    font-size: 12px;
+    letter-spacing: 0.35em;
+  }
+}
