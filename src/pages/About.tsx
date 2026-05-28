@@ -1,7 +1,8 @@
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import { easings } from '../theme';
 import { WordSplitter, NumberCounter } from '../components/animations/TextReveal';
-import { ShieldCheck, Target, Compass, Paintbrush, Code, Settings, BarChart, Cpu, Layers, Zap, Globe, ShoppingCart, Factory, Stethoscope, Wallet } from 'lucide-react';
+import { ShieldCheck, Target, Compass, ArrowRight, Cpu, Layers, Zap, Globe, ShoppingCart, Factory, Stethoscope, Wallet } from 'lucide-react';
 import ScrollReveal from '../components/animations/ScrollReveal';
 import BorderGlow from '../components/BorderGlow';
 
@@ -247,63 +248,37 @@ const About = () => {
           </div>
         </ScrollReveal>
 
-        {/* SECTION 5: Services Grid */}
+        {/* SECTION 5: Services redirect (not duplicated here) */}
         <ScrollReveal className="section-padding-tight" style={{ background: 'var(--bg-primary)' }}>
-          <div className="container">
-            <div className="section-header">
-              <motion.span 
-                initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.15 }}
-                variants={sectionHeaderVariants} className="section-subtitle" style={{ display: 'inline-block' }}
-              >
-                WHAT WE DO
-              </motion.span>
-              <br/>
-              <WordSplitter text="Our Services" className="h2-title" />
-            </div>
-
-            <motion.div 
-              initial="hidden" 
-              whileInView="visible" 
-              viewport={{ once: true, amount: 0.15 }}
-              variants={{ visible: { transition: { staggerChildren: 0.05 } } }}
-              style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem' }}
+          <div className="container" style={{ textAlign: 'center' }}>
+            <motion.span
+              initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.15 }}
+              variants={sectionHeaderVariants} className="section-subtitle" style={{ display: 'inline-block' }}
             >
-              {[
-                { icon: Paintbrush, title: 'UI/UX Design', desc: 'We turn big ideas into pixel-perfect realities. Crafting intuitive user interfaces and impactful visual identities.' },
-                { icon: Code, title: 'Web Development', desc: 'Building high-performance, scalable applications combining robust backend architecture with lightning-fast frontend speed.' },
-                { icon: Settings, title: 'Smart Automation', desc: 'We streamline your business operations. Engineering data-driven workflows that eliminate repetitive tasks.' },
-                { icon: BarChart, title: 'Digital Marketing', desc: 'We drive targeted growth through data-driven insights and creative storytelling. Maximizing engagement and conversions across platforms.' }
-              ].map((service, idx) => (
-                <motion.div 
-                  key={`srv-${idx}`}
-                  variants={{
-                    hidden: { opacity: 0, y: 20 },
-                    visible: { opacity: 1, y: 0, transition: { duration: 0.4 } }
-                  }}
-                  style={{ height: '100%' }}
-                >
-                  <BorderGlow
-                    edgeSensitivity={30}
-                    glowColor="40 80 80"
-                    backgroundColor="var(--bg-card)"
-                    borderRadius={16}
-                    glowRadius={40}
-                    glowIntensity={1}
-                    coneSpread={25}
-                    animated={false}
-                    colors={['#c084fc', '#f472b6', '#38bdf8']}
-                    className="h-full"
-                  >
-                    <div className="service-card-v2" style={{ padding: '2rem', border: 'none', background: 'transparent', height: '100%' }}>
-                      <div className="service-card-icon-v2">
-                        <service.icon color="var(--accent-blue)" size={32} />
-                      </div>
-                      <h4 className="service-card-title-v2" style={{ fontSize: '1.25rem' }}>{service.title}</h4>
-                      <p className="service-card-desc-v2">{service.desc}</p>
-                    </div>
-                  </BorderGlow>
-                </motion.div>
-              ))}
+              WHAT WE DO
+            </motion.span>
+            <br />
+            <WordSplitter text="Full-Spectrum Digital Services" className="h2-title" />
+            <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, delay: 0.1 }}
+              className="text-body"
+              style={{ marginTop: '1.5rem', maxWidth: '580px', marginInline: 'auto' }}
+            >
+              UI/UX design, full-stack development, smart automation, digital marketing, IoT hardware — and everything in between.
+            </motion.p>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, delay: 0.2 }}
+              style={{ marginTop: '2.5rem' }}
+            >
+              <Link to="/services" className="btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none' }}>
+                Explore all services <ArrowRight size={16} />
+              </Link>
             </motion.div>
           </div>
         </ScrollReveal>
@@ -580,7 +555,7 @@ const About = () => {
                 <p style={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: '1.25rem', marginBottom: '3rem', maxWidth: '600px', marginInline: 'auto' }}>
                   Let's architect your long-term success together with cutting-edge software and hardware innovation.
                 </p>
-                <a href="#contact" className="btn-white-cta hero-cta-button">
+                <a href="/#contact" className="btn-white-cta hero-cta-button">
                   Start A Conversation &rarr;
                 </a>
               </motion.div>

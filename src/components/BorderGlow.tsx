@@ -26,6 +26,20 @@ const activeCards = new Set<{
 let globalMouseX = -1000;
 let globalMouseY = -1000;
 let rafId: number | null = null;
+let idleTimer: ReturnType<typeof setTimeout> | null = null;
+
+const stopLoop = () => {
+  if (rafId !== null) {
+    cancelAnimationFrame(rafId);
+    rafId = null;
+  }
+  // Reset all cards to zero proximity so glows fade out
+  activeCards.forEach(card => {
+    if (card.ref.current) {
+      card.ref.current.style.setProperty('--edge-proximity', '0');
+    }
+  });
+};
 
 const runUpdateLoop = () => {
   activeCards.forEach((card) => {
@@ -34,11 +48,19 @@ const runUpdateLoop = () => {
   rafId = requestAnimationFrame(runUpdateLoop);
 };
 
+const startLoop = () => {
+  if (!rafId) rafId = requestAnimationFrame(runUpdateLoop);
+  // Cancel any pending idle timer
+  if (idleTimer !== null) clearTimeout(idleTimer);
+  // Stop loop 2s after mouse goes idle
+  idleTimer = setTimeout(stopLoop, 2000);
+};
+
 if (typeof window !== 'undefined') {
   window.addEventListener('mousemove', (e) => {
     globalMouseX = e.clientX;
     globalMouseY = e.clientY;
-    if (!rafId) rafId = requestAnimationFrame(runUpdateLoop);
+    startLoop();
   }, { passive: true });
 
   window.addEventListener('scroll', () => {

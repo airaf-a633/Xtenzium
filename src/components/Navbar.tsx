@@ -273,7 +273,7 @@ const Navbar = () => {
                 )}
               </AnimatePresence>
             </div>
-            <a href="#contact" className="btn-white-cta navbar-cta" style={{ padding: '0.6rem 1.25rem', fontSize: '0.9rem', borderRadius: '2rem' }}>Let's Talk</a>
+            <a href="/#contact" className="btn-white-cta navbar-cta" style={{ padding: '0.6rem 1.25rem', fontSize: '0.9rem', borderRadius: '2rem' }}>Let's Talk</a>
             <button 
               className="navbar-toggle"
               onClick={() => { setIsOpen(!isOpen); setIsThemeOpen(false); }}

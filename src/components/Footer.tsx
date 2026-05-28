@@ -44,9 +44,9 @@ const Footer = () => {
           <div className="footer-column">
             <h4 className="footer-label">Expertise</h4>
             <ul className="footer-link-list">
-              <li><Link to="/about" className="footer-nav-link">UI/UX Design</Link></li>
-              <li><Link to="/about" className="footer-nav-link">Web Solutions</Link></li>
-              <li><Link to="/about" className="footer-nav-link">Automation</Link></li>
+              <li><Link to="/services/design" className="footer-nav-link">UI/UX Design</Link></li>
+              <li><Link to="/services/development" className="footer-nav-link">Web Solutions</Link></li>
+              <li><Link to="/services/consultancy" className="footer-nav-link">Automation</Link></li>
               <li><Link to="/electronics" className="footer-nav-link">Electronics</Link></li>
             </ul>
           </div>

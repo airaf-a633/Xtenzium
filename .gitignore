@@ -26,3 +26,8 @@ dist-ssr
 # Local artifacts
 temp_pdf/
 build_log.txt
+
+# Environment — never commit secrets
+.env
+.env.local
+.env.*.local

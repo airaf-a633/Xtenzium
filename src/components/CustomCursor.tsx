@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react';
 import { motion, useMotionValue, useSpring } from 'framer-motion';
 
+// Don't render custom cursor on touch / coarse-pointer devices
+const isTouchDevice =
+  typeof window !== 'undefined' &&
+  (window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0);
+
 const CustomCursor = () => {
   const [isHovering, setIsHovering] = useState(false);
   
@@ -47,6 +52,8 @@ const CustomCursor = () => {
       window.removeEventListener('mouseover', handleMouseOver as EventListener);
     };
   }, [cursorX, cursorY]);
+
+  if (isTouchDevice) return null;
 
   return (
     <>

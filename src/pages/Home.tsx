@@ -6,6 +6,7 @@ import { ClipReveal, WordSplitter, NumberCounter } from '../components/animation
 import ScrollReveal from '../components/animations/ScrollReveal';
 import Hero3D from '../components/Hero3D';
 import BorderGlow from '../components/BorderGlow';
+import ContactSection from '../components/ContactSection';
 
 const MarqueeTicker = () => {
   return (
@@ -229,6 +230,8 @@ const Home = () => {
           </div>
         </motion.div>
       </ScrollReveal>
+
+      <ContactSection />
 
     </div>
   );
