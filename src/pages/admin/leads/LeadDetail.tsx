@@ -49,8 +49,6 @@ const LeadDetail = () => {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
   });
 
-  const currentStatus = STATUS_OPTIONS.find(s => s.value === status)!;
-
   if (loading) {
     return <div style={{ color: '#555', fontSize: 14 }}>Loading…</div>;
   }

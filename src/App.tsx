@@ -36,7 +36,6 @@ import Leads from './pages/admin/leads/Leads';
 import LeadDetail from './pages/admin/leads/LeadDetail';
 import AdminBlogs from './pages/admin/blogs/Blogs';
 import BlogEdit from './pages/admin/blogs/BlogEdit';
-import BlogPost from './pages/BlogPost';
 import ProtectedRoute from './components/admin/ProtectedRoute';
 
 // Context
@@ -60,7 +59,6 @@ const AnimatedRoutes = () => {
         <Route path="/strategy" element={<PageTransition><Strategy /></PageTransition>} />
         <Route path="/electronics" element={<PageTransition><Electronics /></PageTransition>} />
         <Route path="/blogs" element={<PageTransition><Blogs /></PageTransition>} />
-        <Route path="/blog/:slug" element={<PageTransition><BlogPost /></PageTransition>} />
         <Route path="/team" element={<PageTransition><Team /></PageTransition>} />
         <Route path="/about" element={<PageTransition><About /></PageTransition>} />
       </Routes>

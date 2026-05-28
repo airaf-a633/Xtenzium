@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, Clock, ChevronRight, Search } from 'lucide-react';
+import { Calendar, ChevronRight, Search } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { WordSplitter } from '../components/animations/TextReveal';
 import ScrollReveal from '../components/animations/ScrollReveal';

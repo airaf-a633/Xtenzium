@@ -18,7 +18,7 @@ export interface Blog {
   title: string;
   slug: string;
   excerpt: string | null;
-  content: Record<string, unknown>; // Tiptap JSON
+  content: Record<string, unknown>;
   cover_image: string | null;
   category: string | null;
   tags: string[];
@@ -28,25 +28,35 @@ export interface Blog {
   updated_at: string;
 }
 
-export interface Database {
+export type Database = {
   public: {
     Tables: {
       leads: {
-        Row: Lead;
-        Insert: Omit<Lead, 'id' | 'created_at' | 'updated_at'> & {
+        Row: Lead & Record<string, unknown>;
+        Insert: Omit<Lead, 'id' | 'created_at' | 'updated_at' | 'status' | 'notes'> & {
+          id?: string;
           status?: LeadStatus;
           notes?: string | null;
+          updated_at?: string;
         };
         Update: Partial<Omit<Lead, 'id' | 'created_at'>>;
+        Relationships: [];
       };
       blogs: {
-        Row: Blog;
+        Row: Blog & Record<string, unknown>;
         Insert: Omit<Blog, 'id' | 'created_at' | 'updated_at'> & {
+          id?: string;
           status?: BlogStatus;
           tags?: string[];
+          updated_at?: string;
         };
         Update: Partial<Omit<Blog, 'id' | 'created_at'>>;
+        Relationships: [];
       };
     };
+    Views: { [_ in never]: never };
+    Functions: { [_ in never]: never };
+    Enums: { [_ in never]: never };
+    CompositeTypes: { [_ in never]: never };
   };
-}
+};
