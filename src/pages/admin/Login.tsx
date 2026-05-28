@@ -35,6 +35,7 @@ const Login = () => {
       alignItems: 'center',
       justifyContent: 'center',
       fontFamily: 'system-ui, -apple-system, sans-serif',
+      cursor: 'default',
     }}>
       <div style={{ width: '100%', maxWidth: 400, padding: '0 24px' }}>
         {/* Logo mark */}

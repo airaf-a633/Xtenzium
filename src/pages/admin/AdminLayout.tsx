@@ -65,6 +65,7 @@ const AdminLayout = () => {
       minHeight: '100vh',
       background: '#0a0a0a',
       fontFamily: 'system-ui, -apple-system, sans-serif',
+      cursor: 'default',
     }}>
       {/* Sidebar */}
       <aside style={{
