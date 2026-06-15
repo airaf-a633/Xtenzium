@@ -1,0 +1,135 @@
+.container {
+  position: relative;
+  width: 100%;
+  height: 500px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  perspective: 1000px;
+  overflow: hidden;
+}
+
+/* Floor shadow that pulses inversely to the levitation */
+.floorShadow {
+  position: absolute;
+  bottom: 10%;
+  width: 250px;
+  height: 20px;
+  background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0) 70%);
+  border-radius: 50%;
+  animation: pulseShadow 6s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Levitating wrapper translates the entire ring complex up and down */
+.levitatingWrapper {
+  position: relative;
+  width: 400px;
+  height: 400px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  animation: levitate 6s ease-in-out infinite;
+}
+
+/* Inner wrapper responsible for the slow rotation */
+.rotatingRing {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  animation: spin 60s linear infinite;
+  /* Add SVG drop shadow for the glowing effect on the stroke itself */
+  filter: drop-shadow(0 0 8px rgba(30, 144, 255, 0.4)) drop-shadow(0 0 20px rgba(30, 144, 255, 0.2));
+}
+
+/* The actual dashed SVG stroke */
+.svgCircle {
+  stroke: #1E90FF;
+  stroke-width: 2;
+  stroke-dasharray: 12 8;
+  fill: none;
+  opacity: 0.8;
+}
+
+/* The glowing interactive node fixed to the rotating ring's edge */
+.orbitalNode {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  transform: translate(50%, -50%);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(30, 144, 255, 0.1);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border: 1px solid rgba(30, 144, 255, 0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 0 20px rgba(30, 144, 255, 0.3);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.orbitalNode:hover {
+  background: rgba(30, 144, 255, 0.2);
+  box-shadow: 0 0 30px rgba(30, 144, 255, 0.6);
+  transform: translate(50%, -50%) scale(1.1);
+}
+
+.orbitalNodeCore {
+  width: 10px;
+  height: 10px;
+  background: #1E90FF;
+  border-radius: 50%;
+  box-shadow: 0 0 10px #1E90FF;
+}
+
+/* Static central text that remains strictly horizontal */
+.centerText {
+  position: absolute;
+  z-index: 10;
+  font-family: var(--font-heading, 'Inter', sans-serif);
+  font-size: 2.5rem;
+  letter-spacing: 0.15em;
+  font-weight: 800;
+  color: #cbd5e1;
+  text-align: center;
+  /* Metallic sheen / subtle background glow */
+  text-shadow: 0 0 20px rgba(0, 0, 0, 0.8), 0 0 40px rgba(30, 144, 255, 0.2);
+  background: linear-gradient(180deg, #ffffff 0%, #94a3b8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  pointer-events: none;
+}
+
+@media (max-width: 768px) {
+  .levitatingWrapper {
+    width: 300px;
+    height: 300px;
+  }
+  .centerText {
+    font-size: 1.5rem;
+  }
+}
+
+/* Animations */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes levitate {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-15px); }
+  100% { transform: translateY(0px); }
+}
+
+@keyframes pulseShadow {
+  0% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(0.85); opacity: 0.3; }
+  100% { transform: scale(1); opacity: 0.6; }
+}
