@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { easings } from '../theme';
 import { Cpu, Database, Wrench } from 'lucide-react';
@@ -11,6 +12,7 @@ const sectionHeaderVariants = {
 };
 
 const Electronics = () => {
+  useEffect(() => { document.title = 'Electronics & IoT — Xtenzium'; }, []);
   return (
     <div className="main-wrapper" style={{ paddingTop: '100px', minHeight: '100vh', background: 'var(--bg-primary)', position: 'relative' }}>
       <div className="grid-bg" style={{ position: 'absolute', inset: 0, zIndex: 0, opacity: 0.03 }}></div>

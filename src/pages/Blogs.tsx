@@ -11,6 +11,7 @@ import type { Blog } from '../types/database';
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&q=80&w=800';
 
 const Blogs = () => {
+  useEffect(() => { document.title = 'Blog — Xtenzium'; }, []);
   const [posts, setPosts] = useState<Blog[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('All');

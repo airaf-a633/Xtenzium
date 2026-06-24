@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { useEffect } from 'react';
 import { easings } from '../theme';
 import { ArrowRight, Paintbrush, Code, Settings, BarChart } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -29,6 +30,7 @@ const MarqueeTicker = () => {
 };
 
 const Home = () => {
+  useEffect(() => { document.title = 'Xtenzium — We Architect Long-Term Success'; }, []);
   return (
     <div className="main-wrapper">
       <div className="grid-bg" style={{ position: 'absolute', inset: 0, zIndex: 0 }}></div>

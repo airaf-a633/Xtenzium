@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { easings } from '../theme';
 import { ShieldCheck, Network, Zap, AlertCircle, Compass, Eye, Target } from 'lucide-react';
@@ -12,6 +13,7 @@ const sectionHeaderVariants = {
 };
 
 const Strategy = () => {
+  useEffect(() => { document.title = 'Strategy — Xtenzium'; }, []);
   return (
     <div className="main-wrapper" style={{ paddingTop: '100px', background: 'var(--bg-primary)', position: 'relative' }}>
       <div className="grid-bg" style={{ position: 'absolute', inset: 0, zIndex: 0, opacity: 0.03 }}></div>

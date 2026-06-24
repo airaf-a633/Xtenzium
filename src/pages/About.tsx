@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { easings } from '../theme';
@@ -12,6 +13,7 @@ const sectionHeaderVariants = {
 };
 
 const About = () => {
+  useEffect(() => { document.title = 'About — Xtenzium'; }, []);
   return (
     <div className="main-wrapper" style={{ paddingTop: '100px', minHeight: '100vh', background: 'var(--bg-primary)', position: 'relative' }}>
       {/* Explicit Grid Overlay */}
