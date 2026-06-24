@@ -4,6 +4,7 @@ import { ShieldCheck, Network, Zap, AlertCircle, Compass, Eye, Target } from 'lu
 import { WordSplitter } from '../components/animations/TextReveal';
 import ScrollReveal from '../components/animations/ScrollReveal';
 import BorderGlow from '../components/BorderGlow';
+import OrbitalStrategy from '../components/OrbitalStrategy';
 
 const sectionHeaderVariants = {
   hidden: { opacity: 0, x: -20 },
@@ -101,21 +102,7 @@ const Strategy = () => {
                 animated={false}
                 colors={['#c084fc', '#f472b6', '#38bdf8']}
               >
-                <div 
-                  className="graphic-panel"
-                  style={{ background: 'transparent', border: 'none', borderRadius: '1.5rem', width: '100%', height: '500px' }}
-                >
-                  <motion.div 
-                    animate={{ rotate: 360 }} 
-                    transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
-                    className="graphic-circle"
-                  >
-                    <svg width="400" height="400" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
-                      <circle cx="200" cy="200" r="180" stroke="var(--accent-blue)" strokeWidth="2" strokeDasharray="8 6" fill="none" />
-                    </svg>
-                  </motion.div>
-                  <h2 className="graphic-text" style={{ color: 'var(--text-muted)', fontSize: '2.5rem', letterSpacing: '0.1em', opacity: 0.2 }}>XTENZIUM STRATEGY</h2>
-                </div>
+                <OrbitalStrategy />
               </BorderGlow>
             </motion.div>
           </motion.div>

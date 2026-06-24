@@ -15,7 +15,7 @@ import SplashScreen from './components/SplashScreen';
 import Home from './pages/Home';
 import Strategy from './pages/Strategy';
 import Electronics from './pages/Electronics';
-import Team from './pages/Team';
+import Contact from './pages/Contact';
 import About from './pages/About';
 import Services from './pages/Services';
 import Blogs from './pages/Blogs';
@@ -59,7 +59,7 @@ const AnimatedRoutes = () => {
         <Route path="/strategy" element={<PageTransition><Strategy /></PageTransition>} />
         <Route path="/electronics" element={<PageTransition><Electronics /></PageTransition>} />
         <Route path="/blogs" element={<PageTransition><Blogs /></PageTransition>} />
-        <Route path="/team" element={<PageTransition><Team /></PageTransition>} />
+        <Route path="/contact" element={<PageTransition><Contact /></PageTransition>} />
         <Route path="/about" element={<PageTransition><About /></PageTransition>} />
       </Routes>
     </AnimatePresence>

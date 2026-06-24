@@ -15,6 +15,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
     const img = new Image();
     img.src = xLogo;
     img.onload = () => setImageLoaded(true);
+    img.onerror = () => setImageLoaded(true);
   }, []);
 
   // Sequence timing

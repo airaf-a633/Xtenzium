@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { easings } from '../theme';
 import { ArrowRight, Paintbrush, Code, Settings, BarChart } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 import { ClipReveal, WordSplitter, NumberCounter } from '../components/animations/TextReveal';
 import ScrollReveal from '../components/animations/ScrollReveal';
@@ -34,24 +35,24 @@ const Home = () => {
       
       {/* 1. Hero Section */}
       <ScrollReveal id="home" className="hero-section" style={{ position: 'relative' }}>
-        <div className="container" style={{ position: 'relative', zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-          <div className="hero-content" style={{ textAlign: 'left', margin: 0, maxWidth: '600px', position: 'relative', zIndex: 10 }}>
-            <div className="hero-title-wrapper" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+        <div className="container max-[768px]:!flex-col max-[768px]:!justify-center" style={{ position: 'relative', zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+          <div className="hero-content max-[768px]:!text-center max-[768px]:!flex max-[768px]:!flex-col max-[768px]:!items-center" style={{ textAlign: 'left', margin: 0, maxWidth: '600px', position: 'relative', zIndex: 10 }}>
+            <div className="hero-title-wrapper max-[768px]:!items-center" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
               <ClipReveal delay={0.1}><h1 className="h1-super" style={{ color: 'var(--text-primary)' }}>We Architect</h1></ClipReveal>
               <ClipReveal delay={0.2}><h1 className="h1-super" style={{ color: 'var(--accent-blue)' }}>Long-Term</h1></ClipReveal>
               <ClipReveal delay={0.3}><h1 className="h1-super" style={{ color: 'var(--text-primary)' }}>Success.</h1></ClipReveal>
             </div>
             <motion.p 
               initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, ease: "easeOut" }}
-              className="text-body hero-desc" style={{ marginTop: '1.5rem', marginLeft: 0 }}
+              className="text-body hero-desc max-[768px]:!mx-auto max-[768px]:!text-center" style={{ marginTop: '1.5rem', marginLeft: 0 }}
             >
               Xtenzium is a full-service digital agency delivering end-to-end solutions in design, development, automation, and digital growth. Tailored to modern businesses.
             </motion.p>
             <motion.div 
               initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4, ease: "easeOut" }}
-              className="hero-actions" style={{ justifyContent: 'flex-start', marginTop: '2.5rem' }}
+              className="hero-actions max-[768px]:!justify-center max-[768px]:!w-full max-[768px]:!flex-col" style={{ justifyContent: 'flex-start', marginTop: '2.5rem' }}
             >
-              <a href="#about" className="btn-primary hero-cta-button">Discover Xtenzium <ArrowRight className="btn-icon" size={20} /></a>
+              <a href="#about" className="btn-primary hero-cta-button max-[768px]:!w-full max-[768px]:!justify-center">Discover Xtenzium <ArrowRight className="btn-icon" size={20} /></a>
             </motion.div>
           </div>
         </div>
@@ -124,6 +125,7 @@ const Home = () => {
           </div>
           <motion.div 
             variants={{ visible: { transition: { staggerChildren: 0.05 } } }}
+            className="max-[768px]:!flex max-[768px]:!flex-col"
             style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem' }}
           >
             {[
@@ -164,7 +166,7 @@ const Home = () => {
       {/* 4. Mission and Vision */}
       <ScrollReveal id="electronics" className="section-padding" style={{ background: 'var(--bg-primary)' }}>
         <div className="container">
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
+          <div className="max-[768px]:!flex max-[768px]:!flex-col" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '2rem' }}>
             <motion.div 
               variants={{ hidden: { opacity: 0, x: -30 }, visible: { opacity: 1, x: 0, transition: { duration: 0.7, ease: easings.global } }}}
               style={{ width: '100%' }}
@@ -220,12 +222,12 @@ const Home = () => {
           style={{ background: 'var(--accent-blue)', padding: '6rem 0', textAlign: 'center', position: 'relative', zIndex: 1 }}
         >
           <div className="container">
-            <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.6, delay: 0.3, ease: easings.global } } }}>
-              <h2 style={{ fontFamily: 'var(--font-heading)', color: '#ffffff', fontSize: 'clamp(2.5rem, 5vw, 4rem)', fontWeight: 800, marginBottom: '1rem', lineHeight: 1.1 }}>
+            <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.6, delay: 0.3, ease: easings.global } } }} className="max-[768px]:!flex max-[768px]:!flex-col max-[768px]:!items-center">
+              <h2 className="max-[768px]:!text-[2rem]" style={{ fontFamily: 'var(--font-heading)', color: '#ffffff', fontSize: 'clamp(2.5rem, 5vw, 4rem)', fontWeight: 800, marginBottom: '1rem', lineHeight: 1.1 }}>
                 Ready To Build Something Remarkable?
               </h2>
               <p style={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: '1.25rem', marginBottom: '2.5rem' }}>Let's architect your long-term success together.</p>
-              <a href="#contact" className="btn-white-cta">Let's Talk &rarr;</a>
+              <Link to="/contact" className="btn-white-cta max-[768px]:!w-full max-[768px]:!justify-center">Let's Talk &rarr;</Link>
             </motion.div>
           </div>
         </motion.div>

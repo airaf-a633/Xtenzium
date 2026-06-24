@@ -30,7 +30,7 @@ const NAVBAR_LINKS = [
   { name: 'Strategy', path: '/strategy', id: 'strategy' },
   { name: 'Electronics', path: '/electronics', id: 'electronics' },
   { name: 'Blogs', path: '/blogs', id: 'blogs' },
-  { name: 'Team', path: '/team', id: 'team' }
+  { name: 'Contact', path: '/contact', id: 'contact' }
 ];
 
 const Navbar = () => {
@@ -273,7 +273,7 @@ const Navbar = () => {
                 )}
               </AnimatePresence>
             </div>
-            <a href="/#contact" className="btn-white-cta navbar-cta" style={{ padding: '0.6rem 1.25rem', fontSize: '0.9rem', borderRadius: '2rem' }}>Let's Talk</a>
+            <Link to="/contact" className="btn-white-cta navbar-cta max-[768px]:!hidden" style={{ padding: '0.6rem 1.25rem', fontSize: '0.9rem', borderRadius: '2rem' }}>Let's Talk</Link>
             <button 
               className="navbar-toggle"
               onClick={() => { setIsOpen(!isOpen); setIsThemeOpen(false); }}

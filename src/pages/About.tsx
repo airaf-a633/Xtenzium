@@ -447,18 +447,29 @@ const About = () => {
                 >
                   <div 
                     className="graphic-panel"
-                    style={{ background: 'rgba(41, 121, 255, 0.05)', border: 'none', height: '400px', borderRadius: '1.5rem', position: 'relative' }}
+                    style={{ background: 'linear-gradient(135deg, rgba(41, 121, 255, 0.08) 0%, rgba(41, 121, 255, 0.01) 100%)', border: '1px solid rgba(41, 121, 255, 0.1)', height: '400px', borderRadius: '1.5rem', position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}
                   >
-                    <motion.div 
-                      animate={{ rotate: 360 }} 
-                      transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
-                      style={{ position: 'relative', width: '200px', height: '200px', margin: '0 auto', top: '100px' }}
+                    {/* Background glow orb */}
+                    <div style={{ position: 'absolute', width: '200px', height: '200px', background: 'var(--accent-blue)', opacity: 0.1, filter: 'blur(50px)', borderRadius: '50%' }}></div>
+
+                    <motion.div
+                      animate={{ y: [-15, 15, -15] }}
+                      transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
                     >
-                      <Layers size={120} color="var(--accent-blue)" style={{ position: 'absolute', top: '20%', left: '20%', opacity: 0.8 }} />
-                      <Cpu size={80} color="var(--accent-light)" style={{ position: 'absolute', bottom: '10%', right: '10%', opacity: 0.6 }} />
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 45, repeat: Infinity, ease: "linear" }}
+                        style={{ position: 'relative', width: '200px', height: '200px', display: 'flex', justifyContent: 'center', alignItems: 'center', filter: 'drop-shadow(0 0 25px rgba(41, 121, 255, 0.4))' }}
+                      >
+                        <Layers size={140} color="var(--accent-blue)" strokeWidth={1} style={{ position: 'absolute', opacity: 0.9 }} />
+                        <div style={{ position: 'absolute', background: 'var(--bg-primary)', borderRadius: '16px', padding: '0.5rem', display: 'flex', justifyContent: 'center', alignItems: 'center', boxShadow: '0 0 20px rgba(0,0,0,0.5)' }}>
+                          <Cpu size={56} color="var(--accent-light)" strokeWidth={1.5} style={{ opacity: 1, zIndex: 2 }} />
+                        </div>
+                      </motion.div>
                     </motion.div>
-                    <div style={{ position: 'absolute', bottom: '2rem', textAlign: 'center', width: '100%' }}>
-                      <span style={{ fontSize: '0.8rem', letterSpacing: '0.2em', opacity: 0.5 }}>INTEGRATED SYSTEMS</span>
+
+                    <div style={{ position: 'absolute', bottom: '2.5rem', textAlign: 'center', width: '100%' }}>
+                      <span style={{ fontSize: '0.85rem', letterSpacing: '0.3em', opacity: 0.8, color: 'var(--accent-light)', fontWeight: 600 }}>INTEGRATED SYSTEMS</span>
                     </div>
                   </div>
                 </BorderGlow>
@@ -555,9 +566,9 @@ const About = () => {
                 <p style={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: '1.25rem', marginBottom: '3rem', maxWidth: '600px', marginInline: 'auto' }}>
                   Let's architect your long-term success together with cutting-edge software and hardware innovation.
                 </p>
-                <a href="/#contact" className="btn-white-cta hero-cta-button">
+                <Link to="/contact" className="btn-white-cta hero-cta-button">
                   Start A Conversation &rarr;
-                </a>
+                </Link>
               </motion.div>
             </div>
           </motion.div>
