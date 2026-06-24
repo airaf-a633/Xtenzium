@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
 import { motion } from 'framer-motion';
+import SEO from '../components/SEO';
 import { easings } from '../theme';
 import { Cpu, Database, Wrench } from 'lucide-react';
 import { WordSplitter } from '../components/animations/TextReveal';
@@ -12,8 +12,13 @@ const sectionHeaderVariants = {
 };
 
 const Electronics = () => {
-  useEffect(() => { document.title = 'Electronics & IoT — Xtenzium'; }, []);
   return (
+    <>
+      <SEO
+        title="Electronics & IoT"
+        url="/electronics"
+        description="Xtenzium's electronics division: custom PCB design, IoT hardware integration, embedded systems, and network infrastructure. Hardware and software under one roof in Karachi."
+      />
     <div className="main-wrapper" style={{ paddingTop: '100px', minHeight: '100vh', background: 'var(--bg-primary)', position: 'relative' }}>
       <div className="grid-bg" style={{ position: 'absolute', inset: 0, zIndex: 0, opacity: 0.03 }}></div>
       <ScrollReveal id="electronics" className="section-padding">
@@ -90,6 +95,7 @@ const Electronics = () => {
         </div>
       </ScrollReveal>
     </div>
+    </>
   );
 };
 

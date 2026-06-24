@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import SEO from '../components/SEO';
 import { motion } from 'framer-motion';
 import { Mail, MapPin, ArrowRight } from 'lucide-react';
 import ScrollReveal from '../components/animations/ScrollReveal';
@@ -17,8 +18,6 @@ const Contact = () => {
   const [form, setForm] = useState<FormState>(INITIAL);
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
-
-  useEffect(() => { document.title = 'Contact — Xtenzium'; }, []);
 
   const set = (field: keyof FormState) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
@@ -60,6 +59,11 @@ const Contact = () => {
 
   return (
     <div className="main-wrapper" style={{ paddingTop: '100px', background: 'var(--bg-primary)', position: 'relative', minHeight: '100vh' }}>
+      <SEO
+        title="Contact"
+        url="/contact"
+        description="Start a project with Xtenzium. We're a digital agency in Karachi, Pakistan delivering web development, design, IoT, and AI automation. Get in touch today."
+      />
       <div className="grid-bg" style={{ position: 'absolute', inset: 0, zIndex: 0, opacity: 0.03 }}></div>
 
       <ScrollReveal className="section-padding" style={{ position: 'relative', zIndex: 10 }}>

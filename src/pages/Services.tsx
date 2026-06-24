@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import SEO from '../components/SEO';
 import { 
   ArrowRight,
   Briefcase,
@@ -228,6 +229,11 @@ const ServiceCard = ({ card, index }: { card: AccordionCard; index: number }) =>
 const Services = () => {
   return (
     <div className="main-wrapper" style={{ paddingTop: '100px', background: 'var(--bg-primary)' }}>
+      <SEO
+        title="Services"
+        url="/services"
+        description="Xtenzium offers full-stack web development, UI/UX design, AI automation, digital marketing, IoT hardware, and cybersecurity — end-to-end digital solutions from Karachi."
+      />
       {/* Section: Hero Banner */}
       <section className="section-padding" style={{ padding: '100px 0' }}>
         <div className="container">

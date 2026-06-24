@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
 import { motion } from 'framer-motion';
+import SEO from '../components/SEO';
 import { Link } from 'react-router-dom';
 import { easings } from '../theme';
 import { WordSplitter, NumberCounter } from '../components/animations/TextReveal';
@@ -13,9 +13,13 @@ const sectionHeaderVariants = {
 };
 
 const About = () => {
-  useEffect(() => { document.title = 'About — Xtenzium'; }, []);
   return (
     <div className="main-wrapper" style={{ paddingTop: '100px', minHeight: '100vh', background: 'var(--bg-primary)', position: 'relative' }}>
+      <SEO
+        title="About"
+        url="/about"
+        description="Learn about Xtenzium — a full-service digital agency in Karachi bridging software and custom hardware. 65+ projects delivered, 36%+ average client ROI."
+      />
       {/* Explicit Grid Overlay */}
       <div className="grid-bg" style={{ position: 'absolute', inset: 0, zIndex: 0, opacity: 0.03 }}></div>
       

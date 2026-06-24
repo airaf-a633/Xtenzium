@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { useEffect } from 'react';
+import SEO from '../components/SEO';
 import { easings } from '../theme';
 import { ArrowRight, Paintbrush, Code, Settings, BarChart } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -30,9 +30,34 @@ const MarqueeTicker = () => {
 };
 
 const Home = () => {
-  useEffect(() => { document.title = 'Xtenzium — We Architect Long-Term Success'; }, []);
   return (
     <div className="main-wrapper">
+      <SEO
+        url="/"
+        description="Xtenzium is a full-service digital agency in Karachi, Pakistan. Web development, UI/UX design, IoT hardware, AI automation, and digital marketing — all under one roof."
+      />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'Organization',
+        name: 'Xtenzium',
+        url: 'https://www.xtenzium.com',
+        logo: 'https://www.xtenzium.com/logo.png',
+        description: 'Full-service digital agency in Karachi, Pakistan delivering web development, UI/UX design, IoT hardware, AI automation, and digital marketing.',
+        address: {
+          '@type': 'PostalAddress',
+          addressLocality: 'Karachi',
+          addressCountry: 'PK',
+        },
+        contactPoint: {
+          '@type': 'ContactPoint',
+          email: 'contact@xtenzium.com',
+          contactType: 'customer service',
+        },
+        sameAs: [
+          'https://www.linkedin.com/company/xtenzium/',
+          'https://www.instagram.com/xtenzium/',
+        ],
+      }) }} />
       <div className="grid-bg" style={{ position: 'absolute', inset: 0, zIndex: 0 }}></div>
       
       {/* 1. Hero Section */}

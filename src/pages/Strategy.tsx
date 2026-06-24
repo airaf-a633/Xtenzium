@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
 import { motion } from 'framer-motion';
+import SEO from '../components/SEO';
 import { easings } from '../theme';
 import { ShieldCheck, Network, Zap, AlertCircle, Compass, Eye, Target } from 'lucide-react';
 import { WordSplitter } from '../components/animations/TextReveal';
@@ -13,9 +13,13 @@ const sectionHeaderVariants = {
 };
 
 const Strategy = () => {
-  useEffect(() => { document.title = 'Strategy — Xtenzium'; }, []);
   return (
     <div className="main-wrapper" style={{ paddingTop: '100px', background: 'var(--bg-primary)', position: 'relative' }}>
+      <SEO
+        title="Our Strategy"
+        url="/strategy"
+        description="Xtenzium's strategy bridges abstract vision with market reality. Rigorous analysis, intelligent execution, and data-driven systems built for long-term resilience."
+      />
       <div className="grid-bg" style={{ position: 'absolute', inset: 0, zIndex: 0, opacity: 0.03 }}></div>
       
       {/* 6. Strategy Split Layout */}

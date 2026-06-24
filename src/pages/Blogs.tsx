@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import SEO from '../components/SEO';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, ChevronRight, Search } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -11,7 +12,6 @@ import type { Blog } from '../types/database';
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&q=80&w=800';
 
 const Blogs = () => {
-  useEffect(() => { document.title = 'Blog — Xtenzium'; }, []);
   const [posts, setPosts] = useState<Blog[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('All');
@@ -48,6 +48,11 @@ const Blogs = () => {
 
   return (
     <div className="main-wrapper" style={{ paddingTop: '100px', background: 'var(--bg-primary)', position: 'relative' }}>
+      <SEO
+        title="Blog — Insights & Innovation"
+        url="/blogs"
+        description="Deep dives into web development, UI/UX design, IoT, AI automation, and digital strategy from the experts at Xtenzium — a digital agency in Karachi, Pakistan."
+      />
       <div className="grid-bg" style={{ position: 'absolute', inset: 0, zIndex: 0, opacity: 0.03, pointerEvents: 'none' }} />
 
       {/* Hero */}

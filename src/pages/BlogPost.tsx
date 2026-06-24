@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import SEO from '../components/SEO';
 import { motion } from 'framer-motion';
 import { Calendar, ArrowLeft, Tag } from 'lucide-react';
 import { useEditor, EditorContent } from '@tiptap/react';
@@ -29,7 +30,6 @@ const BlogPost = () => {
           setNotFound(true);
         } else {
           setPost(data as Blog);
-          document.title = `${data.title} — Xtenzium`;
         }
         setLoading(false);
       });
@@ -68,6 +68,15 @@ const BlogPost = () => {
 
   return (
     <div style={{ background: 'var(--bg-primary)', minHeight: '100vh', paddingTop: '100px' }}>
+      <SEO
+        title={post.title}
+        url={`/blog/${post.slug}`}
+        description={post.excerpt ?? `Read ${post.title} on the Xtenzium blog — insights on web development, design, IoT, and digital strategy.`}
+        image={post.cover_image ?? undefined}
+        type="article"
+        publishedAt={post.published_at ?? undefined}
+        tags={post.tags}
+      />
 
       {/* Hero */}
       {post.cover_image && (
