@@ -127,7 +127,7 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({ content, onChange, placehol
     const fileName = `inline-${Date.now()}.${ext}`;
     const { data, error } = await supabase.storage
       .from('blog-images')
-      .upload(fileName, file, { upsert: true });
+      .upload(fileName, file);
     if (error) { alert(`Upload failed: ${error.message}`); return; }
     const { data: { publicUrl } } = supabase.storage.from('blog-images').getPublicUrl(data.path);
     editor.chain().focus().setImage({ src: publicUrl }).run();

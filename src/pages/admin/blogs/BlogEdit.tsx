@@ -96,7 +96,7 @@ const BlogEdit = () => {
     const fileName = `cover-${Date.now()}.${ext}`;
     const { data, error } = await supabase.storage
       .from('blog-images')
-      .upload(fileName, file, { upsert: true });
+      .upload(fileName, file);
     if (error) {
       alert(`Upload failed: ${error.message}`);
       setUploadingCover(false);
