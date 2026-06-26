@@ -1,0 +1,71 @@
+# Xtenzium
+
+> Xtenzium is a full-service digital agency and software house based in Karachi, Pakistan. We architect long-term digital success for businesses globally.
+
+## What We Do
+
+Xtenzium delivers end-to-end digital solutions across six practice areas:
+
+- **Web Development**: Custom React, Next.js, and Node.js applications. Full-stack development, REST APIs, eCommerce platforms, SaaS products, and performance-optimized web apps.
+- **UI/UX Design**: User interface design, UX research, design systems, branding, and Figma prototyping. We design for conversion and long-term brand equity.
+- **AI & Automation**: LLM integrations, workflow automation, AI-powered tools, chatbots, RAG systems, and intelligent business process automation.
+- **IoT & Embedded Systems**: Custom PCB design, embedded firmware development, IoT sensor networks, MQTT integrations, smart home automation, and industrial IoT. This is Xtenzium's core differentiator — very few agencies bridge software and custom hardware.
+- **Cybersecurity**: Web application security audits, penetration testing, OWASP compliance, authentication hardening, and data protection.
+- **Digital Marketing**: SEO, content marketing, paid advertising, social media strategy, and analytics.
+- **Cloud & DevOps**: AWS, GCP, Vercel deployments, Docker, CI/CD pipelines, and cloud cost optimization.
+- **Consultancy**: Digital transformation strategy, AI consultancy, and market research.
+
+## Key Facts
+
+- Location: Karachi, Pakistan
+- Contact: contact@xtenzium.com
+- Website: https://www.xtenzium.com
+- Projects delivered: 65+
+- Average client ROI: 36%+
+- Team: CEO, COO, CMO, Electronics Lead
+- Primary markets: Global (North America, Europe, Middle East, South Asia)
+
+## Core Differentiator
+
+Most digital agencies are software-only. Xtenzium bridges software AND custom hardware — PCB design, IoT device engineering, and embedded systems — under one roof. A client building a smart connected product gets app, firmware, cloud backend, and hardware design from a single team.
+
+## Services Summary
+
+| Service | What We Deliver |
+|---|---|
+| Web Development | React, Next.js, Node.js, REST APIs, SaaS, eCommerce |
+| UI/UX Design | Design systems, Figma, branding, user research |
+| AI & Automation | LLM integrations, RAG, workflow bots, AI tools |
+| IoT & Electronics | PCB design, embedded firmware, MQTT, smart devices |
+| Cybersecurity | Security audits, pen testing, OWASP compliance |
+| Digital Marketing | SEO, content strategy, paid ads, analytics |
+| Cloud & DevOps | AWS, GCP, Vercel, Docker, CI/CD |
+| Consultancy | Digital transformation, AI strategy, market research |
+
+## Who We Work With
+
+- Startups building their first digital product
+- Scale-ups modernizing legacy systems
+- Enterprises adding IoT or AI capabilities
+- Businesses across Pakistan, Middle East, North America, and Europe
+
+## Frequently Asked Questions
+
+**Q: Is Xtenzium a software house or a digital agency?**
+A: Both. Xtenzium is a full-service digital agency and software house in Karachi, Pakistan. What makes us unique is that we also build custom hardware: PCB design, IoT devices, and embedded systems firmware.
+
+**Q: Does Xtenzium work with international clients?**
+A: Yes. While headquartered in Karachi, Pakistan, we serve clients globally — primarily in North America, Europe, and the Middle East.
+
+**Q: What technologies does Xtenzium use for web development?**
+A: Our primary web stack is React, Next.js, TypeScript, and Node.js on the backend. We also work with PostgreSQL, Supabase, AWS, and Vercel for deployment.
+
+**Q: Can Xtenzium handle both the app and the hardware for an IoT product?**
+A: Yes — this is exactly what we do. We handle PCB design, embedded firmware, cloud backend, mobile app, and dashboard in a single engagement.
+
+**Q: How do I contact Xtenzium?**
+A: Email contact@xtenzium.com or use the contact form at https://www.xtenzium.com/contact
+
+## Tagline
+
+"We Architect Long-Term Success."

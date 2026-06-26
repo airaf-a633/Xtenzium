@@ -60,9 +60,9 @@ const Contact = () => {
   return (
     <div className="main-wrapper" style={{ paddingTop: '100px', background: 'var(--bg-primary)', position: 'relative', minHeight: '100vh' }}>
       <SEO
-        title="Contact"
+        title="Contact — Hire Web Developers in Karachi, Pakistan"
         url="/contact"
-        description="Start a project with Xtenzium. We're a digital agency in Karachi, Pakistan delivering web development, design, IoT, and AI automation. Get in touch today."
+        description="Hire web developers, UI/UX designers, and IoT engineers in Karachi. Start a project with Xtenzium — Pakistan's full-service digital agency. Free consultation."
       />
       <div className="grid-bg" style={{ position: 'absolute', inset: 0, zIndex: 0, opacity: 0.03 }}></div>
 

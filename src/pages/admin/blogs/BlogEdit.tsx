@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../../../lib/supabase';
 import type { BlogStatus } from '../../../types/database';
@@ -49,6 +49,8 @@ const BlogEdit = () => {
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState('');
   const [slugEdited, setSlugEdited] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
+  const coverInputRef = useRef<HTMLInputElement>(null);
 
   // Load existing post
   useEffect(() => {
@@ -85,6 +87,26 @@ const BlogEdit = () => {
   const handleContentChange = useCallback((json: Record<string, unknown>) => {
     setForm(prev => ({ ...prev, content: json }));
   }, []);
+
+  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingCover(true);
+    const ext = file.name.split('.').pop() ?? 'jpg';
+    const fileName = `cover-${Date.now()}.${ext}`;
+    const { data, error } = await supabase.storage
+      .from('blog-images')
+      .upload(fileName, file, { upsert: true });
+    if (error) {
+      alert(`Upload failed: ${error.message}`);
+      setUploadingCover(false);
+      return;
+    }
+    const { data: { publicUrl } } = supabase.storage.from('blog-images').getPublicUrl(data.path);
+    setForm(prev => ({ ...prev, cover_image: publicUrl }));
+    setUploadingCover(false);
+    e.target.value = '';
+  };
 
   const handleSave = async (statusOverride?: BlogStatus) => {
     setSaving(true);
@@ -298,12 +320,41 @@ const BlogEdit = () => {
 
           {/* Cover image */}
           <div style={{ background: '#141414', border: '1px solid #1e1e1e', borderRadius: 10, padding: 18 }}>
-            <label style={labelStyle}>Cover image URL</label>
+            <label style={labelStyle}>Cover Image</label>
+            <input
+              ref={coverInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleCoverUpload}
+              style={{ display: 'none' }}
+            />
+            <button
+              type="button"
+              onClick={() => coverInputRef.current?.click()}
+              disabled={uploadingCover}
+              style={{
+                width: '100%',
+                padding: '9px 14px',
+                background: 'transparent',
+                border: '1px dashed #2a2a2a',
+                borderRadius: 8,
+                color: uploadingCover ? '#444' : '#555',
+                fontSize: 13,
+                cursor: uploadingCover ? 'not-allowed' : 'pointer',
+                marginBottom: 10,
+                transition: 'all 0.15s',
+                fontFamily: 'inherit',
+              }}
+              onMouseEnter={e => { if (!uploadingCover) (e.currentTarget as HTMLElement).style.borderColor = '#444'; }}
+              onMouseLeave={e => { if (!uploadingCover) (e.currentTarget as HTMLElement).style.borderColor = '#2a2a2a'; }}
+            >
+              {uploadingCover ? 'Uploading…' : '↑  Upload image'}
+            </button>
             <input
               type="url"
               value={form.cover_image}
               onChange={set('cover_image')}
-              placeholder="https://…"
+              placeholder="or paste URL…"
               style={inputStyle}
               onFocus={e => (e.target.style.borderColor = '#444')}
               onBlur={e => (e.target.style.borderColor = '#222')}

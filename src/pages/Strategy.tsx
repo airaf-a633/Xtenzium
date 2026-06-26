@@ -16,9 +16,9 @@ const Strategy = () => {
   return (
     <div className="main-wrapper" style={{ paddingTop: '100px', background: 'var(--bg-primary)', position: 'relative' }}>
       <SEO
-        title="Our Strategy"
+        title="Our Strategy — How Xtenzium Delivers Digital Results"
         url="/strategy"
-        description="Xtenzium's strategy bridges abstract vision with market reality. Rigorous analysis, intelligent execution, and data-driven systems built for long-term resilience."
+        description="Xtenzium's strategy bridges vision with execution. Rigorous market analysis and data-driven digital systems — built by a top digital agency in Karachi, Pakistan."
       />
       <div className="grid-bg" style={{ position: 'absolute', inset: 0, zIndex: 0, opacity: 0.03 }}></div>
       

@@ -4,7 +4,8 @@ import Placeholder from '@tiptap/extension-placeholder';
 import Link from '@tiptap/extension-link';
 import Image from '@tiptap/extension-image';
 import Typography from '@tiptap/extension-typography';
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
+import { supabase } from '../../lib/supabase';
 
 interface TiptapEditorProps {
   content: Record<string, unknown>;
@@ -63,6 +64,7 @@ const Divider = () => (
 // ─── Editor ────────────────────────────────────────────────
 
 const TiptapEditor: React.FC<TiptapEditorProps> = ({ content, onChange, placeholder }) => {
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -114,9 +116,22 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({ content, onChange, placehol
   }, [editor]);
 
   const addImage = useCallback(() => {
+    imageInputRef.current?.click();
+  }, []);
+
+  const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!editor) return;
-    const url = window.prompt('Image URL');
-    if (url) editor.chain().focus().setImage({ src: url }).run();
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const ext = file.name.split('.').pop() ?? 'jpg';
+    const fileName = `inline-${Date.now()}.${ext}`;
+    const { data, error } = await supabase.storage
+      .from('blog-images')
+      .upload(fileName, file, { upsert: true });
+    if (error) { alert(`Upload failed: ${error.message}`); return; }
+    const { data: { publicUrl } } = supabase.storage.from('blog-images').getPublicUrl(data.path);
+    editor.chain().focus().setImage({ src: publicUrl }).run();
+    e.target.value = '';
   }, [editor]);
 
   if (!editor) return null;
@@ -198,6 +213,8 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({ content, onChange, placehol
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/></svg>
         </ToolBtn>
       </div>
+
+      <input ref={imageInputRef} type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
 
       {/* Editor content */}
       <EditorContent editor={editor} style={{ padding: '20px 24px', minHeight: 360 }} />

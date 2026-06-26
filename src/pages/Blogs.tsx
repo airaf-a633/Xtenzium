@@ -49,9 +49,9 @@ const Blogs = () => {
   return (
     <div className="main-wrapper" style={{ paddingTop: '100px', background: 'var(--bg-primary)', position: 'relative' }}>
       <SEO
-        title="Blog — Insights & Innovation"
+        title="Blog — Web Development & Tech Insights from Karachi"
         url="/blogs"
-        description="Deep dives into web development, UI/UX design, IoT, AI automation, and digital strategy from the experts at Xtenzium — a digital agency in Karachi, Pakistan."
+        description="Expert insights on web development, UI/UX design, AI automation, IoT, and digital marketing from Xtenzium — a software house and digital agency in Karachi, Pakistan."
       />
       <div className="grid-bg" style={{ position: 'absolute', inset: 0, zIndex: 0, opacity: 0.03, pointerEvents: 'none' }} />
 

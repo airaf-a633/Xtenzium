@@ -230,10 +230,24 @@ const Services = () => {
   return (
     <div className="main-wrapper" style={{ paddingTop: '100px', background: 'var(--bg-primary)' }}>
       <SEO
-        title="Services"
+        title="Services — Web Development Company Karachi, Pakistan"
         url="/services"
-        description="Xtenzium offers full-stack web development, UI/UX design, AI automation, digital marketing, IoT hardware, and cybersecurity — end-to-end digital solutions from Karachi."
+        description="Xtenzium is a full-service web development company in Karachi offering React/Next.js development, UI/UX design, AI automation, IoT engineering, and digital marketing."
       />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'ItemList',
+        name: 'Xtenzium Digital Services',
+        description: 'Full range of digital and hardware services offered by Xtenzium, a software house and digital agency in Karachi, Pakistan.',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, item: { '@type': 'Service', name: 'Consultancy', description: 'Digital transformation, AI consultancy, and market research for growing businesses.', provider: { '@type': 'Organization', name: 'Xtenzium' } } },
+          { '@type': 'ListItem', position: 2, item: { '@type': 'Service', name: 'Digital Marketing', description: 'SEO, paid advertising, marketing strategy, and content marketing.', provider: { '@type': 'Organization', name: 'Xtenzium' } } },
+          { '@type': 'ListItem', position: 3, item: { '@type': 'Service', name: 'UI/UX Design', description: 'Web design, graphic design, branding, design systems, and user experience.', provider: { '@type': 'Organization', name: 'Xtenzium' } } },
+          { '@type': 'ListItem', position: 4, item: { '@type': 'Service', name: 'Cybersecurity & Managed IT', description: 'Web application security audits, penetration testing, cloud services, and managed IT.', provider: { '@type': 'Organization', name: 'Xtenzium' } } },
+          { '@type': 'ListItem', position: 5, item: { '@type': 'Service', name: 'Web & Software Development', description: 'Full-stack web development with React, Next.js, and Node.js. Custom software, eCommerce, SaaS.', provider: { '@type': 'Organization', name: 'Xtenzium' } } },
+          { '@type': 'ListItem', position: 6, item: { '@type': 'Service', name: 'IoT & Embedded Systems', description: 'Custom PCB design, embedded firmware development, IoT sensor networks, and smart home automation.', provider: { '@type': 'Organization', name: 'Xtenzium' } } },
+        ],
+      }) }} />
       {/* Section: Hero Banner */}
       <section className="section-padding" style={{ padding: '100px 0' }}>
         <div className="container">

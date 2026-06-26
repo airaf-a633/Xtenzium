@@ -16,9 +16,9 @@ const About = () => {
   return (
     <div className="main-wrapper" style={{ paddingTop: '100px', minHeight: '100vh', background: 'var(--bg-primary)', position: 'relative' }}>
       <SEO
-        title="About"
+        title="About — Digital Agency in Karachi, Pakistan"
         url="/about"
-        description="Learn about Xtenzium — a full-service digital agency in Karachi bridging software and custom hardware. 65+ projects delivered, 36%+ average client ROI."
+        description="Xtenzium is a digital agency in Karachi, Pakistan with 65+ delivered projects and 36%+ average client ROI. Full-stack development, IoT hardware, AI automation — one team."
       />
       {/* Explicit Grid Overlay */}
       <div className="grid-bg" style={{ position: 'absolute', inset: 0, zIndex: 0, opacity: 0.03 }}></div>

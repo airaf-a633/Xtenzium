@@ -15,9 +15,9 @@ const Electronics = () => {
   return (
     <>
       <SEO
-        title="Electronics & IoT"
+        title="IoT & Embedded Systems — PCB Design Company Karachi"
         url="/electronics"
-        description="Xtenzium's electronics division: custom PCB design, IoT hardware integration, embedded systems, and network infrastructure. Hardware and software under one roof in Karachi."
+        description="Xtenzium builds custom IoT devices, PCB designs, and embedded firmware for businesses in Pakistan and globally. Hardware and software engineering under one roof in Karachi."
       />
     <div className="main-wrapper" style={{ paddingTop: '100px', minHeight: '100vh', background: 'var(--bg-primary)', position: 'relative' }}>
       <div className="grid-bg" style={{ position: 'absolute', inset: 0, zIndex: 0, opacity: 0.03 }}></div>

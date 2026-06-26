@@ -34,28 +34,46 @@ const Home = () => {
     <div className="main-wrapper">
       <SEO
         url="/"
-        description="Xtenzium is a full-service digital agency in Karachi, Pakistan. Web development, UI/UX design, IoT hardware, AI automation, and digital marketing — all under one roof."
+        description="Xtenzium is a software house and digital agency in Karachi, Pakistan. We build React/Next.js apps, custom IoT hardware, AI automation, and UI/UX design for global businesses."
       />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
         '@context': 'https://schema.org',
-        '@type': 'Organization',
-        name: 'Xtenzium',
-        url: 'https://www.xtenzium.com',
-        logo: 'https://www.xtenzium.com/logo.png',
-        description: 'Full-service digital agency in Karachi, Pakistan delivering web development, UI/UX design, IoT hardware, AI automation, and digital marketing.',
-        address: {
-          '@type': 'PostalAddress',
-          addressLocality: 'Karachi',
-          addressCountry: 'PK',
-        },
-        contactPoint: {
-          '@type': 'ContactPoint',
-          email: 'contact@xtenzium.com',
-          contactType: 'customer service',
-        },
-        sameAs: [
-          'https://www.linkedin.com/company/xtenzium/',
-          'https://www.instagram.com/xtenzium/',
+        '@graph': [
+          {
+            '@type': ['Organization', 'LocalBusiness'],
+            '@id': 'https://www.xtenzium.com/#organization',
+            name: 'Xtenzium',
+            url: 'https://www.xtenzium.com',
+            logo: 'https://www.xtenzium.com/logo.png',
+            description: 'Full-service software house and digital agency in Karachi, Pakistan. Web development, UI/UX design, AI automation, IoT hardware, and digital marketing for global businesses.',
+            address: { '@type': 'PostalAddress', addressLocality: 'Karachi', addressRegion: 'Sindh', addressCountry: 'PK' },
+            email: 'contact@xtenzium.com',
+            contactPoint: { '@type': 'ContactPoint', email: 'contact@xtenzium.com', contactType: 'customer service', areaServed: 'Worldwide' },
+            sameAs: ['https://www.linkedin.com/company/xtenzium/', 'https://www.instagram.com/xtenzium/'],
+            hasOfferCatalog: {
+              '@type': 'OfferCatalog',
+              name: 'Digital Services',
+              itemListElement: [
+                { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Web Development', description: 'React, Next.js, and Node.js web applications and SaaS products.' } },
+                { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'UI/UX Design', description: 'User interface design, design systems, and branding.' } },
+                { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'AI & Automation', description: 'LLM integrations, workflow automation, and AI-powered tools.' } },
+                { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'IoT & Embedded Systems', description: 'Custom PCB design, IoT hardware, and embedded firmware development.' } },
+                { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Cybersecurity', description: 'Web application security audits, penetration testing, and OWASP compliance.' } },
+                { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Digital Marketing', description: 'SEO, content marketing, paid advertising, and analytics.' } },
+              ],
+            },
+          },
+          {
+            '@type': 'FAQPage',
+            mainEntity: [
+              { '@type': 'Question', name: 'What services does Xtenzium offer?', acceptedAnswer: { '@type': 'Answer', text: 'Xtenzium offers full-stack web development (React, Next.js, Node.js), UI/UX design, branding, mobile apps, AI automation, IoT hardware design, PCB engineering, cloud infrastructure, cybersecurity, and digital marketing — all under one roof in Karachi, Pakistan.' } },
+              { '@type': 'Question', name: 'Where is Xtenzium based?', acceptedAnswer: { '@type': 'Answer', text: 'Xtenzium is a software house and digital agency headquartered in Karachi, Pakistan, serving clients across North America, Europe, the Middle East, and South Asia.' } },
+              { '@type': 'Question', name: 'Can Xtenzium build both software and hardware?', acceptedAnswer: { '@type': 'Answer', text: 'Yes — this is Xtenzium\'s core differentiator. We handle everything from React web apps to custom PCB design and IoT firmware. Most agencies are software-only; Xtenzium bridges digital and physical product development.' } },
+              { '@type': 'Question', name: 'How many projects has Xtenzium delivered?', acceptedAnswer: { '@type': 'Answer', text: 'Xtenzium has delivered 65+ projects across web development, design, IoT, and automation — with an average client ROI of 36%+.' } },
+              { '@type': 'Question', name: 'Does Xtenzium work with international clients?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. Xtenzium is based in Karachi, Pakistan but serves clients globally — primarily startups and businesses in North America, Europe, and the Middle East.' } },
+              { '@type': 'Question', name: 'How do I hire Xtenzium for a web development or IoT project?', acceptedAnswer: { '@type': 'Answer', text: 'Contact Xtenzium at contact@xtenzium.com or via the contact page at xtenzium.com/contact. We offer a free consultation to scope your project before proposing an engagement.' } },
+            ],
+          },
         ],
       }) }} />
       <div className="grid-bg" style={{ position: 'absolute', inset: 0, zIndex: 0 }}></div>
@@ -258,6 +276,38 @@ const Home = () => {
             </motion.div>
           </div>
         </motion.div>
+      </ScrollReveal>
+
+      {/* FAQ Section */}
+      <ScrollReveal className="section-padding" style={{ background: 'var(--bg-secondary)', borderTop: '1px solid var(--border-divider)' }}>
+        <div className="container">
+          <div className="section-header">
+            <span className="section-subtitle" style={{ display: 'inline-block' }}>FAQ</span><br/>
+            <WordSplitter text="Common Questions" className="h2-title" />
+          </div>
+          <motion.div
+            variants={{ visible: { transition: { staggerChildren: 0.06 } } }}
+            style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 480px), 1fr))', gap: '1.5rem', marginTop: '3rem' }}
+          >
+            {[
+              { q: 'What services does Xtenzium offer?', a: 'Xtenzium offers full-stack web development (React, Next.js, Node.js), UI/UX design, branding, mobile apps, AI automation, IoT hardware design, PCB engineering, cloud infrastructure, cybersecurity, and digital marketing — all under one roof.' },
+              { q: 'Where is Xtenzium based?', a: 'Xtenzium is a digital agency and software house headquartered in Karachi, Pakistan, serving clients across North America, Europe, the Middle East, and South Asia.' },
+              { q: 'Can Xtenzium build both software and hardware?', a: 'Yes — this is our core differentiator. We handle everything from React web apps to custom PCB design and IoT firmware. Most agencies are software-only; Xtenzium bridges digital and physical product development.' },
+              { q: 'How many projects has Xtenzium delivered?', a: 'Xtenzium has delivered 65+ projects across web development, design, IoT, and automation — with an average client ROI of 36%+.' },
+              { q: 'Does Xtenzium work with international clients?', a: 'Yes. While based in Karachi, the majority of our clients are international — startups and businesses in North America, Europe, and the Middle East.' },
+              { q: 'How do I start a project with Xtenzium?', a: 'Reach out via our contact page or email contact@xtenzium.com. We offer a free consultation to understand your project scope before proposing an engagement.' },
+            ].map((item, i) => (
+              <motion.div
+                key={i}
+                variants={{ hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0, transition: { duration: 0.4 } } }}
+                style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '2rem' }}
+              >
+                <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.75rem' }}>{item.q}</h3>
+                <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', lineHeight: 1.7, margin: 0 }}>{item.a}</p>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
       </ScrollReveal>
 
       <ContactSection />
