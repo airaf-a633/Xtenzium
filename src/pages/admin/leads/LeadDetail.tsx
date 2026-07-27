@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../../../lib/supabase';
-import type { Lead, LeadStatus } from '../../../types/database';
+import type { Client, Lead, LeadStatus } from '../../../types/database';
 
 const STATUS_OPTIONS: Array<{ value: LeadStatus; label: string; color: string }> = [
   { value: 'new', label: 'New', color: '#3b82f6' },
@@ -19,20 +19,43 @@ const LeadDetail = () => {
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [linkedClient, setLinkedClient] = useState<Client | null>(null);
+  const [converting, setConverting] = useState(false);
 
   useEffect(() => {
     if (!id) return;
     const fetchLead = async () => {
-      const { data } = await supabase.from('leads').select('*').eq('id', id).single();
-      if (data) {
-        setLead(data);
-        setStatus(data.status);
-        setNotes(data.notes ?? '');
+      const [leadResult, clientResult] = await Promise.all([
+        supabase.from('leads').select('*').eq('id', id).single(),
+        supabase.from('clients').select('*').eq('lead_id', id).maybeSingle(),
+      ]);
+      if (leadResult.data) {
+        setLead(leadResult.data);
+        setStatus(leadResult.data.status);
+        setNotes(leadResult.data.notes ?? '');
       }
+      setLinkedClient((clientResult.data as Client | null) ?? null);
       setLoading(false);
     };
     fetchLead();
   }, [id]);
+
+  const handleConvert = async () => {
+    if (!lead) return;
+    setConverting(true);
+    const { data, error } = await supabase.from('clients').insert({
+      name: lead.name,
+      email: lead.email,
+      company: lead.company,
+      phone: null,
+      notes: null,
+      lead_id: lead.id,
+    }).select().single();
+    setConverting(false);
+    if (!error && data) {
+      navigate(`/crm/clients/${(data as Client).id}`);
+    }
+  };
 
   const handleSave = async () => {
     if (!id) return;
@@ -92,23 +115,62 @@ const LeadDetail = () => {
           </h1>
           <p style={{ color: '#555', fontSize: 14, margin: 0 }}>{formatDate(lead.created_at)}</p>
         </div>
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          style={{
-            padding: '10px 20px',
-            background: saved ? '#10b981' : '#ffffff',
-            color: saved ? '#ffffff' : '#0a0a0a',
-            border: 'none',
-            borderRadius: 8,
-            fontSize: 14,
-            fontWeight: 600,
-            cursor: saving ? 'not-allowed' : 'pointer',
-            transition: 'all 0.2s',
-          }}
-        >
-          {saving ? 'Saving…' : saved ? '✓ Saved' : 'Save changes'}
-        </button>
+        <div style={{ display: 'flex', gap: 10 }}>
+          {linkedClient ? (
+            <Link
+              to={`/crm/clients/${linkedClient.id}`}
+              style={{
+                padding: '10px 20px',
+                background: 'transparent',
+                border: '1px solid #2a2a2a',
+                borderRadius: 8,
+                color: '#888',
+                fontSize: 14,
+                fontWeight: 600,
+                textDecoration: 'none',
+                display: 'inline-flex',
+                alignItems: 'center',
+              }}
+            >
+              View in CRM →
+            </Link>
+          ) : (
+            <button
+              onClick={handleConvert}
+              disabled={converting}
+              style={{
+                padding: '10px 20px',
+                background: 'transparent',
+                border: '1px solid #2a2a2a',
+                borderRadius: 8,
+                color: '#888',
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: converting ? 'not-allowed' : 'pointer',
+                transition: 'all 0.2s',
+              }}
+            >
+              {converting ? 'Converting…' : 'Convert to Client'}
+            </button>
+          )}
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            style={{
+              padding: '10px 20px',
+              background: saved ? '#10b981' : '#ffffff',
+              color: saved ? '#ffffff' : '#0a0a0a',
+              border: 'none',
+              borderRadius: 8,
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: saving ? 'not-allowed' : 'pointer',
+              transition: 'all 0.2s',
+            }}
+          >
+            {saving ? 'Saving…' : saved ? '✓ Saved' : 'Save changes'}
+          </button>
+        </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>

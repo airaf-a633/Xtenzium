@@ -3,9 +3,10 @@ import { useAuth } from '../../context/AuthContext';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
+  redirectTo?: string;
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, redirectTo = '/admin/login' }) => {
   const { session, loading } = useAuth();
 
   if (loading) {
@@ -36,7 +37,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   }
 
   if (!session) {
-    return <Navigate to="/admin/login" replace />;
+    return <Navigate to={redirectTo} replace />;
   }
 
   return <>{children}</>;

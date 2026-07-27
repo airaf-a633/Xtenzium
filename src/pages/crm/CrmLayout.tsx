@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 
 const NAV_ITEMS = [
   {
-    path: '/admin',
+    path: '/crm',
     label: 'Dashboard',
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -17,8 +17,8 @@ const NAV_ITEMS = [
     exact: true,
   },
   {
-    path: '/admin/leads',
-    label: 'Leads',
+    path: '/crm/clients',
+    label: 'Clients',
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -30,19 +30,31 @@ const NAV_ITEMS = [
     exact: false,
   },
   {
-    path: '/admin/blogs',
-    label: 'Blogs',
+    path: '/crm/projects',
+    label: 'Projects',
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M12 20h9" />
-        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+        <path d="M3 3h18v4H3z" />
+        <path d="M3 3v18h18V3" />
+        <path d="M3 11h18" />
+      </svg>
+    ),
+    exact: false,
+  },
+  {
+    path: '/crm/tasks',
+    label: 'Tasks',
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M9 11l3 3L22 4" />
+        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
       </svg>
     ),
     exact: false,
   },
 ];
 
-const AdminLayout = () => {
+const CrmLayout = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -51,7 +63,7 @@ const AdminLayout = () => {
   const handleSignOut = async () => {
     setSigningOut(true);
     await signOut();
-    navigate('/admin/login', { replace: true });
+    navigate('/crm/login', { replace: true });
   };
 
   const isActive = (path: string, exact: boolean) => {
@@ -103,7 +115,7 @@ const AdminLayout = () => {
           </div>
           <div>
             <div style={{ color: '#ffffff', fontSize: 14, fontWeight: 700, lineHeight: 1.2 }}>Xtenzium</div>
-            <div style={{ color: '#555', fontSize: 11, lineHeight: 1.2 }}>Admin Portal</div>
+            <div style={{ color: '#555', fontSize: 11, lineHeight: 1.2 }}>CRM</div>
           </div>
         </div>
 
@@ -151,7 +163,7 @@ const AdminLayout = () => {
           <div style={{ margin: '12px 20px', borderTop: '1px solid #1a1a1a' }} />
 
           <NavLink
-            to="/crm"
+            to="/admin/leads"
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -168,7 +180,7 @@ const AdminLayout = () => {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <polyline points="9 18 15 12 9 6" />
             </svg>
-            CRM
+            Admin portal
           </NavLink>
         </nav>
 
@@ -225,4 +237,4 @@ const AdminLayout = () => {
   );
 };
 
-export default AdminLayout;
+export default CrmLayout;

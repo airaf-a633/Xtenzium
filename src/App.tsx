@@ -44,6 +44,16 @@ const LeadDetail  = lazy(() => import('./pages/admin/leads/LeadDetail'));
 const AdminBlogs  = lazy(() => import('./pages/admin/blogs/Blogs'));
 const BlogEdit    = lazy(() => import('./pages/admin/blogs/BlogEdit'));
 
+// ─── Lazy CRM pages ────────────────────────────────────────────────────────
+const CrmLogin       = lazy(() => import('./pages/crm/Login'));
+const CrmLayout       = lazy(() => import('./pages/crm/CrmLayout'));
+const CrmDashboard    = lazy(() => import('./pages/crm/Dashboard'));
+const Clients         = lazy(() => import('./pages/crm/clients/Clients'));
+const ClientDetail    = lazy(() => import('./pages/crm/clients/ClientDetail'));
+const Projects        = lazy(() => import('./pages/crm/projects/Projects'));
+const ProjectDetail   = lazy(() => import('./pages/crm/projects/ProjectDetail'));
+const Tasks           = lazy(() => import('./pages/crm/tasks/Tasks'));
+
 // ─── Minimal fallback shown while chunks load ──────────────────────────────
 const PageLoader = () => (
   <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-primary)' }}>
@@ -104,10 +114,11 @@ const PublicApp = () => {
   );
 };
 
-// ─── Route splitter — decides admin vs public ──────────────────────────────
+// ─── Route splitter — decides admin vs crm vs public ───────────────────────
 const AppRoutes = () => {
   const location = useLocation();
   const isAdmin = location.pathname.startsWith('/admin');
+  const isCrm = location.pathname.startsWith('/crm');
 
   if (isAdmin) {
     return (
@@ -128,6 +139,33 @@ const AppRoutes = () => {
             <Route path="blogs"  element={<AdminBlogs />} />
             <Route path="blogs/new" element={<BlogEdit />} />
             <Route path="blogs/:id" element={<BlogEdit />} />
+          </Route>
+        </Routes>
+      </Suspense>
+    );
+  }
+
+  if (isCrm) {
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          <Route path="/crm/login" element={<CrmLogin />} />
+          <Route
+            path="/crm"
+            element={
+              <ProtectedRoute redirectTo="/crm/login">
+                <CrmLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index                element={<CrmDashboard />} />
+            <Route path="clients"       element={<Clients />} />
+            <Route path="clients/new"   element={<ClientDetail />} />
+            <Route path="clients/:id"   element={<ClientDetail />} />
+            <Route path="projects"      element={<Projects />} />
+            <Route path="projects/new"  element={<ProjectDetail />} />
+            <Route path="projects/:id"  element={<ProjectDetail />} />
+            <Route path="tasks"         element={<Tasks />} />
           </Route>
         </Routes>
       </Suspense>
