@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../../../lib/supabase';
+import Banner from '../../../components/crm/Banner';
 import type { Client, Project, ProjectStatus } from '../../../types/database';
 
 interface FormState {
@@ -35,15 +36,20 @@ const ClientDetail = () => {
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (isNew) return;
     const fetchClient = async () => {
+      setLoading(true);
       const [clientResult, projectsResult] = await Promise.all([
         supabase.from('clients').select('*').eq('id', id).single(),
         supabase.from('projects').select('*').eq('client_id', id).order('created_at', { ascending: false }),
       ]);
-      if (clientResult.data) {
+      if (clientResult.error) {
+        setError(clientResult.error.message);
+      } else if (clientResult.data) {
         const c = clientResult.data as Client;
         setClient(c);
         setForm({
@@ -60,6 +66,7 @@ const ClientDetail = () => {
   const handleSave = async () => {
     if (!form.name.trim()) return;
     setSaving(true);
+    setError(null);
     const payload = {
       name: form.name.trim(),
       company: form.company.trim() || null,
@@ -69,14 +76,20 @@ const ClientDetail = () => {
     };
 
     if (isNew) {
-      const { data, error } = await supabase.from('clients').insert(payload).select().single();
+      const { data, error: insertError } = await supabase.from('clients').insert(payload).select().single();
       setSaving(false);
-      if (!error && data) {
+      if (insertError) {
+        setError(insertError.message);
+      } else if (data) {
         navigate(`/crm/clients/${(data as Client).id}`, { replace: true });
       }
     } else {
-      await supabase.from('clients').update(payload).eq('id', id!);
+      const { error: updateError } = await supabase.from('clients').update(payload).eq('id', id!);
       setSaving(false);
+      if (updateError) {
+        setError(updateError.message);
+        return;
+      }
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
       setClient(prev => prev ? { ...prev, ...payload } : null);
@@ -85,7 +98,14 @@ const ClientDetail = () => {
 
   const handleDelete = async () => {
     if (!confirm('Delete this client and all their projects, tasks, and notes? This cannot be undone.')) return;
-    await supabase.from('clients').delete().eq('id', id!);
+    setDeleting(true);
+    setError(null);
+    const { error: deleteError } = await supabase.from('clients').delete().eq('id', id!);
+    if (deleteError) {
+      setError(deleteError.message);
+      setDeleting(false);
+      return;
+    }
     navigate('/crm/clients');
   };
 
@@ -131,6 +151,8 @@ const ClientDetail = () => {
           {saving ? 'Saving…' : saved ? '✓ Saved' : isNew ? 'Create client' : 'Save changes'}
         </button>
       </div>
+
+      {error && <Banner type="error" message={error} />}
 
       <div style={{ background: '#141414', border: '1px solid #1e1e1e', borderRadius: 12, padding: 24, marginBottom: 20 }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
@@ -217,12 +239,13 @@ const ClientDetail = () => {
           <div style={{ paddingTop: 8, borderTop: '1px solid #1a1a1a' }}>
             <button
               onClick={handleDelete}
+              disabled={deleting}
               style={{
                 padding: '8px 16px', background: 'transparent', border: '1px solid #2a1a1a', borderRadius: 8,
-                color: '#9b4545', fontSize: 13, cursor: 'pointer',
+                color: '#9b4545', fontSize: 13, cursor: deleting ? 'not-allowed' : 'pointer',
               }}
             >
-              Delete client
+              {deleting ? 'Deleting…' : 'Delete client'}
             </button>
           </div>
         </>

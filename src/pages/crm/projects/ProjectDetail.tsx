@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../context/AuthContext';
+import Banner from '../../../components/crm/Banner';
 import type { Activity, ActivityType, Client, Project, ProjectStatus, Task } from '../../../types/database';
 
 interface FormState {
@@ -55,6 +56,8 @@ const ProjectDetail = () => {
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const [noteText, setNoteText] = useState('');
   const [noteType, setNoteType] = useState<ActivityType>('note');
@@ -70,12 +73,15 @@ const ProjectDetail = () => {
   useEffect(() => {
     if (isNew) return;
     const fetchAll = async () => {
+      setLoading(true);
       const [projectResult, activitiesResult, tasksResult] = await Promise.all([
         supabase.from('projects').select('*').eq('id', id).single(),
         supabase.from('activities').select('*').eq('project_id', id).order('created_at', { ascending: false }),
         supabase.from('tasks').select('*').eq('project_id', id).order('due_date', { ascending: true }),
       ]);
-      if (projectResult.data) {
+      if (projectResult.error) {
+        setError(projectResult.error.message);
+      } else if (projectResult.data) {
         const p = projectResult.data as Project;
         setProject(p);
         setForm({
@@ -106,15 +112,24 @@ const ProjectDetail = () => {
   const handleSave = async () => {
     if (!form.name.trim() || !form.client_id) return;
     setSaving(true);
+    setError(null);
     const payload = buildPayload();
 
     if (isNew) {
-      const { data, error } = await supabase.from('projects').insert(payload).select().single();
+      const { data, error: insertError } = await supabase.from('projects').insert(payload).select().single();
       setSaving(false);
-      if (!error && data) navigate(`/crm/projects/${(data as Project).id}`, { replace: true });
+      if (insertError) {
+        setError(insertError.message);
+      } else if (data) {
+        navigate(`/crm/projects/${(data as Project).id}`, { replace: true });
+      }
     } else {
-      await supabase.from('projects').update(payload).eq('id', id!);
+      const { error: updateError } = await supabase.from('projects').update(payload).eq('id', id!);
       setSaving(false);
+      if (updateError) {
+        setError(updateError.message);
+        return;
+      }
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
       setProject(prev => prev ? { ...prev, ...payload } : null);
@@ -128,8 +143,13 @@ const ProjectDetail = () => {
     if (!input) return;
     const amount = Number(input);
     if (!amount || amount <= 0) return;
+    setError(null);
     const newPaid = Math.min(Number(project.amount_paid) + amount, Number(project.total_value));
-    await supabase.from('projects').update({ amount_paid: newPaid }).eq('id', project.id);
+    const { error: updateError } = await supabase.from('projects').update({ amount_paid: newPaid }).eq('id', project.id);
+    if (updateError) {
+      setError(updateError.message);
+      return;
+    }
     setProject(prev => prev ? { ...prev, amount_paid: newPaid } : null);
     setForm(prev => ({ ...prev, amount_paid: String(newPaid) }));
     await supabase.from('activities').insert({
@@ -142,9 +162,16 @@ const ProjectDetail = () => {
   };
 
   const handleStatusChange = async (status: ProjectStatus) => {
+    const previousStatus = form.status;
     setForm(prev => ({ ...prev, status }));
     if (isNew || !project) return;
-    await supabase.from('projects').update({ status }).eq('id', project.id);
+    setError(null);
+    const { error: updateError } = await supabase.from('projects').update({ status }).eq('id', project.id);
+    if (updateError) {
+      setError(updateError.message);
+      setForm(prev => ({ ...prev, status: previousStatus }));
+      return;
+    }
     setProject(prev => prev ? { ...prev, status } : null);
     await supabase.from('activities').insert({
       project_id: project.id, type: 'status_change',
@@ -157,19 +184,29 @@ const ProjectDetail = () => {
 
   const handleAddNote = async () => {
     if (!noteText.trim() || !project) return;
-    const { data } = await supabase.from('activities').insert({
+    setError(null);
+    const { data, error: insertError } = await supabase.from('activities').insert({
       project_id: project.id, type: noteType, content: noteText.trim(), created_by: user?.email ?? null,
     }).select().single();
+    if (insertError) {
+      setError(insertError.message);
+      return;
+    }
     if (data) setActivities(prev => [data as Activity, ...prev]);
     setNoteText('');
   };
 
   const handleAddTask = async () => {
     if (!taskTitle.trim() || !project) return;
-    const { data } = await supabase.from('tasks').insert({
+    setError(null);
+    const { data, error: insertError } = await supabase.from('tasks').insert({
       project_id: project.id, title: taskTitle.trim(), due_date: taskDue || null,
       status: 'pending', assigned_to: user?.email ?? null,
     }).select().single();
+    if (insertError) {
+      setError(insertError.message);
+      return;
+    }
     if (data) setTasks(prev => [...prev, data as Task].sort((a, b) => (a.due_date ?? '9999').localeCompare(b.due_date ?? '9999')));
     setTaskTitle('');
     setTaskDue('');
@@ -177,13 +214,24 @@ const ProjectDetail = () => {
 
   const toggleTask = async (task: Task) => {
     const newStatus = task.status === 'done' ? 'pending' : 'done';
-    await supabase.from('tasks').update({ status: newStatus }).eq('id', task.id);
     setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: newStatus } : t));
+    const { error: updateError } = await supabase.from('tasks').update({ status: newStatus }).eq('id', task.id);
+    if (updateError) {
+      setError(updateError.message);
+      setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: task.status } : t));
+    }
   };
 
   const handleDelete = async () => {
     if (!confirm('Delete this project and all its tasks/notes? This cannot be undone.')) return;
-    await supabase.from('projects').delete().eq('id', id!);
+    setDeleting(true);
+    setError(null);
+    const { error: deleteError } = await supabase.from('projects').delete().eq('id', id!);
+    if (deleteError) {
+      setError(deleteError.message);
+      setDeleting(false);
+      return;
+    }
     navigate(`/crm/clients/${form.client_id}`);
   };
 
@@ -226,6 +274,8 @@ const ProjectDetail = () => {
           {saving ? 'Saving…' : saved ? '✓ Saved' : isNew ? 'Create project' : 'Save changes'}
         </button>
       </div>
+
+      {error && <Banner type="error" message={error} />}
 
       {/* Core fields */}
       <div style={{ ...cardStyle, marginBottom: 20 }}>
@@ -395,8 +445,12 @@ const ProjectDetail = () => {
           </div>
 
           <div style={{ paddingTop: 8, borderTop: '1px solid #1a1a1a' }}>
-            <button onClick={handleDelete} style={{ padding: '8px 16px', background: 'transparent', border: '1px solid #2a1a1a', borderRadius: 8, color: '#9b4545', fontSize: 13, cursor: 'pointer' }}>
-              Delete project
+            <button
+              onClick={handleDelete}
+              disabled={deleting}
+              style={{ padding: '8px 16px', background: 'transparent', border: '1px solid #2a1a1a', borderRadius: 8, color: '#9b4545', fontSize: 13, cursor: deleting ? 'not-allowed' : 'pointer' }}
+            >
+              {deleting ? 'Deleting…' : 'Delete project'}
             </button>
           </div>
         </>

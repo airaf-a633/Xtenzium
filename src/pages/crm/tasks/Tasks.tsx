@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../context/AuthContext';
+import Banner from '../../../components/crm/Banner';
 import type { Project, Task, TaskStatus } from '../../../types/database';
 
 const FILTERS: Array<{ value: TaskStatus | 'all'; label: string }> = [
@@ -21,16 +22,19 @@ const Tasks = () => {
   const [projectsById, setProjectsById] = useState<Record<string, Project>>({});
   const [filter, setFilter] = useState<TaskStatus | 'all'>('pending');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [title, setTitle] = useState('');
   const [due, setDue] = useState('');
 
   useEffect(() => {
     const load = async () => {
       setLoading(true);
+      setError(null);
       const [tasksResult, projectsResult] = await Promise.all([
         supabase.from('tasks').select('*').order('due_date', { ascending: true }),
         supabase.from('projects').select('*'),
       ]);
+      if (tasksResult.error) setError(tasksResult.error.message);
       setTasks((tasksResult.data ?? []) as Task[]);
       const map: Record<string, Project> = {};
       ((projectsResult.data ?? []) as Project[]).forEach(p => { map[p.id] = p; });
@@ -74,6 +78,8 @@ const Tasks = () => {
           {tasks.filter(t => t.status === 'pending').length} pending across all clients
         </p>
       </div>
+
+      {error && <Banner type="error" message={error} />}
 
       {/* Quick add */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>

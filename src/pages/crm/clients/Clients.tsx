@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../../lib/supabase';
+import Banner from '../../../components/crm/Banner';
 import type { Client, Project } from '../../../types/database';
 
 const Clients = () => {
@@ -8,14 +9,17 @@ const Clients = () => {
   const [projectCounts, setProjectCounts] = useState<Record<string, number>>({});
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchClients = async () => {
       setLoading(true);
+      setError(null);
       const [clientsResult, projectsResult] = await Promise.all([
         supabase.from('clients').select('*').order('created_at', { ascending: false }),
         supabase.from('projects').select('client_id'),
       ]);
+      if (clientsResult.error) setError(clientsResult.error.message);
       setClients((clientsResult.data ?? []) as Client[]);
 
       const counts: Record<string, number> = {};
@@ -53,6 +57,8 @@ const Clients = () => {
           + New Client
         </Link>
       </div>
+
+      {error && <Banner type="error" message={error} />}
 
       <div style={{ position: 'relative', marginBottom: 20, maxWidth: 360 }}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2"

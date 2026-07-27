@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../../lib/supabase';
+import Banner from '../../../components/crm/Banner';
 import type { Client, Project, ProjectStatus } from '../../../types/database';
 
 const STATUS_CONFIG: Record<ProjectStatus, { label: string; color: string }> = {
@@ -28,14 +29,17 @@ const Projects = () => {
   const [filter, setFilter] = useState<ProjectStatus | 'all'>('all');
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchProjects = async () => {
       setLoading(true);
+      setError(null);
       const [projectsResult, clientsResult] = await Promise.all([
         supabase.from('projects').select('*').order('created_at', { ascending: false }),
         supabase.from('clients').select('*'),
       ]);
+      if (projectsResult.error) setError(projectsResult.error.message);
       setProjects((projectsResult.data ?? []) as Project[]);
       const map: Record<string, Client> = {};
       ((clientsResult.data ?? []) as Client[]).forEach(c => { map[c.id] = c; });
@@ -62,13 +66,23 @@ const Projects = () => {
           <h1 style={{ color: '#ffffff', fontSize: 24, fontWeight: 700, margin: 0, letterSpacing: -0.5 }}>Projects</h1>
           <p style={{ color: '#555', fontSize: 14, marginTop: 6 }}>{projects.length} total</p>
         </div>
-        <Link
-          to="/crm/projects/new"
-          style={{ padding: '10px 18px', background: '#ffffff', color: '#0a0a0a', borderRadius: 8, fontSize: 14, fontWeight: 600, textDecoration: 'none' }}
-        >
-          + New Project
-        </Link>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <Link
+            to="/crm/projects/import"
+            style={{ padding: '10px 18px', background: 'transparent', border: '1px solid #2a2a2a', color: '#ddd', borderRadius: 8, fontSize: 14, fontWeight: 600, textDecoration: 'none' }}
+          >
+            Import CSV
+          </Link>
+          <Link
+            to="/crm/projects/new"
+            style={{ padding: '10px 18px', background: '#ffffff', color: '#0a0a0a', borderRadius: 8, fontSize: 14, fontWeight: 600, textDecoration: 'none' }}
+          >
+            + New Project
+          </Link>
+        </div>
       </div>
+
+      {error && <Banner type="error" message={error} />}
 
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
         <div style={{ position: 'relative', flex: '1', minWidth: 200 }}>
