@@ -3,7 +3,8 @@ import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../context/AuthContext';
 import Banner from '../../../components/crm/Banner';
-import type { Activity, ActivityType, Client, Project, ProjectStatus, Task } from '../../../types/database';
+import TaskForm, { type TaskFormValues } from '../../../components/crm/TaskForm';
+import type { Activity, ActivityType, Client, Project, ProjectStatus, Task, TeamMember } from '../../../types/database';
 
 interface FormState {
   client_id: string;
@@ -53,6 +54,7 @@ const ProjectDetail = () => {
   const [clients, setClients] = useState<Client[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -61,12 +63,13 @@ const ProjectDetail = () => {
 
   const [noteText, setNoteText] = useState('');
   const [noteType, setNoteType] = useState<ActivityType>('note');
-  const [taskTitle, setTaskTitle] = useState('');
-  const [taskDue, setTaskDue] = useState('');
 
   useEffect(() => {
     supabase.from('clients').select('*').order('name', { ascending: true }).then(({ data }) => {
       setClients((data ?? []) as Client[]);
+    });
+    supabase.from('team_members').select('*').order('name', { ascending: true }).then(({ data }) => {
+      setMembers((data ?? []) as TeamMember[]);
     });
   }, []);
 
@@ -196,20 +199,18 @@ const ProjectDetail = () => {
     setNoteText('');
   };
 
-  const handleAddTask = async () => {
-    if (!taskTitle.trim() || !project) return;
+  const handleAddTask = async (values: TaskFormValues) => {
+    if (!project) return;
     setError(null);
     const { data, error: insertError } = await supabase.from('tasks').insert({
-      project_id: project.id, title: taskTitle.trim(), due_date: taskDue || null,
-      status: 'pending', assigned_to: user?.email ?? null,
+      project_id: project.id, title: values.title, due_date: values.due_date,
+      status: 'pending', assigned_to: values.assigned_to,
     }).select().single();
     if (insertError) {
       setError(insertError.message);
       return;
     }
     if (data) setTasks(prev => [...prev, data as Task].sort((a, b) => (a.due_date ?? '9999').localeCompare(b.due_date ?? '9999')));
-    setTaskTitle('');
-    setTaskDue('');
   };
 
   const toggleTask = async (task: Task) => {
@@ -376,29 +377,27 @@ const ProjectDetail = () => {
           <div style={{ ...cardStyle, marginBottom: 20 }}>
             <h2 style={{ color: '#888', fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, margin: '0 0 16px' }}>Tasks</h2>
             {tasks.length > 0 && (
-              <div style={{ marginBottom: 16 }}>
-                {tasks.map(t => (
-                  <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid #1a1a1a' }}>
-                    <input type="checkbox" checked={t.status === 'done'} onChange={() => toggleTask(t)} style={{ cursor: 'pointer' }} />
-                    <span style={{ flex: 1, color: t.status === 'done' ? '#555' : '#ddd', fontSize: 13.5, textDecoration: t.status === 'done' ? 'line-through' : 'none' }}>
-                      {t.title}
-                    </span>
-                    <span style={{ color: '#555', fontSize: 12 }}>{formatDate(t.due_date)}</span>
-                  </div>
-                ))}
+              <div style={{ marginBottom: 20 }}>
+                {tasks.map(t => {
+                  const assignee = members.find(m => m.id === t.assigned_to);
+                  return (
+                    <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid #1a1a1a' }}>
+                      <input type="checkbox" checked={t.status === 'done'} onChange={() => toggleTask(t)} style={{ cursor: 'pointer' }} />
+                      <span style={{ flex: 1, color: t.status === 'done' ? '#555' : '#ddd', fontSize: 13.5, textDecoration: t.status === 'done' ? 'line-through' : 'none' }}>
+                        {t.title}
+                      </span>
+                      {assignee && (
+                        <span style={{ color: '#666', fontSize: 12, background: '#1e1e1e', padding: '2px 8px', borderRadius: 20 }}>
+                          {assignee.name}
+                        </span>
+                      )}
+                      <span style={{ color: '#555', fontSize: 12, minWidth: 80, textAlign: 'right' }}>{formatDate(t.due_date)}</span>
+                    </div>
+                  );
+                })}
               </div>
             )}
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input
-                style={{ ...inputStyle, flex: 1 }}
-                placeholder="New task…"
-                value={taskTitle}
-                onChange={e => setTaskTitle(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleAddTask()}
-              />
-              <input style={{ ...inputStyle, width: 150 }} type="date" value={taskDue} onChange={e => setTaskDue(e.target.value)} />
-              <button onClick={handleAddTask} style={{ padding: '10px 16px', background: '#1e1e1e', color: '#ddd', border: 'none', borderRadius: 8, fontSize: 13.5, cursor: 'pointer' }}>Add</button>
-            </div>
+            <TaskForm members={members} onSubmit={handleAddTask} />
           </div>
 
           {/* Activity timeline */}

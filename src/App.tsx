@@ -54,6 +54,7 @@ const Projects        = lazy(() => import('./pages/crm/projects/Projects'));
 const ProjectDetail   = lazy(() => import('./pages/crm/projects/ProjectDetail'));
 const ImportCsv       = lazy(() => import('./pages/crm/projects/ImportCsv'));
 const Tasks           = lazy(() => import('./pages/crm/tasks/Tasks'));
+const Team            = lazy(() => import('./pages/crm/team/Team'));
 
 // ─── Minimal fallback shown while chunks load ──────────────────────────────
 const PageLoader = () => (
@@ -168,6 +169,7 @@ const AppRoutes = () => {
             <Route path="projects/import" element={<ImportCsv />} />
             <Route path="projects/:id"    element={<ProjectDetail />} />
             <Route path="tasks"         element={<Tasks />} />
+            <Route path="team"          element={<Team />} />
           </Route>
         </Routes>
       </Suspense>

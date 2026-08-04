@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../../../lib/supabase';
 import Banner from '../../../components/crm/Banner';
+import { getUsdToPkrRate, toUsd } from '../../../lib/settings';
 import type { Client, Project, ProjectStatus } from '../../../types/database';
 
 interface FormState {
@@ -38,6 +39,11 @@ const ClientDetail = () => {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [usdRate, setUsdRate] = useState<number | null>(null);
+
+  useEffect(() => {
+    getUsdToPkrRate().then(setUsdRate);
+  }, []);
 
   useEffect(() => {
     if (isNew) return;
@@ -111,6 +117,22 @@ const ClientDetail = () => {
 
   const formatDate = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   const formatMoney = (n: number, currency = 'PKR') => `${currency} ${n.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+  const formatUsd = (n: number) => `$${n.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+
+  const totalsByCurrency: Record<string, { total: number; paid: number }> = {};
+  projects.forEach(p => {
+    const c = p.currency;
+    if (!totalsByCurrency[c]) totalsByCurrency[c] = { total: 0, paid: 0 };
+    totalsByCurrency[c].total += Number(p.total_value);
+    totalsByCurrency[c].paid += Number(p.amount_paid);
+  });
+  const currencies = Object.keys(totalsByCurrency);
+  const usdTotals = usdRate !== null
+    ? currencies.reduce((acc, c) => ({
+        total: acc.total + toUsd(totalsByCurrency[c].total, c, usdRate),
+        paid: acc.paid + toUsd(totalsByCurrency[c].paid, c, usdRate),
+      }), { total: 0, paid: 0 })
+    : null;
 
   if (loading) return <div style={{ color: '#555', fontSize: 14 }}>Loading…</div>;
 
@@ -189,6 +211,34 @@ const ClientDetail = () => {
           </div>
         )}
       </div>
+
+      {!isNew && projects.length > 0 && (
+        <div style={{ background: '#141414', border: '1px solid #1e1e1e', borderRadius: 12, padding: 20, marginBottom: 20 }}>
+          <h2 style={{ color: '#888', fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, margin: '0 0 14px' }}>
+            Total Across {projects.length} Project{projects.length === 1 ? '' : 's'}
+          </h2>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24 }}>
+            {currencies.map(c => {
+              const t = totalsByCurrency[c];
+              const remaining = t.total - t.paid;
+              return (
+                <div key={c}>
+                  <div style={{ color: '#666', fontSize: 11, marginBottom: 4 }}>{c}</div>
+                  <div style={{ color: '#ddd', fontSize: 17, fontWeight: 600 }}>{formatMoney(t.paid, '')} / {formatMoney(t.total, '')}</div>
+                  {remaining > 0 && <div style={{ color: '#f59e0b', fontSize: 12, marginTop: 2 }}>{formatMoney(remaining, c)} remaining</div>}
+                </div>
+              );
+            })}
+            {usdTotals && currencies.length > 0 && (
+              <div style={{ borderLeft: '1px solid #1e1e1e', paddingLeft: 24 }}>
+                <div style={{ color: '#666', fontSize: 11, marginBottom: 4 }}>≈ USD combined</div>
+                <div style={{ color: '#60a5fa', fontSize: 17, fontWeight: 600 }}>{formatUsd(usdTotals.paid)} / {formatUsd(usdTotals.total)}</div>
+                <div style={{ color: '#444', fontSize: 11, marginTop: 2 }}>at 1 USD = {usdRate} PKR</div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {!isNew && (
         <>

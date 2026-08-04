@@ -1,15 +1,33 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import type { Client, Project, ProjectStatus, Task } from '../../types/database';
+import { getUsdToPkrRate, toUsd } from '../../lib/settings';
+import type { Client, Project, ProjectStatus, Task, TeamMember } from '../../types/database';
 
 interface Stats {
   totalClients: number;
   activeProjects: number;
   pipelineValue: number;
+  pipelineBreakdown: string;
   totalPaid: number;
+  paidBreakdown: string;
   totalOutstanding: number;
+  outstandingBreakdown: string;
 }
+
+const breakdownByCurrency = (projects: Project[], pick: (p: Project) => number): Record<string, number> => {
+  const map: Record<string, number> = {};
+  projects.forEach(p => {
+    map[p.currency] = (map[p.currency] ?? 0) + pick(p);
+  });
+  return map;
+};
+
+const formatBreakdown = (map: Record<string, number>) =>
+  Object.entries(map)
+    .filter(([, v]) => v !== 0)
+    .map(([currency, v]) => `${currency} ${v.toLocaleString('en-US', { maximumFractionDigits: 0 })}`)
+    .join(' + ') || '—';
 
 const STATUS_COLORS: Record<ProjectStatus, string> = {
   proposal: '#3b82f6',
@@ -21,6 +39,8 @@ const STATUS_COLORS: Record<ProjectStatus, string> = {
 
 const formatMoney = (n: number, currency = 'PKR') =>
   `${currency} ${n.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+
+const formatUsd = (n: number) => `≈ $${n.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
 
 const StatCard = ({
   label,
@@ -42,37 +62,48 @@ const StatCard = ({
 
 const Dashboard = () => {
   const [stats, setStats] = useState<Stats>({
-    totalClients: 0, activeProjects: 0, pipelineValue: 0, totalPaid: 0, totalOutstanding: 0,
+    totalClients: 0, activeProjects: 0, pipelineValue: 0, pipelineBreakdown: '—',
+    totalPaid: 0, paidBreakdown: '—', totalOutstanding: 0, outstandingBreakdown: '—',
   });
   const [recentProjects, setRecentProjects] = useState<Project[]>([]);
   const [clientsById, setClientsById] = useState<Record<string, Client>>({});
   const [upcomingTasks, setUpcomingTasks] = useState<Task[]>([]);
+  const [membersById, setMembersById] = useState<Record<string, TeamMember>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
-      const [clientsResult, projectsResult, tasksResult] = await Promise.all([
+      const [clientsResult, projectsResult, tasksResult, membersResult, usdRate] = await Promise.all([
         supabase.from('clients').select('*'),
         supabase.from('projects').select('*').order('created_at', { ascending: false }),
         supabase.from('tasks').select('*').eq('status', 'pending').order('due_date', { ascending: true }).limit(6),
+        supabase.from('team_members').select('*'),
+        getUsdToPkrRate(),
       ]);
 
       const clients = (clientsResult.data ?? []) as Client[];
       const projects = (projectsResult.data ?? []) as Project[];
       const tasks = (tasksResult.data ?? []) as Task[];
+      const memberMap: Record<string, TeamMember> = {};
+      ((membersResult.data ?? []) as TeamMember[]).forEach(m => { memberMap[m.id] = m; });
+      setMembersById(memberMap);
 
       const clientMap: Record<string, Client> = {};
       clients.forEach(c => { clientMap[c.id] = c; });
       setClientsById(clientMap);
 
       const active = projects.filter(p => p.status === 'active' || p.status === 'proposal');
+      const outstandingProjects = projects.filter(p => Number(p.total_value) - Number(p.amount_paid) !== 0);
 
       setStats({
         totalClients: clients.length,
         activeProjects: projects.filter(p => p.status === 'active').length,
-        pipelineValue: active.reduce((sum, p) => sum + Number(p.total_value), 0),
-        totalPaid: projects.reduce((sum, p) => sum + Number(p.amount_paid), 0),
-        totalOutstanding: projects.reduce((sum, p) => sum + (Number(p.total_value) - Number(p.amount_paid)), 0),
+        pipelineValue: active.reduce((sum, p) => sum + toUsd(Number(p.total_value), p.currency, usdRate), 0),
+        pipelineBreakdown: formatBreakdown(breakdownByCurrency(active, p => Number(p.total_value))),
+        totalPaid: projects.reduce((sum, p) => sum + toUsd(Number(p.amount_paid), p.currency, usdRate), 0),
+        paidBreakdown: formatBreakdown(breakdownByCurrency(projects, p => Number(p.amount_paid))),
+        totalOutstanding: projects.reduce((sum, p) => sum + toUsd(Number(p.total_value) - Number(p.amount_paid), p.currency, usdRate), 0),
+        outstandingBreakdown: formatBreakdown(breakdownByCurrency(outstandingProjects, p => Number(p.total_value) - Number(p.amount_paid))),
       });
 
       setRecentProjects(projects.slice(0, 5));
@@ -106,9 +137,9 @@ const Dashboard = () => {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 40 }}>
             <StatCard label="Total Clients" value={stats.totalClients} />
             <StatCard label="Active Projects" value={stats.activeProjects} color="#10b981" />
-            <StatCard label="Pipeline Value" value={formatMoney(stats.pipelineValue)} color="#3b82f6" sub="Active + proposal" />
-            <StatCard label="Total Paid" value={formatMoney(stats.totalPaid)} color="#a78bfa" />
-            <StatCard label="Outstanding" value={formatMoney(stats.totalOutstanding)} color="#f59e0b" sub="Across all projects" />
+            <StatCard label="Pipeline Value" value={formatUsd(stats.pipelineValue)} color="#3b82f6" sub={stats.pipelineBreakdown} />
+            <StatCard label="Total Paid" value={formatUsd(stats.totalPaid)} color="#a78bfa" sub={stats.paidBreakdown} />
+            <StatCard label="Outstanding" value={formatUsd(stats.totalOutstanding)} color="#f59e0b" sub={stats.outstandingBreakdown} />
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: 24, alignItems: 'start' }}>
@@ -172,20 +203,26 @@ const Dashboard = () => {
                 </div>
               ) : (
                 <div style={{ background: '#141414', border: '1px solid #1e1e1e', borderRadius: 12, overflow: 'hidden' }}>
-                  {upcomingTasks.map((t, i) => (
-                    <div
-                      key={t.id}
-                      style={{
-                        padding: '12px 18px',
-                        borderBottom: i < upcomingTasks.length - 1 ? '1px solid #1a1a1a' : 'none',
-                      }}
-                    >
-                      <div style={{ color: '#ddd', fontSize: 13.5 }}>{t.title}</div>
-                      <div style={{ color: isOverdue(t.due_date) ? '#ef4444' : '#555', fontSize: 12, marginTop: 4 }}>
-                        {isOverdue(t.due_date) ? 'Overdue · ' : ''}{formatDate(t.due_date)}
+                  {upcomingTasks.map((t, i) => {
+                    const assignee = t.assigned_to ? membersById[t.assigned_to] : null;
+                    return (
+                      <div
+                        key={t.id}
+                        style={{
+                          padding: '12px 18px',
+                          borderBottom: i < upcomingTasks.length - 1 ? '1px solid #1a1a1a' : 'none',
+                        }}
+                      >
+                        <div style={{ color: '#ddd', fontSize: 13.5 }}>{t.title}</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                          <span style={{ color: isOverdue(t.due_date) ? '#ef4444' : '#555', fontSize: 12 }}>
+                            {isOverdue(t.due_date) ? 'Overdue · ' : ''}{formatDate(t.due_date)}
+                          </span>
+                          {assignee && <span style={{ color: '#444', fontSize: 12 }}>· {assignee.name}</span>}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

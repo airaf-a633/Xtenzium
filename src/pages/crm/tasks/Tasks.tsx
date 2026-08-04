@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../../lib/supabase';
-import { useAuth } from '../../../context/AuthContext';
 import Banner from '../../../components/crm/Banner';
-import type { Project, Task, TaskStatus } from '../../../types/database';
+import TaskForm, { type TaskFormValues } from '../../../components/crm/TaskForm';
+import type { Project, Task, TaskStatus, TeamMember } from '../../../types/database';
 
 const FILTERS: Array<{ value: TaskStatus | 'all'; label: string }> = [
   { value: 'all', label: 'All' },
@@ -11,64 +11,80 @@ const FILTERS: Array<{ value: TaskStatus | 'all'; label: string }> = [
   { value: 'done', label: 'Done' },
 ];
 
-const inputStyle: React.CSSProperties = {
-  padding: '10px 12px', background: '#0f0f0f', border: '1px solid #222', borderRadius: 8,
-  color: '#ddd', fontSize: 14, outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit',
-};
+const cardStyle: React.CSSProperties = { background: '#141414', border: '1px solid #1e1e1e', borderRadius: 12, padding: 20 };
 
 const Tasks = () => {
-  const { user } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [projectsById, setProjectsById] = useState<Record<string, Project>>({});
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [members, setMembers] = useState<TeamMember[]>([]);
   const [filter, setFilter] = useState<TaskStatus | 'all'>('pending');
+  const [assigneeFilter, setAssigneeFilter] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [title, setTitle] = useState('');
-  const [due, setDue] = useState('');
 
   useEffect(() => {
     const load = async () => {
       setLoading(true);
       setError(null);
-      const [tasksResult, projectsResult] = await Promise.all([
+      const [tasksResult, projectsResult, membersResult] = await Promise.all([
         supabase.from('tasks').select('*').order('due_date', { ascending: true }),
         supabase.from('projects').select('*'),
+        supabase.from('team_members').select('*').order('name', { ascending: true }),
       ]);
       if (tasksResult.error) setError(tasksResult.error.message);
       setTasks((tasksResult.data ?? []) as Task[]);
+      const projectList = (projectsResult.data ?? []) as Project[];
+      setProjects(projectList);
       const map: Record<string, Project> = {};
-      ((projectsResult.data ?? []) as Project[]).forEach(p => { map[p.id] = p; });
+      projectList.forEach(p => { map[p.id] = p; });
       setProjectsById(map);
+      setMembers((membersResult.data ?? []) as TeamMember[]);
       setLoading(false);
     };
     load();
   }, []);
 
-  const handleAddTask = async () => {
-    if (!title.trim()) return;
-    const { data } = await supabase.from('tasks').insert({
-      project_id: null, title: title.trim(), due_date: due || null, status: 'pending', assigned_to: user?.email ?? null,
+  const handleAddTask = async (values: TaskFormValues) => {
+    setError(null);
+    const { data, error: insertError } = await supabase.from('tasks').insert({
+      project_id: values.project_id, title: values.title, due_date: values.due_date,
+      status: 'pending', assigned_to: values.assigned_to,
     }).select().single();
+    if (insertError) {
+      setError(insertError.message);
+      return;
+    }
     if (data) setTasks(prev => [...prev, data as Task]);
-    setTitle('');
-    setDue('');
   };
 
   const toggleTask = async (task: Task) => {
     const newStatus = task.status === 'done' ? 'pending' : 'done';
-    await supabase.from('tasks').update({ status: newStatus }).eq('id', task.id);
     setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: newStatus } : t));
+    const { error: updateError } = await supabase.from('tasks').update({ status: newStatus }).eq('id', task.id);
+    if (updateError) {
+      setError(updateError.message);
+      setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: task.status } : t));
+    }
   };
 
   const deleteTask = async (task: Task) => {
-    await supabase.from('tasks').delete().eq('id', task.id);
+    const { error: deleteError } = await supabase.from('tasks').delete().eq('id', task.id);
+    if (deleteError) {
+      setError(deleteError.message);
+      return;
+    }
     setTasks(prev => prev.filter(t => t.id !== task.id));
   };
 
   const isOverdue = (iso: string | null) => !!iso && new Date(iso) < new Date(new Date().toDateString());
   const formatDate = (iso: string | null) => iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
 
-  const filtered = tasks.filter(t => filter === 'all' || t.status === filter);
+  const filtered = tasks.filter(t => {
+    if (filter !== 'all' && t.status !== filter) return false;
+    if (assigneeFilter && t.assigned_to !== assigneeFilter) return false;
+    return true;
+  });
 
   return (
     <div>
@@ -81,37 +97,41 @@ const Tasks = () => {
 
       {error && <Banner type="error" message={error} />}
 
-      {/* Quick add */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-        <input
-          style={{ ...inputStyle, flex: 1 }}
-          placeholder="New task (not tied to a project)…"
-          value={title}
-          onChange={e => setTitle(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && handleAddTask()}
-        />
-        <input style={{ ...inputStyle, width: 160 }} type="date" value={due} onChange={e => setDue(e.target.value)} />
-        <button onClick={handleAddTask} style={{ padding: '10px 18px', background: '#ffffff', color: '#0a0a0a', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
-          Add
-        </button>
+      <div style={{ ...cardStyle, marginBottom: 20 }}>
+        <TaskForm members={members} projects={projects} onSubmit={handleAddTask} />
       </div>
 
-      <div style={{ display: 'flex', gap: 6, marginBottom: 20 }}>
-        {FILTERS.map(f => (
-          <button
-            key={f.value}
-            onClick={() => setFilter(f.value)}
+      <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 6 }}>
+          {FILTERS.map(f => (
+            <button
+              key={f.value}
+              onClick={() => setFilter(f.value)}
+              style={{
+                padding: '8px 14px', borderRadius: 8, border: '1px solid',
+                borderColor: filter === f.value ? '#444' : '#1e1e1e',
+                background: filter === f.value ? '#1e1e1e' : 'transparent',
+                color: filter === f.value ? '#ffffff' : '#666', fontSize: 13,
+                fontWeight: filter === f.value ? 600 : 400, cursor: 'pointer',
+              }}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+        {members.length > 0 && (
+          <select
+            value={assigneeFilter}
+            onChange={e => setAssigneeFilter(e.target.value)}
             style={{
-              padding: '8px 14px', borderRadius: 8, border: '1px solid',
-              borderColor: filter === f.value ? '#444' : '#1e1e1e',
-              background: filter === f.value ? '#1e1e1e' : 'transparent',
-              color: filter === f.value ? '#ffffff' : '#666', fontSize: 13,
-              fontWeight: filter === f.value ? 600 : 400, cursor: 'pointer',
+              padding: '8px 12px', background: '#141414', border: '1px solid #1e1e1e', borderRadius: 8,
+              color: assigneeFilter ? '#ddd' : '#666', fontSize: 13, outline: 'none',
             }}
           >
-            {f.label}
-          </button>
-        ))}
+            <option value="">Everyone</option>
+            {members.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+          </select>
+        )}
       </div>
 
       {loading ? (
@@ -124,6 +144,7 @@ const Tasks = () => {
         <div style={{ background: '#141414', border: '1px solid #1e1e1e', borderRadius: 12, overflow: 'hidden' }}>
           {filtered.map((t, i) => {
             const project = t.project_id ? projectsById[t.project_id] : null;
+            const assignee = members.find(m => m.id === t.assigned_to);
             const overdue = t.status === 'pending' && isOverdue(t.due_date);
             return (
               <div key={t.id} style={{
@@ -141,7 +162,12 @@ const Tasks = () => {
                     </Link>
                   )}
                 </div>
-                <span style={{ color: overdue ? '#ef4444' : '#555', fontSize: 12.5, flexShrink: 0 }}>
+                {assignee && (
+                  <span style={{ color: '#666', fontSize: 12, background: '#1e1e1e', padding: '2px 8px', borderRadius: 20, flexShrink: 0 }}>
+                    {assignee.name}
+                  </span>
+                )}
+                <span style={{ color: overdue ? '#ef4444' : '#555', fontSize: 12.5, flexShrink: 0, minWidth: 90, textAlign: 'right' }}>
                   {overdue ? 'Overdue · ' : ''}{formatDate(t.due_date)}
                 </span>
                 <button

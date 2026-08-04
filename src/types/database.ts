@@ -79,6 +79,19 @@ export interface Task {
   updated_at: string;
 }
 
+export interface TeamMember {
+  id: string;
+  name: string;
+  designation: string | null;
+  created_at: string;
+}
+
+export interface AppSetting {
+  key: string;
+  value: string;
+  updated_at: string;
+}
+
 export type Database = {
   public: {
     Tables: {
@@ -140,6 +153,22 @@ export type Database = {
           description?: string | null;
         };
         Update: Partial<Omit<Task, 'id' | 'created_at'>>;
+        Relationships: [];
+      };
+      team_members: {
+        Row: TeamMember & Record<string, unknown>;
+        Insert: Omit<TeamMember, 'id' | 'created_at' | 'designation'> & {
+          id?: string;
+          created_at?: string;
+          designation?: string | null;
+        };
+        Update: Partial<Omit<TeamMember, 'id' | 'created_at'>>;
+        Relationships: [];
+      };
+      app_settings: {
+        Row: AppSetting & Record<string, unknown>;
+        Insert: Omit<AppSetting, 'updated_at'> & { updated_at?: string };
+        Update: Partial<AppSetting>;
         Relationships: [];
       };
     };
