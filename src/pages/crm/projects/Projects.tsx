@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../../lib/supabase';
 import Banner from '../../../components/crm/Banner';
+import { getUsdToPkrRate, toPkr } from '../../../lib/settings';
+import ProjectsBoard from './ProjectsBoard';
 import type { Client, Project, ProjectStatus } from '../../../types/database';
 
 const STATUS_CONFIG: Record<ProjectStatus, { label: string; color: string }> = {
@@ -30,24 +32,34 @@ const Projects = () => {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [view, setView] = useState<'list' | 'board'>('list');
+  const [usdRate, setUsdRate] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchProjects = async () => {
       setLoading(true);
       setError(null);
-      const [projectsResult, clientsResult] = await Promise.all([
+      const [projectsResult, clientsResult, rate] = await Promise.all([
         supabase.from('projects').select('*').order('created_at', { ascending: false }),
         supabase.from('clients').select('*'),
+        getUsdToPkrRate(),
       ]);
       if (projectsResult.error) setError(projectsResult.error.message);
       setProjects((projectsResult.data ?? []) as Project[]);
       const map: Record<string, Client> = {};
       ((clientsResult.data ?? []) as Client[]).forEach(c => { map[c.id] = c; });
       setClientsById(map);
+      setUsdRate(rate);
       setLoading(false);
     };
     fetchProjects();
   }, []);
+
+  const handleStatusChange = async (projectId: string, status: ProjectStatus) => {
+    setProjects(prev => prev.map(p => p.id === projectId ? { ...p, status } : p));
+    const { error: updateError } = await supabase.from('projects').update({ status }).eq('id', projectId);
+    if (updateError) setError(updateError.message);
+  };
 
   const filtered = projects.filter(p => {
     const matchesFilter = filter === 'all' || p.status === filter;
@@ -67,6 +79,20 @@ const Projects = () => {
           <p style={{ color: '#555', fontSize: 14, marginTop: 6 }}>{projects.length} total</p>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
+          <div style={{ display: 'flex', border: '1px solid #2a2a2a', borderRadius: 8, overflow: 'hidden' }}>
+            {(['list', 'board'] as const).map(v => (
+              <button
+                key={v}
+                onClick={() => setView(v)}
+                style={{
+                  padding: '10px 16px', background: view === v ? '#1e1e1e' : 'transparent', border: 'none',
+                  color: view === v ? '#fff' : '#666', fontSize: 13.5, fontWeight: 600, cursor: 'pointer', textTransform: 'capitalize',
+                }}
+              >
+                {v}
+              </button>
+            ))}
+          </div>
           <Link
             to="/crm/projects/import"
             style={{ padding: '10px 18px', background: 'transparent', border: '1px solid #2a2a2a', color: '#ddd', borderRadius: 8, fontSize: 14, fontWeight: 600, textDecoration: 'none' }}
@@ -102,30 +128,39 @@ const Projects = () => {
             }}
           />
         </div>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          {FILTERS.map(f => (
-            <button
-              key={f.value}
-              onClick={() => setFilter(f.value)}
-              style={{
-                padding: '8px 14px', borderRadius: 8, border: '1px solid',
-                borderColor: filter === f.value ? '#444' : '#1e1e1e',
-                background: filter === f.value ? '#1e1e1e' : 'transparent',
-                color: filter === f.value ? '#ffffff' : '#666', fontSize: 13,
-                fontWeight: filter === f.value ? 600 : 400, cursor: 'pointer',
-              }}
-            >
-              {f.label}
-              {f.value !== 'all' && (
-                <span style={{ marginLeft: 6, color: '#444' }}>{projects.filter(p => p.status === f.value).length}</span>
-              )}
-            </button>
-          ))}
-        </div>
+        {view === 'list' && (
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {FILTERS.map(f => (
+              <button
+                key={f.value}
+                onClick={() => setFilter(f.value)}
+                style={{
+                  padding: '8px 14px', borderRadius: 8, border: '1px solid',
+                  borderColor: filter === f.value ? '#444' : '#1e1e1e',
+                  background: filter === f.value ? '#1e1e1e' : 'transparent',
+                  color: filter === f.value ? '#ffffff' : '#666', fontSize: 13,
+                  fontWeight: filter === f.value ? 600 : 400, cursor: 'pointer',
+                }}
+              >
+                {f.label}
+                {f.value !== 'all' && (
+                  <span style={{ marginLeft: 6, color: '#444' }}>{projects.filter(p => p.status === f.value).length}</span>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {loading ? (
         <div style={{ color: '#555', fontSize: 14, padding: '32px 0' }}>Loading projects…</div>
+      ) : view === 'board' ? (
+        <ProjectsBoard
+          projects={projects.filter(p => !search || [p.name, clientsById[p.client_id]?.name ?? ''].some(v => v.toLowerCase().includes(search.toLowerCase())))}
+          clientsById={clientsById}
+          usdRate={usdRate}
+          onStatusChange={handleStatusChange}
+        />
       ) : filtered.length === 0 ? (
         <div style={{ background: '#141414', border: '1px solid #1e1e1e', borderRadius: 12, padding: '48px 32px', textAlign: 'center', color: '#444', fontSize: 14 }}>
           {search || filter !== 'all' ? 'No projects match your filters.' : 'No projects yet.'}
@@ -165,8 +200,21 @@ const Projects = () => {
                 </span>
                 <span style={{ color: '#444', fontSize: 13 }}>{formatDate(p.created_at)}</span>
                 <div>
-                  <div style={{ color: '#aaa', fontSize: 13.5 }}>{formatMoney(Number(p.amount_paid), p.currency)} / {formatMoney(Number(p.total_value), p.currency)}</div>
-                  {remaining > 0 && <div style={{ color: '#f59e0b', fontSize: 11.5, marginTop: 2 }}>{formatMoney(remaining, p.currency)} due</div>}
+                  <div style={{ color: '#aaa', fontSize: 13.5 }}>
+                    {usdRate !== null
+                      ? `${formatMoney(toPkr(Number(p.amount_paid), p.currency, usdRate))} / ${formatMoney(toPkr(Number(p.total_value), p.currency, usdRate))}`
+                      : `${formatMoney(Number(p.amount_paid), p.currency)} / ${formatMoney(Number(p.total_value), p.currency)}`}
+                  </div>
+                  {p.currency !== 'PKR' && (
+                    <div style={{ color: '#555', fontSize: 11, marginTop: 2 }}>
+                      {formatMoney(Number(p.amount_paid), p.currency)} / {formatMoney(Number(p.total_value), p.currency)}
+                    </div>
+                  )}
+                  {remaining > 0 && (
+                    <div style={{ color: '#f59e0b', fontSize: 11.5, marginTop: 2 }}>
+                      {usdRate !== null ? formatMoney(toPkr(remaining, p.currency, usdRate)) : formatMoney(remaining, p.currency)} due
+                    </div>
+                  )}
                 </div>
                 <span style={{ color: '#888', fontSize: 13, justifySelf: 'end' }}>View →</span>
               </Link>

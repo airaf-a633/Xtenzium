@@ -11,3 +11,7 @@ export async function getUsdToPkrRate(): Promise<number> {
 export function toUsd(amount: number, currency: string, usdToPkrRate: number): number {
   return currency.trim().toUpperCase() === 'USD' ? amount : amount / usdToPkrRate;
 }
+
+export function toPkr(amount: number, currency: string, usdToPkrRate: number): number {
+  return currency.trim().toUpperCase() === 'USD' ? amount * usdToPkrRate : amount;
+}

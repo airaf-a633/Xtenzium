@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { getUsdToPkrRate, toUsd } from '../../lib/settings';
+import { getUsdToPkrRate, toPkr } from '../../lib/settings';
 import type { Client, Project, ProjectStatus, Task, TeamMember } from '../../types/database';
 
 interface Stats {
@@ -40,8 +40,6 @@ const STATUS_COLORS: Record<ProjectStatus, string> = {
 const formatMoney = (n: number, currency = 'PKR') =>
   `${currency} ${n.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
 
-const formatUsd = (n: number) => `≈ $${n.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
-
 const StatCard = ({
   label,
   value,
@@ -69,6 +67,7 @@ const Dashboard = () => {
   const [clientsById, setClientsById] = useState<Record<string, Client>>({});
   const [upcomingTasks, setUpcomingTasks] = useState<Task[]>([]);
   const [membersById, setMembersById] = useState<Record<string, TeamMember>>({});
+  const [rate, setRate] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -80,6 +79,7 @@ const Dashboard = () => {
         supabase.from('team_members').select('*'),
         getUsdToPkrRate(),
       ]);
+      setRate(usdRate);
 
       const clients = (clientsResult.data ?? []) as Client[];
       const projects = (projectsResult.data ?? []) as Project[];
@@ -98,11 +98,11 @@ const Dashboard = () => {
       setStats({
         totalClients: clients.length,
         activeProjects: projects.filter(p => p.status === 'active').length,
-        pipelineValue: active.reduce((sum, p) => sum + toUsd(Number(p.total_value), p.currency, usdRate), 0),
+        pipelineValue: active.reduce((sum, p) => sum + toPkr(Number(p.total_value), p.currency, usdRate), 0),
         pipelineBreakdown: formatBreakdown(breakdownByCurrency(active, p => Number(p.total_value))),
-        totalPaid: projects.reduce((sum, p) => sum + toUsd(Number(p.amount_paid), p.currency, usdRate), 0),
+        totalPaid: projects.reduce((sum, p) => sum + toPkr(Number(p.amount_paid), p.currency, usdRate), 0),
         paidBreakdown: formatBreakdown(breakdownByCurrency(projects, p => Number(p.amount_paid))),
-        totalOutstanding: projects.reduce((sum, p) => sum + toUsd(Number(p.total_value) - Number(p.amount_paid), p.currency, usdRate), 0),
+        totalOutstanding: projects.reduce((sum, p) => sum + toPkr(Number(p.total_value) - Number(p.amount_paid), p.currency, usdRate), 0),
         outstandingBreakdown: formatBreakdown(breakdownByCurrency(outstandingProjects, p => Number(p.total_value) - Number(p.amount_paid))),
       });
 
@@ -137,9 +137,9 @@ const Dashboard = () => {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 40 }}>
             <StatCard label="Total Clients" value={stats.totalClients} />
             <StatCard label="Active Projects" value={stats.activeProjects} color="#10b981" />
-            <StatCard label="Pipeline Value" value={formatUsd(stats.pipelineValue)} color="#3b82f6" sub={stats.pipelineBreakdown} />
-            <StatCard label="Total Paid" value={formatUsd(stats.totalPaid)} color="#a78bfa" sub={stats.paidBreakdown} />
-            <StatCard label="Outstanding" value={formatUsd(stats.totalOutstanding)} color="#f59e0b" sub={stats.outstandingBreakdown} />
+            <StatCard label="Pipeline Value" value={formatMoney(stats.pipelineValue, 'PKR')} color="#3b82f6" sub={stats.pipelineBreakdown} />
+            <StatCard label="Total Paid" value={formatMoney(stats.totalPaid, 'PKR')} color="#a78bfa" sub={stats.paidBreakdown} />
+            <StatCard label="Outstanding" value={formatMoney(stats.totalOutstanding, 'PKR')} color="#f59e0b" sub={stats.outstandingBreakdown} />
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: 24, alignItems: 'start' }}>
@@ -182,7 +182,7 @@ const Dashboard = () => {
                         {p.status.replace('_', ' ')}
                       </span>
                       <span style={{ color: '#888', fontSize: 13, minWidth: 90, textAlign: 'right' }}>
-                        {formatMoney(Number(p.total_value), p.currency)}
+                        {formatMoney(rate !== null ? toPkr(Number(p.total_value), p.currency, rate) : Number(p.total_value), 'PKR')}
                       </span>
                     </Link>
                   ))}

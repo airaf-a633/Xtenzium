@@ -75,6 +75,7 @@ export interface Task {
   due_date: string | null;
   status: TaskStatus;
   assigned_to: string | null;
+  recurrence_days: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -147,10 +148,11 @@ export type Database = {
       };
       tasks: {
         Row: Task & Record<string, unknown>;
-        Insert: Omit<Task, 'id' | 'created_at' | 'updated_at' | 'description'> & {
+        Insert: Omit<Task, 'id' | 'created_at' | 'updated_at' | 'description' | 'recurrence_days'> & {
           id?: string;
           updated_at?: string;
           description?: string | null;
+          recurrence_days?: number | null;
         };
         Update: Partial<Omit<Task, 'id' | 'created_at'>>;
         Relationships: [];

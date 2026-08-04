@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../../../lib/supabase';
 import Banner from '../../../components/crm/Banner';
-import { getUsdToPkrRate, toUsd } from '../../../lib/settings';
+import { getUsdToPkrRate, toPkr } from '../../../lib/settings';
 import type { Client, Project, ProjectStatus } from '../../../types/database';
 
 interface FormState {
@@ -117,7 +117,6 @@ const ClientDetail = () => {
 
   const formatDate = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   const formatMoney = (n: number, currency = 'PKR') => `${currency} ${n.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
-  const formatUsd = (n: number) => `$${n.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
 
   const totalsByCurrency: Record<string, { total: number; paid: number }> = {};
   projects.forEach(p => {
@@ -127,10 +126,10 @@ const ClientDetail = () => {
     totalsByCurrency[c].paid += Number(p.amount_paid);
   });
   const currencies = Object.keys(totalsByCurrency);
-  const usdTotals = usdRate !== null
+  const pkrTotals = usdRate !== null
     ? currencies.reduce((acc, c) => ({
-        total: acc.total + toUsd(totalsByCurrency[c].total, c, usdRate),
-        paid: acc.paid + toUsd(totalsByCurrency[c].paid, c, usdRate),
+        total: acc.total + toPkr(totalsByCurrency[c].total, c, usdRate),
+        paid: acc.paid + toPkr(totalsByCurrency[c].paid, c, usdRate),
       }), { total: 0, paid: 0 })
     : null;
 
@@ -217,26 +216,31 @@ const ClientDetail = () => {
           <h2 style={{ color: '#888', fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, margin: '0 0 14px' }}>
             Total Across {projects.length} Project{projects.length === 1 ? '' : 's'}
           </h2>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24 }}>
-            {currencies.map(c => {
-              const t = totalsByCurrency[c];
-              const remaining = t.total - t.paid;
-              return (
-                <div key={c}>
-                  <div style={{ color: '#666', fontSize: 11, marginBottom: 4 }}>{c}</div>
-                  <div style={{ color: '#ddd', fontSize: 17, fontWeight: 600 }}>{formatMoney(t.paid, '')} / {formatMoney(t.total, '')}</div>
-                  {remaining > 0 && <div style={{ color: '#f59e0b', fontSize: 12, marginTop: 2 }}>{formatMoney(remaining, c)} remaining</div>}
-                </div>
-              );
-            })}
-            {usdTotals && currencies.length > 0 && (
-              <div style={{ borderLeft: '1px solid #1e1e1e', paddingLeft: 24 }}>
-                <div style={{ color: '#666', fontSize: 11, marginBottom: 4 }}>≈ USD combined</div>
-                <div style={{ color: '#60a5fa', fontSize: 17, fontWeight: 600 }}>{formatUsd(usdTotals.paid)} / {formatUsd(usdTotals.total)}</div>
-                <div style={{ color: '#444', fontSize: 11, marginTop: 2 }}>at 1 USD = {usdRate} PKR</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24, alignItems: 'flex-start' }}>
+            {pkrTotals && (
+              <div>
+                <div style={{ color: '#666', fontSize: 11, marginBottom: 4 }}>Combined (PKR)</div>
+                <div style={{ color: '#ddd', fontSize: 19, fontWeight: 600 }}>{formatMoney(pkrTotals.paid, 'PKR')} / {formatMoney(pkrTotals.total, 'PKR')}</div>
+                {pkrTotals.total - pkrTotals.paid > 0 && (
+                  <div style={{ color: '#f59e0b', fontSize: 12, marginTop: 2 }}>{formatMoney(pkrTotals.total - pkrTotals.paid, 'PKR')} remaining</div>
+                )}
+              </div>
+            )}
+            {currencies.length > 1 && (
+              <div style={{ borderLeft: '1px solid #1e1e1e', paddingLeft: 24, display: 'flex', gap: 20, flexWrap: 'wrap' }}>
+                {currencies.map(c => {
+                  const t = totalsByCurrency[c];
+                  return (
+                    <div key={c}>
+                      <div style={{ color: '#555', fontSize: 11, marginBottom: 4 }}>originally in {c}</div>
+                      <div style={{ color: '#888', fontSize: 14 }}>{formatMoney(t.paid, '')} / {formatMoney(t.total, '')}</div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
+          {usdRate !== null && <div style={{ color: '#444', fontSize: 11, marginTop: 12 }}>at 1 USD = {usdRate} PKR</div>}
         </div>
       )}
 

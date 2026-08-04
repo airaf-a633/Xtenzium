@@ -4,7 +4,11 @@ import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../context/AuthContext';
 import Banner from '../../../components/crm/Banner';
 import TaskForm, { type TaskFormValues } from '../../../components/crm/TaskForm';
+import { getUsdToPkrRate, toPkr } from '../../../lib/settings';
+import { spawnNextRecurrence } from '../../../lib/tasks';
 import type { Activity, ActivityType, Client, Project, ProjectStatus, Task, TeamMember } from '../../../types/database';
+
+const CURRENCIES = ['PKR', 'USD'];
 
 interface FormState {
   client_id: string;
@@ -60,6 +64,7 @@ const ProjectDetail = () => {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [usdRate, setUsdRate] = useState<number | null>(null);
 
   const [noteText, setNoteText] = useState('');
   const [noteType, setNoteType] = useState<ActivityType>('note');
@@ -71,6 +76,7 @@ const ProjectDetail = () => {
     supabase.from('team_members').select('*').order('name', { ascending: true }).then(({ data }) => {
       setMembers((data ?? []) as TeamMember[]);
     });
+    getUsdToPkrRate().then(setUsdRate);
   }, []);
 
   useEffect(() => {
@@ -204,7 +210,7 @@ const ProjectDetail = () => {
     setError(null);
     const { data, error: insertError } = await supabase.from('tasks').insert({
       project_id: project.id, title: values.title, due_date: values.due_date,
-      status: 'pending', assigned_to: values.assigned_to,
+      status: 'pending', assigned_to: values.assigned_to, recurrence_days: values.recurrence_days,
     }).select().single();
     if (insertError) {
       setError(insertError.message);
@@ -220,6 +226,11 @@ const ProjectDetail = () => {
     if (updateError) {
       setError(updateError.message);
       setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: task.status } : t));
+      return;
+    }
+    if (newStatus === 'done') {
+      const nextTask = await spawnNextRecurrence(task);
+      if (nextTask) setTasks(prev => [...prev, nextTask].sort((a, b) => (a.due_date ?? '9999').localeCompare(b.due_date ?? '9999')));
     }
   };
 
@@ -338,16 +349,28 @@ const ProjectDetail = () => {
           </div>
           <div>
             <label style={labelStyle}>Currency</label>
-            <input style={inputStyle} value={form.currency} onChange={e => setForm({ ...form, currency: e.target.value })} />
+            <select style={inputStyle} value={form.currency} onChange={e => setForm({ ...form, currency: e.target.value })}>
+              {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
           </div>
         </div>
         <div style={{ height: 6, background: '#1e1e1e', borderRadius: 4, overflow: 'hidden', marginBottom: 10 }}>
           <div style={{ height: '100%', width: `${pct}%`, background: '#10b981', transition: 'width 0.3s' }} />
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-          <span style={{ color: '#aaa' }}>{formatMoney(amountPaid, form.currency)} paid</span>
-          <span style={{ color: remaining > 0 ? '#f59e0b' : '#555' }}>{formatMoney(remaining, form.currency)} remaining</span>
+          <span style={{ color: '#aaa' }}>
+            {usdRate !== null ? formatMoney(toPkr(amountPaid, form.currency, usdRate), 'PKR') : formatMoney(amountPaid, form.currency)} paid
+          </span>
+          <span style={{ color: remaining > 0 ? '#f59e0b' : '#555' }}>
+            {usdRate !== null ? formatMoney(toPkr(remaining, form.currency, usdRate), 'PKR') : formatMoney(remaining, form.currency)} remaining
+          </span>
         </div>
+        {form.currency !== 'PKR' && (
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#555', marginTop: 6 }}>
+            <span>originally {formatMoney(amountPaid, form.currency)}</span>
+            <span>originally {formatMoney(remaining, form.currency)}</span>
+          </div>
+        )}
       </div>
 
       {/* Status */}
@@ -385,6 +408,7 @@ const ProjectDetail = () => {
                       <input type="checkbox" checked={t.status === 'done'} onChange={() => toggleTask(t)} style={{ cursor: 'pointer' }} />
                       <span style={{ flex: 1, color: t.status === 'done' ? '#555' : '#ddd', fontSize: 13.5, textDecoration: t.status === 'done' ? 'line-through' : 'none' }}>
                         {t.title}
+                        {t.recurrence_days && <span title={`Repeats every ${t.recurrence_days} day(s)`} style={{ marginLeft: 6, color: '#555' }}>🔁</span>}
                       </span>
                       {assignee && (
                         <span style={{ color: '#666', fontSize: 12, background: '#1e1e1e', padding: '2px 8px', borderRadius: 20 }}>
