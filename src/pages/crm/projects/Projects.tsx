@@ -4,7 +4,11 @@ import { supabase } from '../../../lib/supabase';
 import Banner from '../../../components/crm/Banner';
 import { getUsdToPkrRate, toPkr } from '../../../lib/settings';
 import ProjectsBoard from './ProjectsBoard';
+import ProjectsCalendar from './ProjectsCalendar';
 import type { Client, Project, ProjectStatus } from '../../../types/database';
+
+const VIEWS = ['board', 'list', 'calendar'] as const;
+type View = typeof VIEWS[number];
 
 const STATUS_CONFIG: Record<ProjectStatus, { label: string; color: string }> = {
   proposal: { label: 'Proposal', color: '#3b82f6' },
@@ -32,7 +36,7 @@ const Projects = () => {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [view, setView] = useState<'list' | 'board'>('list');
+  const [view, setView] = useState<View>('board');
   const [usdRate, setUsdRate] = useState<number | null>(null);
 
   useEffect(() => {
@@ -61,13 +65,14 @@ const Projects = () => {
     if (updateError) setError(updateError.message);
   };
 
-  const filtered = projects.filter(p => {
-    const matchesFilter = filter === 'all' || p.status === filter;
+  const matchesSearch = (p: Project) => {
     const q = search.toLowerCase();
     const clientName = clientsById[p.client_id]?.name ?? '';
-    const matchesSearch = !q || [p.name, clientName].some(v => v.toLowerCase().includes(q));
-    return matchesFilter && matchesSearch;
-  });
+    return !q || [p.name, clientName].some(v => v.toLowerCase().includes(q));
+  };
+
+  const filtered = projects.filter(p => (filter === 'all' || p.status === filter) && matchesSearch(p));
+  const searched = projects.filter(matchesSearch);
 
   const formatDate = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
@@ -80,7 +85,7 @@ const Projects = () => {
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
           <div style={{ display: 'flex', border: '1px solid #2a2a2a', borderRadius: 8, overflow: 'hidden' }}>
-            {(['list', 'board'] as const).map(v => (
+            {VIEWS.map(v => (
               <button
                 key={v}
                 onClick={() => setView(v)}
@@ -156,11 +161,13 @@ const Projects = () => {
         <div style={{ color: '#555', fontSize: 14, padding: '32px 0' }}>Loading projects…</div>
       ) : view === 'board' ? (
         <ProjectsBoard
-          projects={projects.filter(p => !search || [p.name, clientsById[p.client_id]?.name ?? ''].some(v => v.toLowerCase().includes(search.toLowerCase())))}
+          projects={searched}
           clientsById={clientsById}
           usdRate={usdRate}
           onStatusChange={handleStatusChange}
         />
+      ) : view === 'calendar' ? (
+        <ProjectsCalendar projects={searched} clientsById={clientsById} />
       ) : filtered.length === 0 ? (
         <div style={{ background: '#141414', border: '1px solid #1e1e1e', borderRadius: 12, padding: '48px 32px', textAlign: 'center', color: '#444', fontSize: 14 }}>
           {search || filter !== 'all' ? 'No projects match your filters.' : 'No projects yet.'}

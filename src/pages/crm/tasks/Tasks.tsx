@@ -15,7 +15,7 @@ const FILTERS: Array<{ value: TaskStatus | 'all'; label: string }> = [
   { value: 'done', label: 'Done' },
 ];
 
-const VIEWS = ['list', 'board', 'calendar'] as const;
+const VIEWS = ['board', 'list', 'calendar'] as const;
 type View = typeof VIEWS[number];
 
 const cardStyle: React.CSSProperties = { background: '#141414', border: '1px solid #1e1e1e', borderRadius: 12, padding: 20 };
@@ -28,7 +28,7 @@ const Tasks = () => {
   const [membersById, setMembersById] = useState<Record<string, TeamMember>>({});
   const [filter, setFilter] = useState<TaskStatus | 'all'>('pending');
   const [assigneeFilter, setAssigneeFilter] = useState('');
-  const [view, setView] = useState<View>('list');
+  const [view, setView] = useState<View>('board');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
