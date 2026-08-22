@@ -1,0 +1,158 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Navbar from '../../components/Navbar.astro';
+import Footer from '../../components/Footer.astro';
+import Faq from '../../components/Faq.astro';
+import { services } from '../../data/services';
+
+const sorted = [...services].sort((a, b) => a.order - b.order);
+
+const faqs = [
+  {
+    q: 'Do you take on just one of these, or do they come as a package?',
+    a: 'One is fine. Most engagements start with a single service and grow only if there is a reason. We will not bundle a retainer into a build quote to inflate it.',
+  },
+  {
+    q: 'Can you handle a project that spans several of these?',
+    a: 'That is usually where we are most useful — a connected product needs hardware, firmware, a backend and an interface, and having one team across all of it removes the integration argument entirely.',
+  },
+  {
+    q: 'How big is the team?',
+    a: 'A small senior core, extended with trusted specialists per project. You talk to the people building your work rather than an account manager, and we scale up around them when a project needs it.',
+  },
+  {
+    q: 'Where are you based, and does that matter?',
+    a: 'Karachi, Pakistan, with most clients overseas. We overlap several hours with both European and US-Eastern working days, and everything runs in English.',
+  },
+];
+---
+
+<BaseLayout
+  title="Services — Xtenzium"
+  description="Web development, design and branding, IoT and embedded engineering, AI and automation, technical consultancy, marketing, and ongoing support."
+  path="/services"
+>
+  <Fragment slot="head">
+    <script
+      is:inline
+      type="application/ld+json"
+      set:html={JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: faqs.map((f) => ({
+          '@type': 'Question',
+          name: f.q,
+          acceptedAnswer: { '@type': 'Answer', text: f.a },
+        })),
+      })}
+    />
+  </Fragment>
+
+  <Navbar />
+
+  <main>
+    <!-- ── Header ───────────────────────────────────────────── -->
+    <section class="on-carbon relative overflow-hidden bg-carbon pb-20 pt-40 md:pb-24 md:pt-48">
+      <div
+        aria-hidden="true"
+        class="pointer-events-none absolute inset-0 opacity-40"
+        style="background-image: radial-gradient(circle at center, rgba(194,98,27,0.4) 1px, transparent 1px); background-size: 34px 34px;"
+      >
+      </div>
+
+      <div class="container-x relative" data-reveal-group>
+        <p class="eyebrow !text-copper-hi" data-reveal="eyebrow">Services</p>
+        <h1
+          class="mt-4 max-w-3xl font-display text-[clamp(2.25rem,6vw,4.25rem)] font-bold leading-[1.02] tracking-[-0.035em] text-white"
+        >
+          <span class="block" data-reveal="line">Seven things we do,</span>
+          <span class="block" data-reveal="line">and do properly.</span>
+        </h1>
+        <p class="mt-7 max-w-xl text-lg leading-relaxed text-white/60" data-reveal="body">
+          Most agencies stop at the browser. We keep going — through firmware,
+          onto the board, and back again. Take one of these or several.
+        </p>
+      </div>
+    </section>
+
+    <!-- ── Index ────────────────────────────────────────────── -->
+    <section class="bg-bg py-20 md:py-28">
+      <div class="container-x">
+        <ol data-reveal-cards>
+          {
+            sorted.map((s, i) => (
+              <li data-reveal="card">
+                <a
+                  href={`/services/${s.slug}`}
+                  class="group grid items-baseline gap-x-8 gap-y-3 border-t border-line py-9 transition-colors duration-300 hover:border-copper md:grid-cols-[3rem_minmax(0,20rem)_1fr_2rem] md:py-10"
+                >
+                  <span class="font-mono text-xs text-ink-3">
+                    {String(i + 1).padStart(2, '0')}
+                  </span>
+
+                  <div>
+                    <p class="eyebrow !text-copper">{s.kicker}</p>
+                    <h2
+                      transition:name={`service-${s.slug}`}
+                      class="mt-2.5 font-display text-[clamp(1.5rem,3vw,2.125rem)] font-bold leading-[1.08] tracking-[-0.03em] text-ink transition-colors duration-300 group-hover:text-copper"
+                    >
+                      {s.title}
+                    </h2>
+                  </div>
+
+                  <p class="max-w-lg leading-relaxed text-ink-2">{s.summary}</p>
+
+                  <span
+                    aria-hidden="true"
+                    class="hidden text-xl text-ink-3 transition-all duration-300 group-hover:translate-x-1 group-hover:text-copper md:block md:justify-self-end"
+                  >
+                    &rarr;
+                  </span>
+                </a>
+              </li>
+            ))
+          }
+          <li class="border-t border-line" />
+        </ol>
+      </div>
+    </section>
+
+    <Faq eyebrow="Questions" heading={['Before you pick one.']} items={faqs} />
+
+    <!-- ── CTA ──────────────────────────────────────────────── -->
+    <section class="border-t border-white/10 bg-carbon py-20 md:py-28">
+      <div class="container-x" data-reveal-group>
+        <div class="max-w-2xl">
+          <p class="eyebrow !text-copper-hi" data-reveal="eyebrow">Not sure which</p>
+          <h2
+            class="mt-3 font-display text-[clamp(1.75rem,4vw,2.75rem)] font-bold tracking-[-0.035em] text-white"
+          >
+            <span class="block" data-reveal="line">Describe the problem</span>
+            <span class="block" data-reveal="line">and we will tell you.</span>
+          </h2>
+          <p class="mt-5 max-w-lg leading-relaxed text-white/60" data-reveal="body">
+            Occasionally the answer is that you do not need us, or that you need
+            a smaller piece of work than you thought. We would rather say that
+            on a call than after an invoice.
+          </p>
+          <div class="mt-8 flex flex-col gap-3 sm:flex-row" data-reveal="body">
+            <a
+              href="/contact"
+              class="inline-flex items-center justify-center rounded-pill bg-copper px-7 py-3.5 text-sm font-bold text-white transition-colors duration-300 hover:bg-copper-hi"
+            >
+              Book a scoping call
+            </a>
+            <a
+              href="/estimate"
+              class="inline-flex items-center justify-center rounded-pill border border-white/25 px-7 py-3.5 text-sm font-bold text-white transition-colors duration-300 hover:bg-white hover:text-carbon"
+            >
+              Estimate a project
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <Footer />
+</BaseLayout>

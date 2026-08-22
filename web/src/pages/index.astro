@@ -8,6 +8,7 @@ import StackingCards from '../components/StackingCards.astro';
 import Coverflow from '../components/Coverflow.astro';
 import Testimonial from '../components/Testimonial.astro';
 import { unverified } from '../lib/placeholder';
+import { services as servicesData } from '../data/services';
 
 const heroLines = ['We architect', 'long-term', 'success.'];
 
@@ -17,46 +18,18 @@ const capabilities = [
   'ESP32', 'STM32', 'LoRaWAN', 'MQTT', 'AWS', 'Vercel',
 ];
 
-// Engagement kicker tells you the commercial shape before the description
-// does — that is the thing a buyer is actually scanning for.
-const services = [
-  {
-    kicker: 'Scoped product build',
-    title: 'Web Development',
-    href: '/services/development',
-    body: 'React, Next.js and Astro applications that load fast, rank well, and hold up after launch. Built from scratch — no themes, no page builders.',
-  },
-  {
-    kicker: 'Identity engagement',
-    href: '/services/design',
-    title: 'Design & Branding',
-    body: 'Interface design, design systems, and visual identity. The system ships with the work, so your team can extend it without us.',
-  },
-  {
-    kicker: 'Board-level engineering',
-    href: '/services/iot',
-    title: 'IoT & Embedded',
-    body: 'Custom PCB design, firmware, and connected hardware. The part most agencies subcontract, we do in-house.',
-  },
-  {
-    kicker: 'Workflow-led systems build',
-    href: '/services/automation',
-    title: 'AI & Automation',
-    body: 'LLM integrations and internal tooling built around how your team already works, not around a demo.',
-  },
-  {
-    kicker: 'Advisory engagement',
-    href: '/services/consultancy',
-    title: 'Technical Consultancy',
-    body: 'Architecture reviews, stack decisions, and roadmaps — so you avoid the expensive mistake before you make it.',
-  },
-  {
-    kicker: 'Ongoing retainer',
-    href: '/services/support',
-    title: 'Support & Growth',
-    body: 'Maintenance, performance work, and iteration once the build ships. Optional, never bundled in to inflate a quote.',
-  },
-];
+// Single source of truth — the same data the /services pages render from,
+// so a service can never exist on one and not the other.
+const services = servicesData
+  .slice()
+  .sort((a, b) => a.order - b.order)
+  .map((sv) => ({
+    kicker: sv.kicker,
+    title: sv.title,
+    href: `/services/${sv.slug}`,
+    body: sv.summary,
+    image: undefined as string | undefined,
+  }));
 
 // A real sequence, so the numbering carries information the reader needs.
 const process = [
