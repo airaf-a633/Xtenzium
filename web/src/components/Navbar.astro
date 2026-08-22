@@ -1,0 +1,43 @@
+---
+const links = [
+  { href: '/work', label: 'Work' },
+  { href: '/services', label: 'Services' },
+  { href: '/about', label: 'About' },
+  { href: '/journal', label: 'Journal' },
+];
+---
+
+<header data-nav class="pointer-events-none fixed inset-x-0 top-0 z-50 pt-4 md:pt-6">
+  <div class="container-x">
+    <nav
+      data-nav-shell
+      class="pointer-events-auto flex items-center justify-between gap-6 rounded-pill border border-white/10 bg-carbon/70 px-5 py-3 backdrop-blur-md transition-[background-color,border-color,box-shadow] duration-300 md:px-6"
+    >
+      <a href="/" class="font-display text-base font-bold tracking-[-0.03em] text-white">
+        Xtenzium
+      </a>
+
+      <ul class="hidden items-center gap-7 md:flex">
+        {
+          links.map((l) => (
+            <li>
+              <a
+                href={l.href}
+                class="text-sm font-medium text-white/70 transition-colors duration-300 hover:text-white"
+              >
+                {l.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+
+      <a
+        href="/contact"
+        class="rounded-pill bg-copper px-5 py-2.5 text-xs font-bold text-white transition-colors duration-300 hover:bg-copper-hi md:text-sm"
+      >
+        Start a project
+      </a>
+    </nav>
+  </div>
+</header>

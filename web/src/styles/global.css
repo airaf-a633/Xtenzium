@@ -167,3 +167,33 @@ body.page-visible  { opacity: 1; transition: opacity 380ms var(--ease-brand); }
 @media (min-width: 768px) {
   .container-x { padding-inline: 2.5rem; }
 }
+
+/* ───────────────────────────────────────────────────────────────
+   Capability marquee — CSS only. A ticker does not need JS, and
+   keeping it off the main thread means it cannot jank the scroll.
+   ─────────────────────────────────────────────────────────────── */
+.marquee {
+  display: flex;
+  overflow: hidden;
+  mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+}
+.marquee__track {
+  display: flex;
+  flex: none;
+  gap: 3rem;
+  padding-right: 3rem;
+  min-width: 100%;
+  animation: marquee-scroll 42s linear infinite;
+}
+.marquee:hover .marquee__track { animation-play-state: paused; }
+
+@keyframes marquee-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-100%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee__track { animation: none; }
+  .marquee { mask-image: none; -webkit-mask-image: none; overflow-x: auto; }
+}

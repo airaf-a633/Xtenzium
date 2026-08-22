@@ -1,34 +1,83 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import StatementPanel from '../components/StatementPanel.astro';
+import Navbar from '../components/Navbar.astro';
+import Footer from '../components/Footer.astro';
 
 const heroLines = ['We architect', 'long-term', 'success.'];
 
+const capabilities = [
+  'React', 'Next.js', 'Astro', 'TypeScript', 'Node.js', 'PostgreSQL',
+  'Supabase', 'Tailwind', 'GSAP', 'Figma', 'KiCad', 'Altium',
+  'ESP32', 'STM32', 'LoRaWAN', 'MQTT', 'AWS', 'Vercel',
+];
+
+// Engagement kicker tells you the commercial shape before the description
+// does — that is the thing a buyer is actually scanning for.
 const services = [
   {
-    n: '01',
     kicker: 'Scoped product build',
     title: 'Web Development',
-    body: 'React and Next.js applications that load fast, rank well, and hold up after launch. Built from scratch — no themes, no page builders.',
+    body: 'React, Next.js and Astro applications that load fast, rank well, and hold up after launch. Built from scratch — no themes, no page builders.',
   },
   {
-    n: '02',
     kicker: 'Identity engagement',
     title: 'Design & Branding',
-    body: 'Interface design, design systems, and visual identity. The system comes with the work, so your team can extend it without us.',
+    body: 'Interface design, design systems, and visual identity. The system ships with the work, so your team can extend it without us.',
   },
   {
-    n: '03',
     kicker: 'Board-level engineering',
     title: 'IoT & Embedded',
     body: 'Custom PCB design, firmware, and connected hardware. The part most agencies subcontract, we do in-house.',
   },
   {
-    n: '04',
     kicker: 'Workflow-led systems build',
     title: 'AI & Automation',
     body: 'LLM integrations and internal tooling built around how your team already works, not around a demo.',
   },
+  {
+    kicker: 'Advisory engagement',
+    title: 'Technical Consultancy',
+    body: 'Architecture reviews, stack decisions, and roadmaps — so you avoid the expensive mistake before you make it.',
+  },
+  {
+    kicker: 'Ongoing retainer',
+    title: 'Support & Growth',
+    body: 'Maintenance, performance work, and iteration once the build ships. Optional, never bundled in to inflate a quote.',
+  },
+];
+
+// A real sequence, so the numbering carries information the reader needs.
+const process = [
+  { n: '01', title: 'Scope', body: 'We sit with your team and map what actually needs building. You leave with a written scope and a number, free.' },
+  { n: '02', title: 'Design', body: 'Interface and system design, reviewed with you weekly. Nothing gets built from a guess.' },
+  { n: '03', title: 'Build', body: 'Two-week cycles with a working link at the end of each one. You watch it come together.' },
+  { n: '04', title: 'Handover', body: 'Documented, audited, and yours. Every credential, every repo, every decision written down.' },
+];
+
+const work = [
+  { client: 'Meridian Logistics', sector: 'Fleet telematics', result: 'Cut dispatch time 41%', body: 'Custom LoRaWAN trackers and a live routing dashboard — hardware and software from one team.' },
+  { client: 'Aster Health', sector: 'Clinical SaaS', result: '3.2s → 0.8s load', body: 'Rebuilt a stalling patient portal on Next.js, with an audited migration and zero downtime.' },
+  { client: 'Kiln & Co', sector: 'D2C commerce', result: '+36% conversion', body: 'Brand system, storefront, and the internal tooling to run it without a developer on call.' },
+];
+
+const differentiators = [
+  { title: 'We learn the business first', body: 'Before any code, we map how your team actually operates. Most agencies skip this and build the wrong thing beautifully.' },
+  { title: 'One team, one conversation', body: 'No account managers relaying messages. You talk to the people building your project, every time.' },
+  { title: 'Honest scoping, not upselling', body: 'Sometimes the answer is a simple site, not a platform. We say so, even when it means a smaller invoice.' },
+  { title: 'It works after we leave', body: 'You own everything and you understand everything. No hostage code, no mandatory retainer.' },
+];
+
+const industries = [
+  { tag: 'Healthcare', label: 'Clinics & platforms' },
+  { tag: 'Logistics', label: 'Fleet & telematics' },
+  { tag: 'Manufacturing', label: 'Industrial IoT' },
+  { tag: 'E-commerce', label: 'D2C & retail' },
+  { tag: 'Education', label: 'Schools & LMS' },
+  { tag: 'Energy', label: 'Metering & monitoring' },
+  { tag: 'Fintech', label: 'Payments & portals' },
+  { tag: 'Agriculture', label: 'Sensing & automation' },
+  { tag: 'Software', label: 'Products & platforms' },
 ];
 
 const stats = [
@@ -43,8 +92,10 @@ const stats = [
   description="Karachi-based digital agency building web products and the custom hardware underneath them. Web development, design, IoT, and AI automation."
   path="/"
 >
+  <Navbar />
+
   <main>
-    <!-- ── Hero ─────────────────────────────────────────────── -->
+    <!-- ═══ 01 · Hero ═══════════════════════════════════════════ -->
     <section
       data-hero
       class="on-carbon relative flex min-h-screen items-end overflow-hidden bg-carbon pb-20 pt-36"
@@ -54,7 +105,6 @@ const stats = [
         aria-hidden="true"
         class="pointer-events-none absolute inset-0 h-full w-full"></canvas>
 
-      <!-- Keeps the headline legible over the densest routing. -->
       <div
         class="pointer-events-none absolute inset-0 bg-gradient-to-r from-carbon via-carbon/85 to-transparent"
       >
@@ -88,24 +138,39 @@ const stats = [
         <div class="mt-10 flex flex-col items-start gap-3 sm:flex-row">
           <a
             data-hero-cta
-            href="/contact"
+            href="/work"
             class="inline-flex w-full items-center justify-center rounded-pill bg-copper px-7 py-3.5 text-sm font-bold text-white transition-colors duration-300 hover:bg-copper-hi sm:w-auto"
           >
-            Start a project
+            See the work
           </a>
           <a
             data-hero-cta
-            href="/work"
+            href="/contact"
             class="inline-flex w-full items-center justify-center rounded-pill border border-white/60 bg-white/5 px-7 py-3.5 text-sm font-bold text-white backdrop-blur-sm transition-colors duration-300 hover:bg-white hover:text-carbon sm:w-auto"
           >
-            See our work
+            Book a scoping call
           </a>
         </div>
       </div>
     </section>
 
-    <!-- ── Services ─────────────────────────────────────────── -->
-    <section class="bg-bg py-24 md:py-32">
+    <!-- ═══ 02 · Capability marquee ═════════════════════════════ -->
+    <section class="border-b border-line bg-bg py-7">
+      <div class="marquee" aria-label="Technologies we work with">
+        {
+          [0, 1].map((dup) => (
+            <div class="marquee__track" aria-hidden={dup === 1 ? 'true' : undefined}>
+              {capabilities.map((c) => (
+                <span class="font-mono text-sm whitespace-nowrap text-ink-3">{c}</span>
+              ))}
+            </div>
+          ))
+        }
+      </div>
+    </section>
+
+    <!-- ═══ 03 · Services ═══════════════════════════════════════ -->
+    <section id="services" class="bg-bg py-24 md:py-32">
       <div class="container-x">
         <div data-reveal-group class="max-w-2xl">
           <p class="eyebrow" data-reveal="eyebrow">What we do</p>
@@ -115,23 +180,20 @@ const stats = [
             <span class="block" data-reveal="line">Software and hardware,</span>
             <span class="block" data-reveal="line">under one roof.</span>
           </h2>
-          <p class="mt-4 text-ink-2 leading-relaxed" data-reveal="body">
+          <p class="mt-4 leading-relaxed text-ink-2" data-reveal="body">
             Most agencies stop at the browser. We keep going — through firmware,
             onto the board, and back again.
           </p>
         </div>
 
-        <div data-reveal-cards class="mt-14 grid gap-4 md:grid-cols-2">
+        <div data-reveal-cards class="mt-14 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {
             services.map((s) => (
               <article
                 data-reveal="card"
-                class="rounded-card border border-line bg-surface p-8 transition-colors duration-300 hover:border-line-strong"
+                class="flex flex-col rounded-card border border-line bg-surface p-8 transition-colors duration-300 hover:border-copper-line"
               >
-                <div class="flex items-baseline justify-between gap-4">
-                  <p class="eyebrow">{s.kicker}</p>
-                  <span class="font-mono text-xs text-copper">{s.n}</span>
-                </div>
+                <p class="eyebrow !text-copper">{s.kicker}</p>
                 <h3 class="mt-4 font-display text-2xl font-bold tracking-[-0.025em] text-ink">
                   {s.title}
                 </h3>
@@ -143,7 +205,7 @@ const stats = [
       </div>
     </section>
 
-    <!-- ── Statement panel — the 'rise' variant ──────────────── -->
+    <!-- ═══ 04 · Statement — 'rise' ═════════════════════════════ -->
     <StatementPanel
       variant="rise"
       eyebrow="The difference"
@@ -151,7 +213,83 @@ const stats = [
       accentWord="board"
     />
 
-    <!-- ── Stats ────────────────────────────────────────────── -->
+    <!-- ═══ 05 · Process ════════════════════════════════════════ -->
+    <section class="bg-bg-tint py-24 md:py-32">
+      <div class="container-x">
+        <div data-reveal-group class="max-w-2xl">
+          <p class="eyebrow" data-reveal="eyebrow">How it goes</p>
+          <h2
+            class="mt-3 font-display text-[clamp(1.75rem,4vw,2.75rem)] font-bold tracking-[-0.03em] text-ink"
+          >
+            <span class="block" data-reveal="line">Four steps, and you</span>
+            <span class="block" data-reveal="line">see work at every one.</span>
+          </h2>
+        </div>
+
+        <ol data-reveal-cards class="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {
+            process.map((p) => (
+              <li data-reveal="card" class="rounded-card border border-line bg-surface p-7">
+                <span class="font-mono text-xs text-copper">{p.n}</span>
+                <h3 class="mt-4 font-display text-xl font-bold tracking-[-0.025em] text-ink">
+                  {p.title}
+                </h3>
+                <p class="mt-2.5 text-sm leading-relaxed text-ink-2">{p.body}</p>
+              </li>
+            ))
+          }
+        </ol>
+      </div>
+    </section>
+
+    <!-- ═══ 06 · Selected work ══════════════════════════════════ -->
+    <section class="bg-bg py-24 md:py-32">
+      <div class="container-x">
+        <div
+          data-reveal-group
+          class="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between"
+        >
+          <div class="max-w-xl">
+            <p class="eyebrow" data-reveal="eyebrow">Selected work</p>
+            <h2
+              class="mt-3 font-display text-[clamp(1.75rem,4vw,2.75rem)] font-bold tracking-[-0.03em] text-ink"
+            >
+              <span class="block" data-reveal="line">Proof, not promises.</span>
+            </h2>
+          </div>
+          <a
+            href="/work"
+            data-reveal="body"
+            class="shrink-0 rounded-pill border border-line-strong px-6 py-3 text-sm font-bold text-ink transition-colors duration-300 hover:bg-ink hover:text-bg"
+          >
+            View all case studies
+          </a>
+        </div>
+
+        <div data-reveal-cards class="mt-14 grid gap-4 md:grid-cols-3">
+          {
+            work.map((w) => (
+              <a
+                href="/work"
+                data-reveal="card"
+                class="group flex flex-col rounded-card border border-line bg-surface p-8 transition-colors duration-300 hover:border-copper-line"
+              >
+                <p class="eyebrow">{w.sector}</p>
+                <h3 class="mt-4 font-display text-xl font-bold tracking-[-0.025em] text-ink">
+                  {w.client}
+                </h3>
+                <p class="mt-3 flex-1 text-[0.95rem] leading-relaxed text-ink-2">{w.body}</p>
+                <p class="mt-6 font-display text-2xl font-bold tracking-[-0.03em] text-copper tabular-nums">
+                  {w.result}
+                </p>
+              </a>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ 07 · Stats ══════════════════════════════════════════ -->
     <section class="bg-bg-tint py-24 md:py-32">
       <div class="container-x">
         <div data-reveal-group class="max-w-2xl">
@@ -179,15 +317,68 @@ const stats = [
       </div>
     </section>
 
-    <!-- ── Statement panel — the 'focus' variant ─────────────── -->
+    <!-- ═══ 08 · Why us ═════════════════════════════════════════ -->
+    <section class="bg-bg py-24 md:py-32">
+      <div class="container-x">
+        <div data-reveal-group class="max-w-2xl">
+          <p class="eyebrow" data-reveal="eyebrow">Why Xtenzium</p>
+          <h2
+            class="mt-3 font-display text-[clamp(1.75rem,4vw,2.75rem)] font-bold tracking-[-0.03em] text-ink"
+          >
+            <span class="block" data-reveal="line">Why it matters for</span>
+            <span class="block" data-reveal="line">your business.</span>
+          </h2>
+        </div>
+
+        <div data-reveal-cards class="mt-14 grid gap-x-12 gap-y-10 md:grid-cols-2">
+          {
+            differentiators.map((d) => (
+              <div data-reveal="card" class="border-t border-line pt-6">
+                <h3 class="font-display text-xl font-bold tracking-[-0.025em] text-ink">
+                  {d.title}
+                </h3>
+                <p class="mt-3 leading-relaxed text-ink-2">{d.body}</p>
+              </div>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ 09 · Statement — 'focus' ════════════════════════════ -->
     <StatementPanel
       variant="focus"
       lines={['Your brand deserves', 'more than a template.']}
       accentWord="template"
     />
 
-    <!-- ── Contact ──────────────────────────────────────────── -->
-    <section class="bg-bg py-24 md:py-32">
+    <!-- ═══ 10 · Industries ═════════════════════════════════════ -->
+    <section class="bg-bg-alt py-20 md:py-28">
+      <div class="container-x">
+        <div data-reveal-group class="max-w-2xl">
+          <p class="eyebrow" data-reveal="eyebrow">Industries</p>
+          <h2
+            class="mt-3 font-display text-[clamp(1.75rem,4vw,2.75rem)] font-bold tracking-[-0.03em] text-ink"
+          >
+            <span class="block" data-reveal="line">Built for every business.</span>
+          </h2>
+        </div>
+
+        <div data-reveal-cards class="mt-12 grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {
+            industries.map((i) => (
+              <div data-reveal="card" class="rounded-card border border-line bg-surface px-6 py-5">
+                <p class="eyebrow !text-copper">{i.tag}</p>
+                <p class="mt-2 text-sm font-medium text-ink">{i.label}</p>
+              </div>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ 11 · Contact — graduated commitment ═════════════════ -->
+    <section id="contact" class="bg-bg py-24 md:py-32">
       <div class="container-x">
         <div data-reveal-group class="max-w-3xl">
           <p class="eyebrow" data-reveal="eyebrow">Start here</p>
@@ -198,19 +389,71 @@ const stats = [
             <span class="block" data-reveal="line">trying to build.</span>
           </h2>
           <p class="mt-5 max-w-lg text-lg leading-relaxed text-ink-2" data-reveal="body">
-            No pitch deck, no discovery fee. A conversation about scope, and an
-            honest answer about whether we're the right team for it.
+            Most projects start months before anyone signs anything. Pick
+            whichever step you're actually on — none of them commit you.
           </p>
-          <div class="mt-8" data-reveal="body">
+        </div>
+
+        <!-- Three rungs, lightest first. A single "contact us" is the wrong
+             ask when the average decision runs 3-18 months across 6-10 people. -->
+        <div data-reveal-cards class="mt-12 grid gap-4 md:grid-cols-3">
+          <div data-reveal="card" class="flex flex-col rounded-card border border-line bg-surface p-8">
+            <p class="eyebrow">Just looking</p>
+            <h3 class="mt-4 font-display text-xl font-bold tracking-[-0.025em] text-ink">
+              Read a case study
+            </h3>
+            <p class="mt-3 flex-1 text-[0.95rem] leading-relaxed text-ink-2">
+              How we scoped, what it cost, what broke, and what it returned. No
+              form, no email required.
+            </p>
             <a
-              href="mailto:contact@xtenzium.com"
-              class="inline-flex items-center rounded-pill bg-copper px-7 py-3.5 text-sm font-bold text-white transition-colors duration-300 hover:bg-copper-hi"
+              href="/work"
+              class="mt-6 inline-flex items-center justify-center rounded-pill border border-line-strong px-6 py-3 text-sm font-bold text-ink transition-colors duration-300 hover:bg-ink hover:text-bg"
             >
-              contact@xtenzium.com
+              Browse the work
+            </a>
+          </div>
+
+          <div data-reveal="card" class="flex flex-col rounded-card border border-line bg-surface p-8">
+            <p class="eyebrow">Comparing options</p>
+            <h3 class="mt-4 font-display text-xl font-bold tracking-[-0.025em] text-ink">
+              Get a ballpark
+            </h3>
+            <p class="mt-3 flex-1 text-[0.95rem] leading-relaxed text-ink-2">
+              Answer four questions and get a realistic range by email — enough
+              to take to whoever holds the budget.
+            </p>
+            <a
+              href="/estimate"
+              class="mt-6 inline-flex items-center justify-center rounded-pill border border-line-strong px-6 py-3 text-sm font-bold text-ink transition-colors duration-300 hover:bg-ink hover:text-bg"
+            >
+              Estimate a project
+            </a>
+          </div>
+
+          <div
+            data-reveal="card"
+            class="on-carbon flex flex-col rounded-card border border-carbon bg-carbon p-8"
+          >
+            <p class="eyebrow !text-copper-hi">Ready to talk</p>
+            <h3 class="mt-4 font-display text-xl font-bold tracking-[-0.025em] text-white">
+              Book a scoping call
+            </h3>
+            <p class="mt-3 flex-1 text-[0.95rem] leading-relaxed text-white/60">
+              Thirty minutes with the people who'd build it. You leave with a
+              written scope and a number, free either way.
+            </p>
+            <a
+              href="/contact"
+              class="mt-6 inline-flex items-center justify-center rounded-pill bg-copper px-6 py-3 text-sm font-bold text-white transition-colors duration-300 hover:bg-copper-hi"
+            >
+              Pick a time
             </a>
           </div>
         </div>
       </div>
     </section>
   </main>
+
+  <Footer />
 </BaseLayout>
