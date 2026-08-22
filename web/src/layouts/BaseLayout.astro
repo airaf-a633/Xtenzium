@@ -67,6 +67,7 @@ const ogImage = new URL(image, Astro.site).href;
       import { initReveal, destroyReveal } from '../lib/reveal';
       import { initStatementPanels, destroyStatementPanels } from '../lib/statement-panel';
       import { initHero, destroyHero } from '../lib/hero';
+      import { initCounters, destroyCounters } from '../lib/counter';
 
       let running = false;
 
@@ -81,6 +82,7 @@ const ogImage = new URL(image, Astro.site).href;
         initHero();
         initReveal();
         initStatementPanels();
+        initCounters();
         if (import.meta.env.DEV) {
           Promise.all([import('gsap'), import('gsap/ScrollTrigger')]).then(([g, st]) => {
             (window as any).gsap = g.default;
@@ -95,6 +97,7 @@ const ogImage = new URL(image, Astro.site).href;
         destroyHero();
         destroyReveal();
         destroyStatementPanels();
+        destroyCounters();
         destroySmoothScroll();
       }
 
