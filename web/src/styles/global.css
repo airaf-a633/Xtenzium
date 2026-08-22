@@ -210,3 +210,47 @@ body.page-visible  { opacity: 1; transition: opacity 380ms var(--ease-brand); }
   .marquee__track { animation: none; }
   .marquee { mask-image: none; -webkit-mask-image: none; overflow-x: auto; }
 }
+
+/* ───────────────────────────────────────────────────────────────
+   Editorial list rows — services, work, journal.
+
+   These are the most-repeated interactive element on the site, so the
+   hover is deliberately quiet: the row tints, the rule warms, and the
+   arrow moves. No transform on the row itself — lifting a full-width
+   row shifts everything below it and reads as a glitch.
+
+   `:has()` keeps this to CSS. A row is only tinted when the pointer is
+   genuinely over its link, not when focus lands anywhere inside.
+   ─────────────────────────────────────────────────────────────── */
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .row-link {
+    transition:
+      background-color 300ms var(--ease-brand),
+      border-color 300ms var(--ease-brand);
+  }
+  .row-link:hover {
+    background-color: color-mix(in srgb, var(--color-copper) 4%, transparent);
+    border-color: color-mix(in srgb, var(--color-copper) 55%, transparent);
+  }
+  .row-link .row-arrow {
+    transition: transform 300ms var(--ease-brand), color 300ms var(--ease-brand);
+  }
+  .row-link:hover .row-arrow {
+    transform: translateX(0.35rem);
+    color: var(--color-copper);
+  }
+}
+
+/* Cards lift; rows do not. A card is an island, so moving it costs
+   nothing around it. */
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .card-lift {
+    transition:
+      transform 320ms var(--ease-brand),
+      border-color 320ms var(--ease-brand);
+  }
+  .card-lift:hover {
+    transform: translateY(-3px);
+    border-color: color-mix(in srgb, var(--color-copper) 55%, transparent);
+  }
+}

@@ -84,7 +84,7 @@ const faqs = [
               <li data-reveal="card">
                 <a
                   href={`/services/${s.slug}`}
-                  class="group grid items-baseline gap-x-8 gap-y-3 border-t border-line py-9 transition-colors duration-300 hover:border-copper md:grid-cols-[3rem_minmax(0,20rem)_1fr_2rem] md:py-10"
+                  class="row-link group grid items-baseline gap-x-8 gap-y-3 border-t border-line py-9 md:grid-cols-[3rem_minmax(0,20rem)_1fr_2rem] md:py-10"
                 >
                   <span class="font-mono text-xs text-ink-3">
                     {String(i + 1).padStart(2, '0')}
@@ -104,7 +104,7 @@ const faqs = [
 
                   <span
                     aria-hidden="true"
-                    class="hidden text-xl text-ink-3 transition-all duration-300 group-hover:translate-x-1 group-hover:text-copper md:block md:justify-self-end"
+                    class="row-arrow hidden text-xl text-ink-3 md:block md:justify-self-end"
                   >
                     &rarr;
                   </span>

@@ -60,6 +60,11 @@ const ogImage = new URL(image, Astro.site).href;
   </head>
 
   <body class="page-visible">
+    <!-- Reading progress. Driven by scale, never width. -->
+    <div aria-hidden="true" class="pointer-events-none fixed inset-x-0 top-0 z-[60] h-[2px]">
+      <div data-progress class="h-full origin-left bg-copper" style="scale: 0 1;"></div>
+    </div>
+
     <slot />
 
     <script>
@@ -75,6 +80,9 @@ const ogImage = new URL(image, Astro.site).href;
       import { initEstimate } from '../lib/estimate';
       import { initContact } from '../lib/contact';
       import { initWatermarks, destroyWatermarks } from '../lib/watermark';
+      import { initChrome, destroyChrome } from '../lib/chrome';
+      import { initFaq, destroyFaq } from '../lib/faq';
+      import { initQuotes, destroyQuotes } from '../lib/quote';
       import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
       let running = false;
@@ -98,6 +106,9 @@ const ogImage = new URL(image, Astro.site).href;
         initEstimate();
         initContact();
         initWatermarks();
+        initChrome();
+        initFaq();
+        initQuotes();
 
         // Pins add scroll length, which invalidates the geometry of every
         // trigger further down the page. Modules are initialised in DOM
@@ -136,6 +147,9 @@ const ogImage = new URL(image, Astro.site).href;
         destroyHorizontalGallery();
         destroyCoverflow();
         destroyWatermarks();
+        destroyChrome();
+        destroyFaq();
+        destroyQuotes();
         destroySmoothScroll();
       }
 

@@ -13,7 +13,7 @@ const links = [
   <div class="w-full max-w-3xl px-4">
     <nav
       data-nav-shell
-      class="pointer-events-auto flex items-center justify-between gap-5 rounded-pill border border-white/12 bg-carbon/70 py-2 pl-5 pr-2 shadow-[0_8px_32px_-12px_rgba(0,0,0,0.6)] backdrop-blur-xl transition-[background-color,border-color] duration-300"
+      class="nav-shell pointer-events-auto flex items-center justify-between gap-5 rounded-pill border border-white/12 bg-carbon/70 py-2 pl-5 pr-2 shadow-[0_8px_32px_-12px_rgba(0,0,0,0.6)] backdrop-blur-xl transition-[background-color,border-color,box-shadow] duration-300"
     >
       <a href="/" class="flex items-center gap-2.5" aria-label="Xtenzium — home">
         <Logo size={26} labelled={false} />
@@ -63,3 +63,14 @@ const links = [
     </nav>
   </div>
 </header>
+
+<style>
+  /* Once anything is scrolled behind it, the nav stops being a floating
+     translucent pill and becomes a solid bar. Colour and shadow only —
+     animating padding here would relayout the whole header on scroll. */
+  .nav-shell.is-scrolled {
+    background-color: color-mix(in srgb, var(--color-carbon) 92%, transparent);
+    border-color: color-mix(in srgb, #ffffff 18%, transparent);
+    box-shadow: 0 10px 40px -14px rgb(0 0 0 / 0.75);
+  }
+</style>
