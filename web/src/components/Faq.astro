@@ -1,0 +1,91 @@
+---
+/**
+ * FAQ built on native <details>/<summary>.
+ *
+ * No JS, no hydration, keyboard and screen-reader support for free, and the
+ * answers are in the HTML whether or not anything runs — which is also what
+ * makes them count for search. An accordion is not worth a framework.
+ */
+interface Item {
+  q: string;
+  a: string;
+}
+interface Props {
+  eyebrow?: string;
+  heading: string[];
+  items: Item[];
+  tone?: 'light' | 'dark';
+}
+const { eyebrow, heading, items, tone = 'light' } = Astro.props;
+
+const dark = tone === 'dark';
+---
+
+<section
+  class:list={[
+    'py-20 md:py-28',
+    dark ? 'on-carbon bg-carbon' : 'bg-bg-tint',
+  ]}
+>
+  <div class="container-x">
+    <div class="grid gap-12 lg:grid-cols-[minmax(0,20rem)_1fr]">
+      <div data-reveal-group>
+        {eyebrow && <p class:list={['eyebrow', dark && '!text-white/45']} data-reveal="eyebrow">{eyebrow}</p>}
+        <h2
+          class:list={[
+            'mt-3 font-display text-[clamp(1.6rem,3.4vw,2.25rem)] font-bold tracking-[-0.03em]',
+            dark ? 'text-white' : 'text-ink',
+          ]}
+        >
+          {heading.map((l) => <span class="block" data-reveal="line">{l}</span>)}
+        </h2>
+      </div>
+
+      <div data-reveal-cards>
+        {
+          items.map((item) => (
+            <details
+              data-reveal="card"
+              class:list={[
+                'group border-t py-5',
+                dark ? 'border-white/10' : 'border-line',
+              ]}
+            >
+              <summary
+                class:list={[
+                  'flex cursor-pointer list-none items-start justify-between gap-6 font-display text-lg font-bold tracking-[-0.02em] transition-colors duration-300 md:text-xl',
+                  dark ? 'text-white hover:text-copper-hi' : 'text-ink hover:text-copper',
+                ]}
+              >
+                {item.q}
+                <span
+                  aria-hidden="true"
+                  class:list={[
+                    'mt-1 shrink-0 text-xl leading-none transition-transform duration-300 group-open:rotate-45',
+                    dark ? 'text-copper-hi' : 'text-copper',
+                  ]}
+                >
+                  +
+                </span>
+              </summary>
+              <p
+                class:list={[
+                  'mt-4 max-w-2xl leading-relaxed',
+                  dark ? 'text-white/60' : 'text-ink-2',
+                ]}
+              >
+                {item.a}
+              </p>
+            </details>
+          ))
+        }
+        <div class:list={['border-t', dark ? 'border-white/10' : 'border-line']}></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  /* Safari still paints a disclosure marker without this. */
+  summary::-webkit-details-marker { display: none; }
+</style>

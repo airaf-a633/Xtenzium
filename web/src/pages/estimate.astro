@@ -3,6 +3,40 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import Navbar from '../components/Navbar.astro';
 import Footer from '../components/Footer.astro';
 import { QUESTIONS } from '../lib/estimate';
+import Faq from '../components/Faq.astro';
+import Testimonial from '../components/Testimonial.astro';
+
+const drivers = [
+  { n: '01', title: 'What it is', body: 'A marketing site and a connected-hardware fleet are different orders of magnitude. This sets the floor; everything else scales it.' },
+  { n: '02', title: 'What already exists', body: 'Designs signed off, or a blank page? Extending a working product costs roughly half what starting cold does.' },
+  { n: '03', title: 'What it talks to', body: 'Integrations are where estimates go wrong. A standalone app is predictable; one wired into a decade-old ERP is not.' },
+  { n: '04', title: 'When it ships', body: 'A hard deadline means more people working in parallel. That is the single most expensive constraint you can add.' },
+];
+
+const included = [
+  'A written scope before anything is built',
+  'Design and build in two-week cycles, with a working link at the end of each',
+  'Source code, credentials and infrastructure in your name from day one',
+  'Documentation written for your team, not for us',
+  'Thirty days of post-launch support',
+  'No mandatory retainer afterwards',
+];
+
+const bands = [
+  { type: 'Marketing website', range: '$6k – $18k', note: 'Brochure through to a full content site with CMS' },
+  { type: 'Web application', range: '$18k – $60k', note: 'Dashboards, portals, internal tooling, SaaS' },
+  { type: 'Mobile app', range: '$22k – $70k', note: 'iOS and Android, shared codebase' },
+  { type: 'Connected hardware', range: '$34k – $120k+', note: 'PCB design, firmware, fleet backend' },
+];
+
+const faqs = [
+  { q: 'How accurate is this range?', a: 'Four questions cannot produce a quote, and we would rather say so than pretend. Treat it as the bracket we would work within — enough to know whether to keep talking. Our written scope after a call is typically within 15% of the final number.' },
+  { q: 'Do you charge for scoping?', a: 'No. The scoping call and the written scope that follows are free, and yours to keep whether or not you hire us. If you take that document to another agency, that is a fair outcome.' },
+  { q: 'Why is hardware so much more expensive?', a: 'Because physical iteration has a cost software does not. Every board revision is a fabrication run and a lead time. We front-load that risk with careful design review, but it is genuinely more work than a web build.' },
+  { q: 'Can you work to a fixed price?', a: 'For well-defined scopes, yes. For anything exploratory we prefer time-and-materials with a cap, because a fixed price on an unclear scope just means padding it — you pay for our uncertainty.' },
+  { q: 'What if my budget is below the range?', a: 'Tell us anyway. Often the honest answer is a smaller first phase that proves the idea, and sometimes it is that we are the wrong team for it. We will say which.' },
+  { q: 'Do you work with clients outside Pakistan?', a: 'Most of our work is international — North America, Europe and the Gulf. We overlap several hours with both European and US-Eastern working days and run everything in English.' },
+];
 ---
 
 <BaseLayout
@@ -10,6 +44,22 @@ import { QUESTIONS } from '../lib/estimate';
   description="Answer four questions and get an indicative budget range for your web, mobile, or hardware project. No call required."
   path="/estimate"
 >
+  <Fragment slot="head">
+    <script
+      is:inline
+      type="application/ld+json"
+      set:html={JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: faqs.map((f) => ({
+          '@type': 'Question',
+          name: f.q,
+          acceptedAnswer: { '@type': 'Answer', text: f.a },
+        })),
+      })}
+    />
+  </Fragment>
+
   <Navbar />
 
   <main class="on-carbon bg-carbon">
@@ -196,6 +246,161 @@ import { QUESTIONS } from '../lib/estimate';
           Ranges are based on our last three years of delivered projects and
           assume a standard engagement. They are not a quote.
         </p>
+      </div>
+    </section>
+
+    <!-- ── What moves the number ────────────────────────────── -->
+    <section class="border-t border-white/10 bg-carbon py-20 md:py-28">
+      <div class="container-x">
+        <div class="max-w-2xl" data-reveal-group>
+          <p class="eyebrow !text-white/45" data-reveal="eyebrow">What moves the number</p>
+          <h2
+            class="mt-3 font-display text-[clamp(1.6rem,3.4vw,2.25rem)] font-bold tracking-[-0.03em] text-white"
+          >
+            <span class="block" data-reveal="line">Four things, and none of</span>
+            <span class="block" data-reveal="line">them are a mystery.</span>
+          </h2>
+          <p class="mt-4 leading-relaxed text-white/55" data-reveal="body">
+            Most agencies keep this opaque. It is not complicated, and knowing
+            it lets you change the number yourself.
+          </p>
+        </div>
+
+        <ol data-reveal-cards class="mt-14 grid gap-4 md:grid-cols-2">
+          {
+            drivers.map((d) => (
+              <li
+                data-reveal="card"
+                class="group relative overflow-hidden rounded-card border border-white/10 bg-white/[0.02] p-8"
+              >
+                <span
+                  aria-hidden="true"
+                  class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-copper/70 via-copper/20 to-transparent"
+                />
+                <div class="flex items-baseline gap-4">
+                  <span class="font-mono text-xs text-copper">{d.n}</span>
+                  <h3 class="font-display text-xl font-bold tracking-[-0.025em] text-white">
+                    {d.title}
+                  </h3>
+                </div>
+                <p class="mt-4 pl-9 text-[0.95rem] leading-relaxed text-white/60">{d.body}</p>
+              </li>
+            ))
+          }
+        </ol>
+      </div>
+    </section>
+
+    <!-- ── Typical bands ────────────────────────────────────── -->
+    <section class="bg-bg py-20 md:py-28">
+      <div class="container-x">
+        <div class="max-w-2xl" data-reveal-group>
+          <p class="eyebrow" data-reveal="eyebrow">For reference</p>
+          <h2
+            class="mt-3 font-display text-[clamp(1.6rem,3.4vw,2.25rem)] font-bold tracking-[-0.03em] text-ink"
+          >
+            <span class="block" data-reveal="line">What we actually charge.</span>
+          </h2>
+          <p class="mt-4 leading-relaxed text-ink-2" data-reveal="body">
+            Published, because you are going to ask anyway and hiding it wastes
+            everyone's first call.
+          </p>
+        </div>
+
+        <div data-reveal-cards class="mt-12">
+          {
+            bands.map((b) => (
+              <div
+                data-reveal="card"
+                class="grid items-baseline gap-2 border-t border-line py-6 md:grid-cols-[minmax(0,16rem)_1fr_auto] md:gap-8"
+              >
+                <h3 class="font-display text-xl font-bold tracking-[-0.025em] text-ink">
+                  {b.type}
+                </h3>
+                <p class="text-[0.95rem] leading-relaxed text-ink-2">{b.note}</p>
+                <p class="font-display text-xl font-bold tracking-[-0.03em] text-copper tabular-nums md:text-right">
+                  {b.range}
+                </p>
+              </div>
+            ))
+          }
+          <div class="border-t border-line"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── What's included ──────────────────────────────────── -->
+    <section class="bg-bg-tint py-20 md:py-28">
+      <div class="container-x">
+        <div class="grid gap-12 lg:grid-cols-[minmax(0,22rem)_1fr]">
+          <div data-reveal-group>
+            <p class="eyebrow" data-reveal="eyebrow">Always included</p>
+            <h2
+              class="mt-3 font-display text-[clamp(1.6rem,3.4vw,2.25rem)] font-bold tracking-[-0.03em] text-ink"
+            >
+              <span class="block" data-reveal="line">In every number</span>
+              <span class="block" data-reveal="line">on this page.</span>
+            </h2>
+            <p class="mt-4 leading-relaxed text-ink-2" data-reveal="body">
+              Not upsells. If a quote from us does not include these, it is not
+              a quote from us.
+            </p>
+          </div>
+
+          <ul data-reveal-cards class="grid gap-x-10 gap-y-5 sm:grid-cols-2">
+            {
+              included.map((item) => (
+                <li data-reveal="card" class="flex gap-3.5 border-t border-line pt-5">
+                  <span aria-hidden="true" class="mt-0.5 font-mono text-xs text-copper">
+                    &#10003;
+                  </span>
+                  <span class="text-[0.95rem] leading-relaxed text-ink-2">{item}</span>
+                </li>
+              ))
+            }
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <Testimonial
+      quote="They told us the smaller option would do the job. It did. That conversation is the reason we came back twice."
+      attribution="Operations Director"
+      role="Logistics client"
+    />
+
+    <Faq eyebrow="Questions" heading={['Before you ask.']} items={faqs} tone="dark" />
+
+    <!-- ── Final CTA ────────────────────────────────────────── -->
+    <section class="border-t border-white/10 bg-carbon py-20 md:py-28">
+      <div class="container-x" data-reveal-group>
+        <div class="max-w-2xl">
+          <p class="eyebrow !text-copper-hi" data-reveal="eyebrow">Next step</p>
+          <h2
+            class="mt-3 font-display text-[clamp(1.75rem,4vw,2.75rem)] font-bold tracking-[-0.035em] text-white"
+          >
+            <span class="block" data-reveal="line">Bring us the number</span>
+            <span class="block" data-reveal="line">and we will scope it properly.</span>
+          </h2>
+          <p class="mt-5 max-w-lg leading-relaxed text-white/60" data-reveal="body">
+            Thirty minutes with the people who would build it. You leave with a
+            written scope, free either way.
+          </p>
+          <div class="mt-8 flex flex-col gap-3 sm:flex-row" data-reveal="body">
+            <a
+              href="/contact"
+              class="inline-flex items-center justify-center rounded-pill bg-copper px-7 py-3.5 text-sm font-bold text-white transition-colors duration-300 hover:bg-copper-hi"
+            >
+              Book a scoping call
+            </a>
+            <a
+              href="/work"
+              class="inline-flex items-center justify-center rounded-pill border border-white/25 px-7 py-3.5 text-sm font-bold text-white transition-colors duration-300 hover:bg-white hover:text-carbon"
+            >
+              See the work first
+            </a>
+          </div>
+        </div>
       </div>
     </section>
   </main>
