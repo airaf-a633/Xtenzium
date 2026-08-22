@@ -1,0 +1,273 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Navbar from '../../components/Navbar.astro';
+import Footer from '../../components/Footer.astro';
+import { getPosts, postDate, postIso, type BlogPost } from '../../lib/blog';
+import { tiptapToHtml, tiptapToText, readingMinutes } from '../../lib/tiptap';
+
+export async function getStaticPaths() {
+  const posts = await getPosts();
+  return posts.map((post, i) => ({
+    params: { slug: post.slug },
+    props: { post, next: posts[(i + 1) % posts.length] as BlogPost | undefined },
+  }));
+}
+
+const { post, next } = Astro.props;
+
+const html = tiptapToHtml(post.content);
+const minutes = readingMinutes(post.content);
+const description =
+  post.excerpt?.trim() || tiptapToText(post.content).slice(0, 155) + '…';
+---
+
+<BaseLayout
+  title={`${post.title} — Xtenzium Journal`}
+  description={description}
+  path={`/journal/${post.slug}`}
+  image={post.cover_image ?? undefined}
+>
+  <Fragment slot="head">
+    <script
+      is:inline
+      type="application/ld+json"
+      set:html={JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'BlogPosting',
+        headline: post.title,
+        description,
+        datePublished: postIso(post),
+        image: post.cover_image ?? undefined,
+        keywords: post.tags?.length ? post.tags.join(', ') : undefined,
+        articleSection: post.category ?? undefined,
+        author: { '@type': 'Organization', name: 'Xtenzium' },
+        publisher: { '@type': 'Organization', name: 'Xtenzium' },
+        mainEntityOfPage: {
+          '@type': 'WebPage',
+          '@id': `https://www.xtenzium.com/journal/${post.slug}`,
+        },
+      })}
+    />
+  </Fragment>
+
+  <Navbar />
+
+  <main>
+    <!-- ── Header ───────────────────────────────────────────── -->
+    <section class="on-carbon relative overflow-hidden bg-carbon pb-16 pt-40 md:pb-20 md:pt-48">
+      <div
+        aria-hidden="true"
+        class="pointer-events-none absolute inset-0 opacity-40"
+        style="background-image: radial-gradient(circle at center, rgba(194,98,27,0.4) 1px, transparent 1px); background-size: 34px 34px;"
+      >
+      </div>
+
+      <div class="container-x relative">
+        <a
+          href="/journal"
+          class="eyebrow !text-white/45 transition-colors duration-300 hover:!text-white"
+        >
+          &larr; All posts
+        </a>
+
+        <div class="mt-8 flex flex-wrap items-center gap-3">
+          {post.category && <span class="eyebrow !text-copper-hi">{post.category}</span>}
+          <span class="font-mono text-[11px] text-white/40">
+            <time datetime={postIso(post)}>{postDate(post)}</time> · {minutes} min read
+          </span>
+        </div>
+
+        <h1
+          transition:name={`post-${post.slug}`}
+          class="mt-4 max-w-4xl font-display text-[clamp(2rem,5.4vw,3.75rem)] font-bold leading-[1.04] tracking-[-0.035em] text-white"
+        >
+          {post.title}
+        </h1>
+
+        {
+          post.excerpt && (
+            <p class="mt-7 max-w-2xl text-lg leading-relaxed text-white/60">{post.excerpt}</p>
+          )
+        }
+      </div>
+    </section>
+
+    {
+      post.cover_image && (
+        <div class="bg-carbon">
+          <div class="container-x">
+            <img
+              src={post.cover_image}
+              alt=""
+              class="w-full rounded-card border border-white/10 object-cover"
+              loading="eager"
+              decoding="async"
+            />
+          </div>
+        </div>
+      )
+    }
+
+    <!-- ── Body ─────────────────────────────────────────────── -->
+    <section class="bg-bg py-20 md:py-28">
+      <div class="container-x">
+        <article class="prose-journal mx-auto max-w-[68ch]" set:html={html} />
+
+        {
+          post.tags?.length > 0 && (
+            <div class="mx-auto mt-14 flex max-w-[68ch] flex-wrap items-center gap-2 border-t border-line pt-8">
+              <span class="eyebrow mr-1">Tags</span>
+              {post.tags.map((t) => (
+                <span class="rounded-pill border border-line px-3 py-1 font-mono text-[11px] text-ink-2">
+                  {t}
+                </span>
+              ))}
+            </div>
+          )
+        }
+      </div>
+    </section>
+
+    <!-- ── Next post ────────────────────────────────────────── -->
+    {
+      next && next.slug !== post.slug && (
+        <section class="border-t border-line bg-bg-tint py-16 md:py-20">
+          <div class="container-x">
+            <a href={`/journal/${next.slug}`} class="group flex flex-col gap-3">
+              <p class="eyebrow">Next post</p>
+              <h2 class="max-w-2xl font-display text-[clamp(1.6rem,3.6vw,2.5rem)] font-bold leading-[1.1] tracking-[-0.03em] text-ink transition-colors duration-300 group-hover:text-copper">
+                {next.title}
+              </h2>
+            </a>
+          </div>
+        </section>
+      )
+    }
+
+    <!-- ── CTA ──────────────────────────────────────────────── -->
+    <section class="border-t border-white/10 bg-carbon py-16 md:py-20">
+      <div class="container-x flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-center">
+        <div class="max-w-lg">
+          <h2 class="font-display text-2xl font-bold tracking-[-0.03em] text-white">
+            Building something like this?
+          </h2>
+          <p class="mt-3 leading-relaxed text-white/60">
+            We are happy to talk it through, whether or not it turns into work.
+          </p>
+        </div>
+        <a
+          href="/contact"
+          class="shrink-0 rounded-pill bg-copper px-7 py-3.5 text-sm font-bold text-white transition-colors duration-300 hover:bg-copper-hi"
+        >
+          Get in touch
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <Footer />
+</BaseLayout>
+
+<style is:global>
+  /* Journal prose. The body is serialised TipTap output, so these rules
+     target plain tags rather than utility classes. */
+  .prose-journal > * + * { margin-top: 1.4rem; }
+  .prose-journal p {
+    font-size: 1.0625rem;
+    line-height: 1.75;
+    color: var(--color-ink-2);
+  }
+  .prose-journal h2 {
+    font-family: var(--font-display);
+    font-size: clamp(1.4rem, 2.6vw, 1.85rem);
+    font-weight: 700;
+    letter-spacing: -0.028em;
+    line-height: 1.15;
+    color: var(--color-ink);
+    margin-top: 3.25rem;
+  }
+  .prose-journal h3 {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--color-ink);
+    margin-top: 2.5rem;
+  }
+  .prose-journal h4, .prose-journal h5, .prose-journal h6 {
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--color-ink);
+    margin-top: 2rem;
+  }
+  .prose-journal > :first-child { margin-top: 0; }
+
+  .prose-journal ul, .prose-journal ol { padding-left: 1.3rem; }
+  .prose-journal ul { list-style: disc; }
+  .prose-journal ol { list-style: decimal; }
+  .prose-journal li { color: var(--color-ink-2); line-height: 1.75; }
+  .prose-journal li + li { margin-top: 0.5rem; }
+  .prose-journal li::marker { color: var(--color-copper); }
+
+  .prose-journal a {
+    color: var(--color-copper);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1px;
+  }
+  .prose-journal a:hover { color: var(--color-ink); }
+
+  .prose-journal strong { color: var(--color-ink); font-weight: 600; }
+
+  .prose-journal blockquote {
+    border-left: 2px solid var(--color-copper);
+    padding-left: 1.5rem;
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    font-weight: 500;
+    letter-spacing: -0.015em;
+    line-height: 1.5;
+    color: var(--color-ink);
+  }
+  .prose-journal blockquote p { font: inherit; color: inherit; }
+
+  .prose-journal code {
+    font-family: var(--font-mono);
+    font-size: 0.875em;
+    background: var(--color-bg-tint);
+    border: 1px solid var(--color-line);
+    border-radius: 5px;
+    padding: 0.12em 0.36em;
+  }
+  .prose-journal pre {
+    background: var(--color-carbon);
+    color: #E8E3DC;
+    border-radius: 14px;
+    padding: 1.25rem 1.4rem;
+    overflow-x: auto;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    line-height: 1.7;
+  }
+  .prose-journal pre code {
+    background: none;
+    border: 0;
+    padding: 0;
+    font-size: inherit;
+    color: inherit;
+  }
+
+  .prose-journal img {
+    border-radius: 14px;
+    border: 1px solid var(--color-line);
+    width: 100%;
+  }
+  .prose-journal hr {
+    border: 0;
+    border-top: 1px solid var(--color-line);
+    margin-block: 2.75rem;
+  }
+  /* An empty paragraph is a deliberate blank line, not a full text block. */
+  .prose-journal p:has(> br:only-child) { margin-top: 0.6rem; }
+</style>
