@@ -1,0 +1,204 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Navbar from '../components/Navbar.astro';
+import Footer from '../components/Footer.astro';
+import { QUESTIONS } from '../lib/estimate';
+---
+
+<BaseLayout
+  title="Estimate a project — Xtenzium"
+  description="Answer four questions and get an indicative budget range for your web, mobile, or hardware project. No call required."
+  path="/estimate"
+>
+  <Navbar />
+
+  <main class="on-carbon bg-carbon">
+    <section class="relative overflow-hidden pb-24 pt-36 md:pb-32 md:pt-44">
+      <!-- Same via-grid ground as the statement panels, so the page reads as
+           part of the system rather than a detached form. -->
+      <div
+        aria-hidden="true"
+        class="pointer-events-none absolute inset-0 opacity-40"
+        style="background-image: radial-gradient(circle at center, rgba(194,98,27,0.4) 1px, transparent 1px); background-size: 34px 34px;"
+      >
+      </div>
+      <div
+        aria-hidden="true"
+        class="pointer-events-none absolute inset-0"
+        style="background: radial-gradient(90% 60% at 50% 0%, rgba(194,98,27,0.18) 0%, rgba(10,9,8,0) 62%);"
+      >
+      </div>
+
+      <div class="container-x relative">
+        <div class="mx-auto max-w-2xl text-center">
+          <p class="eyebrow !text-copper-hi">Estimate a project</p>
+          <h1
+            class="mt-4 font-display text-[clamp(2rem,5vw,3.25rem)] font-bold leading-[1.05] tracking-[-0.035em] text-white"
+          >
+            Four questions, and a number you can take to your board.
+          </h1>
+          <p class="mx-auto mt-5 max-w-lg leading-relaxed text-white/60">
+            No call, no discovery fee. The range is indicative — we will scope
+            it properly before anyone signs anything.
+          </p>
+        </div>
+
+        <!-- ── Estimator ──────────────────────────────────────── -->
+        <div
+          data-estimate
+          class="mx-auto mt-14 max-w-3xl overflow-hidden rounded-card border border-white/12 bg-white/[0.03] backdrop-blur-sm"
+        >
+          <!-- Running range. Visible from the first question so there is a
+               reason to answer the second. -->
+          <div class="border-b border-white/10 px-7 py-6 md:px-9">
+            <div class="flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <p class="eyebrow !text-white/45">Indicative range</p>
+                <p
+                  class="mt-2 font-display text-[clamp(1.75rem,4vw,2.5rem)] font-bold tracking-[-0.035em] text-copper-hi tabular-nums"
+                >
+                  <span data-estimate-low>—</span>
+                  <span class="text-white/25">–</span>
+                  <span data-estimate-high>—</span>
+                </p>
+              </div>
+              <p
+                data-estimate-summary
+                class="max-w-xs text-right font-mono text-[11px] leading-relaxed text-white/40"
+              >
+              </p>
+            </div>
+
+            <div class="mt-6 flex items-center gap-4">
+              <div class="h-[3px] flex-1 overflow-hidden rounded-full bg-white/10">
+                <div
+                  data-estimate-bar
+                  class="h-full origin-left bg-copper transition-[scale] duration-500 ease-out"
+                  style="scale: 0 1;"
+                >
+                </div>
+              </div>
+              <span
+                data-estimate-steplabel
+                class="font-mono text-[11px] whitespace-nowrap text-white/45"
+                aria-live="polite"
+              >
+                Question 1 of {QUESTIONS.length}
+              </span>
+            </div>
+          </div>
+
+          <!-- Steps -->
+          <div class="px-7 py-9 md:px-9 md:py-10">
+            {
+              QUESTIONS.map((q, qi) => (
+                <div data-estimate-step hidden={qi !== 0}>
+                  <h2
+                    tabindex="-1"
+                    class="font-display text-2xl font-bold tracking-[-0.03em] text-white outline-none md:text-3xl"
+                  >
+                    {q.prompt}
+                  </h2>
+                  <p class="mt-2.5 text-sm leading-relaxed text-white/50">{q.help}</p>
+
+                  <div class="mt-7 grid gap-2.5 sm:grid-cols-2">
+                    {q.choices.map((c, ci) => (
+                      <button
+                        type="button"
+                        data-estimate-choice
+                        data-estimate-q={q.id}
+                        data-estimate-choice-index={ci}
+                        aria-pressed="false"
+                        class="group min-h-[4.25rem] rounded-2xl border border-white/12 bg-white/[0.02] px-5 py-4 text-left transition-colors duration-300 hover:border-copper hover:bg-copper/10 aria-pressed:border-copper aria-pressed:bg-copper/15"
+                      >
+                        <span class="block text-[0.95rem] font-semibold text-white">
+                          {c.label}
+                        </span>
+                        {c.hint && (
+                          <span class="mt-1 block text-xs leading-relaxed text-white/45">
+                            {c.hint}
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))
+            }
+
+            <!-- Final step — the ask comes only after the number -->
+            <div data-estimate-step hidden>
+              <h2
+                tabindex="-1"
+                class="font-display text-2xl font-bold tracking-[-0.03em] text-white outline-none md:text-3xl"
+              >
+                Want the breakdown in writing?
+              </h2>
+              <p class="mt-2.5 max-w-md text-sm leading-relaxed text-white/50">
+                We will send what drives that range, what would move it up or
+                down, and two comparable projects. One email, no sequence.
+              </p>
+
+              <form data-estimate-form action="#" class="mt-7 max-w-md">
+                <label for="estimate-email" class="block text-sm font-medium text-white/80">
+                  Work email
+                </label>
+                <div class="mt-2.5 flex flex-col gap-2.5 sm:flex-row">
+                  <input
+                    id="estimate-email"
+                    name="email"
+                    type="email"
+                    required
+                    autocomplete="email"
+                    placeholder="you@company.com"
+                    class="min-h-[3rem] flex-1 rounded-pill border border-white/15 bg-white/[0.04] px-5 text-[0.95rem] text-white placeholder:text-white/30 focus:border-copper focus:outline-none"
+                  />
+                  <button
+                    type="submit"
+                    class="min-h-[3rem] rounded-pill bg-copper px-7 text-sm font-bold text-white transition-colors duration-300 hover:bg-copper-hi disabled:opacity-50"
+                  >
+                    Send it
+                  </button>
+                </div>
+
+                <p
+                  data-estimate-status
+                  role="status"
+                  aria-live="polite"
+                  class="mt-4 text-sm leading-relaxed text-white/50 data-[state=error]:text-copper-hi data-[state=ok]:text-emerald-400"
+                >
+                </p>
+              </form>
+
+              <div class="mt-9 border-t border-white/10 pt-7">
+                <p class="text-sm text-white/50">Rather just talk it through?</p>
+                <a
+                  href="/contact"
+                  class="mt-3 inline-flex rounded-pill border border-white/25 px-6 py-3 text-sm font-bold text-white transition-colors duration-300 hover:bg-white hover:text-carbon"
+                >
+                  Book a scoping call
+                </a>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              data-estimate-back
+              hidden
+              class="mt-8 font-mono text-[11px] uppercase tracking-[0.14em] text-white/40 transition-colors duration-300 hover:text-white"
+            >
+              &larr; Back
+            </button>
+          </div>
+        </div>
+
+        <p class="mx-auto mt-8 max-w-lg text-center text-xs leading-relaxed text-white/35">
+          Ranges are based on our last three years of delivered projects and
+          assume a standard engagement. They are not a quote.
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <Footer />
+</BaseLayout>
