@@ -62,6 +62,15 @@ export function initSmoothScroll() {
   window.__lenis = lenis;
   lenis.on('scroll', ScrollTrigger.update);
 
+  // Lenis caches the scroll limit from the content height it measured at
+  // construction. ScrollTrigger pins insert pin-spacers that make the
+  // document taller *after* that, and Lenis only re-measures on a debounced
+  // ResizeObserver — so until it does, it clamps scrolling short by exactly
+  // the total pin distance and the bottom of the page is unreachable.
+  //
+  // Re-measuring on every ScrollTrigger refresh keeps the two in agreement.
+  ScrollTrigger.addEventListener('refresh', () => lenis.resize());
+
   tickerFn = (time: number) => lenis.raf(time * 1000);
   gsap.ticker.add(tickerFn);
   gsap.ticker.lagSmoothing(0);

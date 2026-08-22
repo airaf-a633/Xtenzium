@@ -23,7 +23,7 @@ const columns = [
 const year = new Date().getFullYear();
 ---
 
-<footer class="on-carbon bg-carbon pb-10 pt-20 text-white md:pt-28">
+<footer class="on-carbon rounded-t-[2rem] bg-carbon pb-10 pt-20 text-white md:rounded-t-[2.5rem] md:pt-28">
   <div class="container-x">
     <div class="grid gap-12 md:grid-cols-[1.5fr_1fr_1fr]">
       <div>
@@ -32,6 +32,20 @@ const year = new Date().getFullYear();
           We architect long-term success — software, hardware, and the systems
           that connect them.
         </p>
+        <div class="mt-7 flex items-center gap-2.5">
+          {
+            ['in', 'ig', 'gh', 'x'].map((n) => (
+              <a
+                href="/contact"
+                aria-label={`Xtenzium on ${n}`}
+                class="grid h-9 w-9 place-items-center rounded-full border border-white/15 font-mono text-[10px] uppercase text-white/60 transition-colors duration-300 hover:border-copper hover:text-copper-hi"
+              >
+                {n}
+              </a>
+            ))
+          }
+        </div>
+
         <a
           href="mailto:contact@xtenzium.com"
           class="mt-6 inline-block font-display text-lg font-bold tracking-[-0.02em] text-copper-hi transition-colors duration-300 hover:text-white"

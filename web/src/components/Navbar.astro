@@ -7,17 +7,17 @@ const links = [
 ];
 ---
 
-<header data-nav class="pointer-events-none fixed inset-x-0 top-0 z-50 pt-4 md:pt-6">
-  <div class="container-x">
+<header data-nav class="pointer-events-none fixed inset-x-0 top-0 z-50 flex justify-center pt-4 md:pt-6">
+  <div class="w-full max-w-3xl px-4">
     <nav
       data-nav-shell
-      class="pointer-events-auto flex items-center justify-between gap-6 rounded-pill border border-white/10 bg-carbon/70 px-5 py-3 backdrop-blur-md transition-[background-color,border-color,box-shadow] duration-300 md:px-6"
+      class="pointer-events-auto flex items-center justify-between gap-5 rounded-pill border border-white/12 bg-carbon/70 py-2 pl-5 pr-2 shadow-[0_8px_32px_-12px_rgba(0,0,0,0.6)] backdrop-blur-xl transition-[background-color,border-color] duration-300"
     >
       <a href="/" class="font-display text-base font-bold tracking-[-0.03em] text-white">
         Xtenzium
       </a>
 
-      <ul class="hidden items-center gap-7 md:flex">
+      <ul class="hidden items-center gap-6 md:flex">
         {
           links.map((l) => (
             <li>
@@ -32,12 +32,29 @@ const links = [
         }
       </ul>
 
-      <a
-        href="/contact"
-        class="rounded-pill bg-copper px-5 py-2.5 text-xs font-bold text-white transition-colors duration-300 hover:bg-copper-hi md:text-sm"
-      >
-        Start a project
-      </a>
+      <div class="flex items-center gap-1.5">
+        <a
+          href="/contact"
+          aria-label="Start a project"
+          class="grid h-9 w-9 place-items-center rounded-full bg-copper text-white transition-colors duration-300 hover:bg-copper-hi"
+        >
+          <span aria-hidden="true" class="text-sm">&#8599;</span>
+        </a>
+        <a
+          href="tel:+920000000000"
+          aria-label="Call the studio"
+          class="hidden h-9 w-9 place-items-center rounded-full border border-white/15 text-white/80 transition-colors duration-300 hover:border-white/40 hover:text-white sm:grid"
+        >
+          <span aria-hidden="true" class="text-xs">&#9742;</span>
+        </a>
+        <button
+          type="button"
+          aria-label="Open menu"
+          class="grid h-9 w-9 place-items-center rounded-full border border-white/15 text-white/80 transition-colors duration-300 hover:border-white/40 hover:text-white"
+        >
+          <span aria-hidden="true" class="text-xs">&#9776;</span>
+        </button>
+      </div>
     </nav>
   </div>
 </header>

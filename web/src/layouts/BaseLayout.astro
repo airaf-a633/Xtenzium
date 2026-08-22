@@ -68,6 +68,11 @@ const ogImage = new URL(image, Astro.site).href;
       import { initStatementPanels, destroyStatementPanels } from '../lib/statement-panel';
       import { initHero, destroyHero } from '../lib/hero';
       import { initCounters, destroyCounters } from '../lib/counter';
+      import { initParallax, destroyParallax } from '../lib/parallax';
+      import { initStackingCards, destroyStackingCards } from '../lib/stacking-cards';
+      import { initHorizontalGallery, destroyHorizontalGallery } from '../lib/horizontal-gallery';
+      import { initCoverflow, destroyCoverflow } from '../lib/coverflow';
+      import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
       let running = false;
 
@@ -83,6 +88,28 @@ const ogImage = new URL(image, Astro.site).href;
         initReveal();
         initStatementPanels();
         initCounters();
+        initParallax();
+        initStackingCards();
+        initHorizontalGallery();
+        initCoverflow();
+
+        // Pins add scroll length, which invalidates the geometry of every
+        // trigger further down the page. Modules are initialised in DOM
+        // order but a pin created late still shifts what came before it in
+        // init order, so sort by document position and recalculate once
+        // everything exists. Without this the stacking cards measure their
+        // start ~1160px early -- exactly the horizontal gallery's pin
+        // distance -- and render their end state before you reach them.
+        ScrollTrigger.sort();
+        ScrollTrigger.refresh();
+
+        // Web fonts and lazy images settle after this point and change
+        // element heights, so measure once more when the page is fully
+        // loaded. Cheap, and it is the difference between a pinned section
+        // being a few hundred pixels out and being exact.
+        if (document.readyState !== 'complete') {
+          window.addEventListener('load', () => ScrollTrigger.refresh(), { once: true });
+        }
         if (import.meta.env.DEV) {
           Promise.all([import('gsap'), import('gsap/ScrollTrigger')]).then(([g, st]) => {
             (window as any).gsap = g.default;
@@ -98,6 +125,10 @@ const ogImage = new URL(image, Astro.site).href;
         destroyReveal();
         destroyStatementPanels();
         destroyCounters();
+        destroyParallax();
+        destroyStackingCards();
+        destroyHorizontalGallery();
+        destroyCoverflow();
         destroySmoothScroll();
       }
 

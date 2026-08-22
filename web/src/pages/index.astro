@@ -3,6 +3,10 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import StatementPanel from '../components/StatementPanel.astro';
 import Navbar from '../components/Navbar.astro';
 import Footer from '../components/Footer.astro';
+import HorizontalGallery from '../components/HorizontalGallery.astro';
+import StackingCards from '../components/StackingCards.astro';
+import Coverflow from '../components/Coverflow.astro';
+import Testimonial from '../components/Testimonial.astro';
 
 const heroLines = ['We architect', 'long-term', 'success.'];
 
@@ -177,60 +181,12 @@ const stats = [
       </div>
     </section>
 
-    <!-- ═══ 03 · Services ═══════════════════════════════════════ -->
-    <section id="services" class="bg-bg py-24 md:py-32">
-      <div class="container-x">
-        <div data-reveal-group class="max-w-2xl">
-          <p class="eyebrow" data-reveal="eyebrow">What we do</p>
-          <h2
-            class="mt-3 font-display text-[clamp(1.75rem,4vw,2.75rem)] font-bold tracking-[-0.03em] text-ink"
-          >
-            <span class="block" data-reveal="line">Software and hardware,</span>
-            <span class="block" data-reveal="line">under one roof.</span>
-          </h2>
-          <p class="mt-4 leading-relaxed text-ink-2" data-reveal="body">
-            Most agencies stop at the browser. We keep going — through firmware,
-            onto the board, and back again.
-          </p>
-        </div>
-
-        <!-- Editorial rows, not a card grid. Six services in six identical
-             boxes reads as a spec sheet; rows let the titles carry weight. -->
-        <ol data-reveal-cards class="mt-14">
-          {
-            services.map((s, i) => (
-              <li data-reveal="card">
-                <a
-                  href={s.href}
-                  class="group grid items-baseline gap-x-8 gap-y-3 border-t border-line py-8 transition-colors duration-300 hover:border-copper md:grid-cols-[3rem_minmax(0,20rem)_1fr_2rem] md:py-9"
-                >
-                  <span class="font-mono text-xs text-ink-3">
-                    {String(i + 1).padStart(2, '0')}
-                  </span>
-
-                  <div>
-                    <p class="eyebrow !text-copper">{s.kicker}</p>
-                    <h3 class="mt-2.5 font-display text-[clamp(1.5rem,3vw,2.125rem)] font-bold leading-[1.08] tracking-[-0.03em] text-ink transition-colors duration-300 group-hover:text-copper">
-                      {s.title}
-                    </h3>
-                  </div>
-
-                  <p class="max-w-lg leading-relaxed text-ink-2">{s.body}</p>
-
-                  <span
-                    aria-hidden="true"
-                    class="hidden text-xl text-ink-3 transition-all duration-300 group-hover:translate-x-1 group-hover:text-copper md:block md:justify-self-end"
-                  >
-                    &rarr;
-                  </span>
-                </a>
-              </li>
-            ))
-          }
-          <li class="border-t border-line" />
-        </ol>
-      </div>
-    </section>
+    <!-- ═══ 03 · Services — pinned horizontal gallery ═════════ -->
+    <HorizontalGallery
+      eyebrow="What we do"
+      heading={['Software and hardware,', 'under one roof.']}
+      items={services}
+    />
 
     <!-- ═══ 04 · Statement — 'rise' ═════════════════════════════ -->
     <StatementPanel
@@ -240,49 +196,12 @@ const stats = [
       accentWord="board"
     />
 
-    <!-- ═══ 05 · Process ════════════════════════════════════════ -->
-    <section class="bg-bg-tint py-24 md:py-32">
-      <div class="container-x">
-        <div data-reveal-group class="max-w-2xl">
-          <p class="eyebrow" data-reveal="eyebrow">How it goes</p>
-          <h2
-            class="mt-3 font-display text-[clamp(1.75rem,4vw,2.75rem)] font-bold tracking-[-0.03em] text-ink"
-          >
-            <span class="block" data-reveal="line">Four steps, and you</span>
-            <span class="block" data-reveal="line">see work at every one.</span>
-          </h2>
-        </div>
-
-        <!-- Nodes on a routed trace. The process is a sequence, so it gets
-             a connector — and the connector is the same PCB language as
-             the hero, which is what ties the page together. -->
-        <ol data-reveal-cards class="relative mt-16 grid gap-10 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
-          <div
-            aria-hidden="true"
-            class="pointer-events-none absolute left-0 right-0 top-[7px] hidden h-px bg-gradient-to-r from-copper/40 via-copper/40 to-transparent lg:block"
-          >
-          </div>
-
-          {
-            process.map((p) => (
-              <li data-reveal="card" class="relative">
-                <span
-                  aria-hidden="true"
-                  class="absolute left-0 top-0 block h-[15px] w-[15px] rounded-full border-[3px] border-copper bg-bg-tint"
-                />
-                <div class="pt-11">
-                  <span class="font-mono text-xs text-copper">{p.n}</span>
-                  <h3 class="mt-3 font-display text-2xl font-bold tracking-[-0.03em] text-ink">
-                    {p.title}
-                  </h3>
-                  <p class="mt-3 max-w-xs text-[0.95rem] leading-relaxed text-ink-2">{p.body}</p>
-                </div>
-              </li>
-            ))
-          }
-        </ol>
-      </div>
-    </section>
+    <!-- ═══ 05 · Process — sticky stacking cards ══════════════ -->
+    <StackingCards
+      eyebrow="How it goes"
+      heading={['Four steps, and you', 'see work at every one.']}
+      items={process}
+    />
 
     <!-- ═══ 06 · Selected work ══════════════════════════════════ -->
     <section class="bg-bg py-24 md:py-32">
@@ -330,6 +249,13 @@ const stats = [
         </div>
       </div>
     </section>
+
+    <!-- ═══ 06b · Testimonial ═════════════════════════════════ -->
+    <Testimonial
+      quote="They didn't just ship a website. They built the thing our operations actually run on, and then handed it over so we could keep going without them."
+      attribution="Operations Director"
+      role="Fleet telematics client"
+    />
 
     <!-- ═══ 07 · Stats ══════════════════════════════════════════ -->
     <!-- Numbers this big are the content. Boxing them shrinks them, so
@@ -425,35 +351,13 @@ const stats = [
       accentWord="template"
     />
 
-    <!-- ═══ 10 · Industries ═════════════════════════════════════ -->
-    <section class="bg-bg-alt py-20 md:py-28">
-      <div class="container-x">
-        <div data-reveal-group class="max-w-2xl">
-          <p class="eyebrow" data-reveal="eyebrow">Industries</p>
-          <h2
-            class="mt-3 font-display text-[clamp(1.75rem,4vw,2.75rem)] font-bold tracking-[-0.03em] text-ink"
-          >
-            <span class="block" data-reveal="line">Built for every business.</span>
-          </h2>
-        </div>
-
-        <!-- Breadth is the message here, so the treatment is density:
-             one flowing band of tags rather than nine equal boxes. -->
-        <div data-reveal-cards class="mt-12 flex flex-wrap gap-2.5">
-          {
-            industries.map((i) => (
-              <div
-                data-reveal="card"
-                class="group flex items-baseline gap-3 rounded-pill border border-line bg-surface py-3 pl-5 pr-6 transition-colors duration-300 hover:border-copper hover:bg-copper-lo"
-              >
-                <span class="eyebrow !text-copper">{i.tag}</span>
-                <span class="text-sm text-ink-2">{i.label}</span>
-              </div>
-            ))
-          }
-        </div>
-      </div>
-    </section>
+    <!-- ═══ 10 · Industries — 3D coverflow ════════════════════ -->
+    <Coverflow
+      eyebrow="Industries"
+      heading={['Built for every business.']}
+      blurb="Real projects for real businesses, from clinics and fleets to factory floors."
+      items={industries}
+    />
 
     <!-- ═══ 11 · Contact — graduated commitment ═════════════════ -->
     <section id="contact" class="bg-bg py-24 md:py-32">

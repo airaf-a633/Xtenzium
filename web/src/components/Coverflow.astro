@@ -1,0 +1,61 @@
+---
+import ParallaxImage from './ParallaxImage.astro';
+
+interface Item { tag: string; label: string; image?: string }
+interface Props { eyebrow: string; heading: string[]; blurb?: string; items: Item[]; href?: string }
+const { eyebrow, heading, blurb, items, href = '/work' } = Astro.props;
+---
+
+<section class="overflow-hidden bg-bg-alt py-20 md:py-28">
+  <div class="container-x text-center" data-reveal-group>
+    <p class="eyebrow" data-reveal="eyebrow">{eyebrow}</p>
+    <h2
+      class="mx-auto mt-3 max-w-2xl font-display text-[clamp(1.75rem,4vw,2.75rem)] font-bold tracking-[-0.03em] text-ink"
+    >
+      {heading.map((l) => <span class="block" data-reveal="line">{l}</span>)}
+    </h2>
+    {blurb && <p class="mx-auto mt-4 max-w-lg leading-relaxed text-ink-2" data-reveal="body">{blurb}</p>}
+  </div>
+
+  <div
+    data-coverflow
+    class="relative mx-auto mt-16 h-[24rem] w-full max-w-5xl [perspective:1600px] [[data-coverflow-flat]&]:flex [[data-coverflow-flat]&]:h-auto [[data-coverflow-flat]&]:snap-x [[data-coverflow-flat]&]:snap-mandatory [[data-coverflow-flat]&]:gap-4 [[data-coverflow-flat]&]:overflow-x-auto [[data-coverflow-flat]&]:px-6 [[data-coverflow-flat]&]:[perspective:none]"
+  >
+    <div
+      data-coverflow-stage
+      class="absolute inset-0 [transform-style:preserve-3d] [[data-coverflow-flat]_&]:static [[data-coverflow-flat]_&]:flex [[data-coverflow-flat]_&]:gap-4"
+    >
+      {
+        items.map((item) => (
+          <article
+            data-coverflow-card
+            class="absolute left-1/2 top-1/2 h-[19rem] w-[14rem] overflow-hidden rounded-card border border-line bg-surface shadow-[0_24px_60px_-24px_rgba(43,38,34,0.4)] [transform-style:preserve-3d] [[data-coverflow-flat]_&]:static [[data-coverflow-flat]_&]:flex-none [[data-coverflow-flat]_&]:snap-start"
+          >
+            <ParallaxImage
+              src={item.image}
+              alt={item.label}
+              strength={8}
+              scrim="bottom"
+              class="absolute inset-0 h-full w-full"
+            />
+            <div class="relative z-10 flex h-full flex-col justify-end p-5">
+              <p class="eyebrow !text-copper-hi">{item.tag}</p>
+              <p class="mt-1.5 font-display text-lg font-bold tracking-[-0.02em] text-white">
+                {item.label}
+              </p>
+            </div>
+          </article>
+        ))
+      }
+    </div>
+  </div>
+
+  <div class="container-x mt-12 text-center">
+    <a
+      href={href}
+      class="inline-flex items-center gap-2 text-sm font-bold text-ink transition-colors duration-300 hover:text-copper"
+    >
+      View full portfolio <span aria-hidden="true">&rarr;</span>
+    </a>
+  </div>
+</section>
