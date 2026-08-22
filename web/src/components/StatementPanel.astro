@@ -1,0 +1,98 @@
+---
+/**
+ * Recipe 02 — full-height statement panel.
+ *
+ * Zero framework JS. The animation is driven by `src/lib/statement-panel.ts`,
+ * which finds these by data attribute. Ship as many as you like per page.
+ */
+interface Props {
+  lines: string[];
+  variant?: 'default' | 'rise' | 'focus';
+  image?: string;
+  alt?: string;
+  eyebrow?: string;
+  /** Highlights one word in copper. Matched case-insensitively. */
+  accentWord?: string;
+}
+
+const {
+  lines,
+  variant = 'default',
+  image,
+  alt = '',
+  eyebrow,
+  accentWord,
+} = Astro.props;
+
+// `focus` splits into individual words; the others animate whole lines.
+const units =
+  variant === 'focus'
+    ? lines.flatMap((line, li) =>
+        line.split(' ').map((word, wi) => ({
+          text: word,
+          key: `${li}-${wi}`,
+          breakAfter: wi === line.split(' ').length - 1 && li < lines.length - 1,
+        })),
+      )
+    : lines.map((line, li) => ({
+        text: line,
+        key: `line-${li}`,
+        breakAfter: li < lines.length - 1,
+      }));
+
+const isAccent = (t: string) =>
+  !!accentWord && t.toLowerCase().replace(/[^a-z]/g, '') === accentWord.toLowerCase();
+---
+
+<section
+  data-statement={variant}
+  class="relative w-full h-[60vh] md:h-screen overflow-hidden bg-carbon on-carbon"
+>
+  <div data-statement-media class="absolute inset-0 overflow-hidden bg-carbon">
+    <div data-statement-inner class="absolute inset-0">
+      {
+        image ? (
+          <img
+            src={image}
+            alt={alt}
+            class="h-full w-full object-cover opacity-70"
+            loading="lazy"
+            decoding="async"
+          />
+        ) : (
+          <div class="h-full w-full bg-carbon" />
+        )
+      }
+    </div>
+  </div>
+
+  <div class="relative z-10 flex h-full items-center">
+    <div class="container-x">
+      {
+        eyebrow && (
+          <p class="eyebrow mb-5 !text-white/60" data-statement-line>
+            {eyebrow}
+          </p>
+        )
+      }
+      <h2
+        class="font-display text-[clamp(1.9rem,5.6vw,4.2rem)] font-bold uppercase leading-[1.02] tracking-[-0.035em] text-white"
+      >
+        {
+          units.map((u) => (
+            <>
+              <span
+                data-statement-line
+                class:list={['inline-block', isAccent(u.text) && 'text-copper']}
+              >
+                {u.text}
+              </span>
+              {variant === 'focus' && !u.breakAfter ? ' ' : null}
+              {u.breakAfter ? <br /> : null}
+            </>
+          ))
+        }
+      </h2>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,162 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import StatementPanel from '../components/StatementPanel.astro';
+import Hero from '../components/Hero.tsx';
+
+const services = [
+  {
+    n: '01',
+    kicker: 'Scoped product build',
+    title: 'Web Development',
+    body: 'React and Next.js applications that load fast, rank well, and hold up after launch. Built from scratch — no themes, no page builders.',
+  },
+  {
+    n: '02',
+    kicker: 'Identity engagement',
+    title: 'Design & Branding',
+    body: 'Interface design, design systems, and visual identity. The system comes with the work, so your team can extend it without us.',
+  },
+  {
+    n: '03',
+    kicker: 'Board-level engineering',
+    title: 'IoT & Embedded',
+    body: 'Custom PCB design, firmware, and connected hardware. The part most agencies subcontract, we do in-house.',
+  },
+  {
+    n: '04',
+    kicker: 'Workflow-led systems build',
+    title: 'AI & Automation',
+    body: 'LLM integrations and internal tooling built around how your team already works, not around a demo.',
+  },
+];
+
+const stats = [
+  { v: '65+', l: 'Projects delivered' },
+  { v: '36%', l: 'Average client ROI' },
+  { v: '4', l: 'Continents served' },
+];
+---
+
+<BaseLayout
+  title="Xtenzium — We Architect Long-Term Success"
+  description="Karachi-based digital agency building web products and the custom hardware underneath them. Web development, design, IoT, and AI automation."
+  path="/"
+>
+  <main>
+    <!-- ── Hero ─────────────────────────────────────────────── -->
+    <section class="relative flex min-h-[92vh] items-end bg-bg-tint pb-20 pt-32">
+      <div class="container-x">
+        <Hero client:load />
+      </div>
+    </section>
+
+    <!-- ── Services ─────────────────────────────────────────── -->
+    <section class="bg-bg py-24 md:py-32">
+      <div class="container-x">
+        <div data-reveal-group class="max-w-2xl">
+          <p class="eyebrow" data-reveal="eyebrow">What we do</p>
+          <h2
+            class="mt-3 font-display text-[clamp(1.75rem,4vw,2.75rem)] font-bold tracking-[-0.03em] text-ink"
+          >
+            <span class="block" data-reveal="line">Software and hardware,</span>
+            <span class="block" data-reveal="line">under one roof.</span>
+          </h2>
+          <p class="mt-4 text-ink-2 leading-relaxed" data-reveal="body">
+            Most agencies stop at the browser. We keep going — through firmware,
+            onto the board, and back again.
+          </p>
+        </div>
+
+        <div data-reveal-cards class="mt-14 grid gap-4 md:grid-cols-2">
+          {
+            services.map((s) => (
+              <article
+                data-reveal="card"
+                class="rounded-card border border-line bg-surface p-8 transition-colors duration-300 hover:border-line-strong"
+              >
+                <div class="flex items-baseline justify-between gap-4">
+                  <p class="eyebrow">{s.kicker}</p>
+                  <span class="font-mono text-xs text-copper">{s.n}</span>
+                </div>
+                <h3 class="mt-4 font-display text-2xl font-bold tracking-[-0.025em] text-ink">
+                  {s.title}
+                </h3>
+                <p class="mt-3 text-[0.95rem] leading-relaxed text-ink-2">{s.body}</p>
+              </article>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Statement panel — the 'rise' variant ──────────────── -->
+    <StatementPanel
+      variant="rise"
+      eyebrow="The difference"
+      lines={['We build the', 'software and the', 'board it runs on.']}
+      accentWord="board"
+    />
+
+    <!-- ── Stats ────────────────────────────────────────────── -->
+    <section class="bg-bg-tint py-24 md:py-32">
+      <div class="container-x">
+        <div data-reveal-group class="max-w-2xl">
+          <p class="eyebrow" data-reveal="eyebrow">Track record</p>
+          <h2
+            class="mt-3 font-display text-[clamp(1.75rem,4vw,2.75rem)] font-bold tracking-[-0.03em] text-ink"
+          >
+            <span class="block" data-reveal="line">Nine years of shipping,</span>
+            <span class="block" data-reveal="line">mostly for people abroad.</span>
+          </h2>
+        </div>
+
+        <div data-reveal-cards class="mt-14 grid gap-4 sm:grid-cols-3">
+          {
+            stats.map((s) => (
+              <div data-reveal="card" class="rounded-card border border-line bg-surface p-8">
+                <div class="font-display text-5xl font-bold tracking-[-0.04em] text-copper tabular-nums">
+                  {s.v}
+                </div>
+                <p class="mt-3 text-sm text-ink-2">{s.l}</p>
+              </div>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Statement panel — the 'focus' variant ─────────────── -->
+    <StatementPanel
+      variant="focus"
+      lines={['Your brand deserves', 'more than a template.']}
+      accentWord="template"
+    />
+
+    <!-- ── Contact ──────────────────────────────────────────── -->
+    <section class="bg-bg py-24 md:py-32">
+      <div class="container-x">
+        <div data-reveal-group class="max-w-3xl">
+          <p class="eyebrow" data-reveal="eyebrow">Start here</p>
+          <h2
+            class="mt-3 font-display text-[clamp(2rem,5vw,3.5rem)] font-bold tracking-[-0.035em] text-ink"
+          >
+            <span class="block" data-reveal="line">Tell us what you're</span>
+            <span class="block" data-reveal="line">trying to build.</span>
+          </h2>
+          <p class="mt-5 max-w-lg text-lg leading-relaxed text-ink-2" data-reveal="body">
+            No pitch deck, no discovery fee. A conversation about scope, and an
+            honest answer about whether we're the right team for it.
+          </p>
+          <div class="mt-8" data-reveal="body">
+            <a
+              href="mailto:contact@xtenzium.com"
+              class="inline-flex items-center rounded-pill bg-copper px-7 py-3.5 text-sm font-bold text-white transition-colors duration-300 hover:bg-copper-hi"
+            >
+              contact@xtenzium.com
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</BaseLayout>

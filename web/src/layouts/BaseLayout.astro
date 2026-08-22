@@ -1,0 +1,159 @@
+---
+import '../styles/global.css';
+import { ClientRouter } from 'astro:transitions';
+
+interface Props {
+  title: string;
+  description: string;
+  /** Path only, e.g. "/work" — combined with site for the canonical. */
+  path?: string;
+  image?: string;
+}
+
+const {
+  title,
+  description,
+  path = Astro.url.pathname,
+  image = '/og-image.png',
+} = Astro.props;
+
+const canonical = new URL(path, Astro.site).href;
+const ogImage = new URL(image, Astro.site).href;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <meta name="robots" content="index, follow" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Xtenzium" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+
+    <meta name="geo.region" content="PK-SD" />
+    <meta name="geo.placename" content="Karachi, Pakistan" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=DM+Sans:opsz,wght@9..40,400..700&family=DM+Mono:wght@400;500&display=swap"
+    />
+
+    <ClientRouter />
+    <slot name="head" />
+  </head>
+
+  <body class="page-visible">
+    <slot />
+
+    <script>
+      import { initSmoothScroll, destroySmoothScroll, syncSmoothScroll } from '../lib/smooth-scroll';
+      import { initReveal, destroyReveal } from '../lib/reveal';
+      import { initStatementPanels, destroyStatementPanels } from '../lib/statement-panel';
+
+      let running = false;
+
+      function start() {
+        // `astro:page-load` also fires on the very first load, so without
+        // this guard every init runs twice: two Lenis instances, two sets
+        // of ScrollTriggers, and a second gsap.set() that re-hides elements
+        // the first pass had already armed.
+        if (running) return;
+        running = true;
+        initSmoothScroll();
+        initReveal();
+        initStatementPanels();
+        if (import.meta.env.DEV) {
+          Promise.all([import('gsap'), import('gsap/ScrollTrigger')]).then(([g, st]) => {
+            (window as any).gsap = g.default;
+            (window as any).ScrollTrigger = st.ScrollTrigger;
+          });
+        }
+      }
+
+      function stop() {
+        if (!running) return;
+        running = false;
+        destroyReveal();
+        destroyStatementPanels();
+        destroySmoothScroll();
+      }
+
+      // ── Scroll restoration ──────────────────────────────────────────
+      // Manual, so a fresh visit always lands at the top and only
+      // back/forward restores a saved position.
+      const nav = performance.getEntriesByType('navigation')[0] as
+        | PerformanceNavigationTiming
+        | undefined;
+      const isBackForward = nav?.type === 'back_forward';
+
+      if ('scrollRestoration' in history) {
+        history.scrollRestoration = isBackForward ? 'auto' : 'manual';
+      }
+
+      const key = 'xtz:scroll:' + location.pathname;
+
+      if (isBackForward) {
+        requestAnimationFrame(() => {
+          if (window.scrollY === 0) {
+            const saved = sessionStorage.getItem(key);
+            if (saved) window.scrollTo(0, parseInt(saved, 10) || 0);
+          }
+        });
+      } else {
+        window.scrollTo(0, 0);
+      }
+
+      window.addEventListener('pagehide', () => {
+        try {
+          sessionStorage.setItem('xtz:scroll:' + location.pathname, String(window.scrollY));
+        } catch {
+          /* private mode — not worth failing over */
+        }
+      });
+
+      // ── Lifecycle ───────────────────────────────────────────────────
+      // No direct start() call — `astro:page-load` fires on first load too.
+
+      document.addEventListener('astro:before-swap', () => {
+        stop();
+        document.body.classList.remove('page-visible');
+        document.body.classList.add('page-entering');
+      });
+
+      document.addEventListener('astro:after-swap', () => {
+        window.scrollTo(0, 0);
+      });
+
+      document.addEventListener('astro:page-load', () => {
+        start();
+        requestAnimationFrame(() => {
+          document.body.classList.remove('page-entering', 'page-leaving');
+          document.body.classList.add('page-visible');
+        });
+      });
+
+      let resizeTimer: number;
+      window.addEventListener('resize', () => {
+        window.clearTimeout(resizeTimer);
+        resizeTimer = window.setTimeout(syncSmoothScroll, 250);
+      });
+    </script>
+  </body>
+</html>
