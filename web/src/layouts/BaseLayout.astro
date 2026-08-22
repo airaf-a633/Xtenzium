@@ -83,6 +83,7 @@ const ogImage = new URL(image, Astro.site).href;
       import { initChrome, destroyChrome } from '../lib/chrome';
       import { initFaq, destroyFaq } from '../lib/faq';
       import { initQuotes, destroyQuotes } from '../lib/quote';
+      import { initMenu, destroyMenu } from '../lib/menu';
       import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
       let running = false;
@@ -109,6 +110,7 @@ const ogImage = new URL(image, Astro.site).href;
         initChrome();
         initFaq();
         initQuotes();
+        initMenu();
 
         // Pins add scroll length, which invalidates the geometry of every
         // trigger further down the page. Modules are initialised in DOM
@@ -150,6 +152,7 @@ const ogImage = new URL(image, Astro.site).href;
         destroyChrome();
         destroyFaq();
         destroyQuotes();
+        destroyMenu();
         destroySmoothScroll();
       }
 

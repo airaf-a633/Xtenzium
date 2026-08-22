@@ -7,70 +7,265 @@ const links = [
   { href: '/about', label: 'About' },
   { href: '/journal', label: 'Journal' },
 ];
+
+const menuLinks = [
+  { href: '/work', label: 'Work', hint: 'Case studies and outcomes' },
+  { href: '/services', label: 'Services', hint: 'Seven lines, one team' },
+  { href: '/about', label: 'About', hint: 'Who builds it' },
+  { href: '/journal', label: 'Journal', hint: 'What we learned' },
+  { href: '/estimate', label: 'Estimate', hint: 'Four questions, a range' },
+  { href: '/contact', label: 'Contact', hint: 'Start a project' },
+];
+
+const path = Astro.url.pathname.replace(/\/$/, '') || '/';
+const isActive = (href: string) => path === href || path.startsWith(href + '/');
 ---
 
-<header data-nav class="pointer-events-none fixed inset-x-0 top-0 z-50 flex justify-center pt-4 md:pt-6">
-  <div class="w-full max-w-3xl px-4">
-    <nav
-      data-nav-shell
-      class="nav-shell pointer-events-auto flex items-center justify-between gap-5 rounded-pill border border-white/12 bg-carbon/70 py-2 pl-5 pr-2 shadow-[0_8px_32px_-12px_rgba(0,0,0,0.6)] backdrop-blur-xl transition-[background-color,border-color,box-shadow] duration-300"
+<header
+  data-nav
+  class="nav-drop pointer-events-none fixed left-1/2 top-5 z-50 w-full max-w-[min(100vw-1.5rem,34rem)] px-3 md:top-[26px] md:max-w-[min(100vw-3rem,58rem)]"
+>
+  <nav
+    data-nav-shell
+    class="nav-shell pointer-events-auto flex items-center gap-3 rounded-pill p-1.5"
+    aria-label="Primary"
+  >
+    <a
+      href="/"
+      class="ml-1.5 flex shrink-0 items-center gap-2.5 rounded-pill"
+      aria-label="Xtenzium — home"
     >
-      <a href="/" class="flex items-center gap-2.5" aria-label="Xtenzium — home">
-        <Logo size={26} labelled={false} />
-        <span class="font-display text-base font-bold tracking-[-0.03em] text-white">
-          Xtenzium
-        </span>
+      <Logo size={28} labelled={false} />
+      <span class="font-display text-base font-bold tracking-[-0.03em] text-white">
+        Xtenzium
+      </span>
+    </a>
+
+    <ul class="ml-auto hidden items-center gap-1 md:flex">
+      {
+        links.map((l) => (
+          <li>
+            <a
+              href={l.href}
+              aria-current={isActive(l.href) ? 'page' : undefined}
+              class="nav-link relative rounded-pill px-3.5 py-2 text-sm font-medium text-white/65 transition-colors duration-300 hover:text-white"
+            >
+              {l.label}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+
+    <div class="ml-auto flex shrink-0 items-center gap-1.5 md:ml-0">
+      <a
+        href="/contact"
+        aria-label="Start a project"
+        class="nav-icon nav-icon--solid grid h-10 w-10 place-items-center rounded-full"
+      >
+        <svg viewBox="0 0 16 16" class="h-3.5 w-3.5" aria-hidden="true" fill="none">
+          <path
+            d="M4 12L12 4M12 4H5.5M12 4v6.5"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
       </a>
 
-      <ul class="hidden items-center gap-6 md:flex">
+      <a
+        href="mailto:contact@xtenzium.com"
+        aria-label="Email the studio"
+        class="nav-icon grid h-10 w-10 place-items-center rounded-full"
+      >
+        <svg viewBox="0 0 16 16" class="h-3.5 w-3.5" aria-hidden="true" fill="none">
+          <rect
+            x="1.6"
+            y="3.2"
+            width="12.8"
+            height="9.6"
+            rx="1.6"
+            stroke="currentColor"
+            stroke-width="1.5"
+          />
+          <path
+            d="M2.2 4.4L8 8.6l5.8-4.2"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </a>
+
+      <button
+        type="button"
+        data-menu-open
+        aria-label="Open menu"
+        aria-expanded="false"
+        aria-controls="site-menu"
+        class="nav-icon grid h-10 w-10 place-items-center rounded-full"
+      >
+        <svg viewBox="0 0 16 16" class="h-3.5 w-3.5" aria-hidden="true" fill="none">
+          <path d="M2 5h12M2 11h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+        </svg>
+      </button>
+    </div>
+  </nav>
+</header>
+
+<!-- ── Fullscreen menu ──────────────────────────────────────────── -->
+<div
+  id="site-menu"
+  data-menu
+  hidden
+  class="on-carbon fixed inset-0 z-[70] bg-carbon"
+  role="dialog"
+  aria-modal="true"
+  aria-label="Site menu"
+>
+  <div
+    aria-hidden="true"
+    class="pointer-events-none absolute inset-0 opacity-40"
+    style="background-image: radial-gradient(circle at center, rgba(184,67,15,0.4) 1px, transparent 1px); background-size: 34px 34px;"
+  >
+  </div>
+
+  <div class="container-x relative flex h-full flex-col py-6">
+    <div class="flex items-center justify-between">
+      <a href="/" class="flex items-center gap-2.5" aria-label="Xtenzium — home">
+        <Logo size={28} labelled={false} />
+        <span class="font-display text-base font-bold tracking-[-0.03em] text-white">Xtenzium</span>
+      </a>
+      <button
+        type="button"
+        data-menu-close
+        aria-label="Close menu"
+        class="nav-icon grid h-10 w-10 place-items-center rounded-full"
+      >
+        <svg viewBox="0 0 16 16" class="h-3.5 w-3.5" aria-hidden="true" fill="none">
+          <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+        </svg>
+      </button>
+    </div>
+
+    <nav class="flex flex-1 flex-col justify-center" aria-label="Menu">
+      <ul class="flex flex-col">
         {
-          links.map((l) => (
-            <li>
+          menuLinks.map((l) => (
+            <li data-menu-item class="border-t border-white/10 last:border-b">
               <a
                 href={l.href}
-                class="text-sm font-medium text-white/70 transition-colors duration-300 hover:text-white"
+                aria-current={isActive(l.href) ? 'page' : undefined}
+                class="menu-link group flex items-baseline justify-between gap-6 py-5 md:py-6"
               >
-                {l.label}
+                <span class="menu-label font-display text-[clamp(1.75rem,5vw,3rem)] font-bold leading-none tracking-[-0.035em] text-white transition-colors duration-300 group-hover:text-copper-hi">
+                  {l.label}
+                </span>
+                <span class="hidden text-sm text-white/40 transition-colors duration-300 group-hover:text-white/70 sm:block">
+                  {l.hint}
+                </span>
               </a>
             </li>
           ))
         }
       </ul>
-
-      <div class="flex items-center gap-1.5">
-        <a
-          href="/contact"
-          aria-label="Start a project"
-          class="grid h-9 w-9 place-items-center rounded-full bg-copper text-white transition-colors duration-300 hover:bg-copper-hover"
-        >
-          <span aria-hidden="true" class="text-sm">&#8599;</span>
-        </a>
-        <a
-          href="tel:+920000000000"
-          aria-label="Call the studio"
-          class="hidden h-9 w-9 place-items-center rounded-full border border-white/15 text-white/80 transition-colors duration-300 hover:border-white/40 hover:text-white sm:grid"
-        >
-          <span aria-hidden="true" class="text-xs">&#9742;</span>
-        </a>
-        <button
-          type="button"
-          aria-label="Open menu"
-          class="grid h-9 w-9 place-items-center rounded-full border border-white/15 text-white/80 transition-colors duration-300 hover:border-white/40 hover:text-white"
-        >
-          <span aria-hidden="true" class="text-xs">&#9776;</span>
-        </button>
-      </div>
     </nav>
+
+    <div data-menu-item class="flex flex-wrap items-center justify-between gap-4 pt-6">
+      <a
+        href="mailto:contact@xtenzium.com"
+        class="font-display text-lg font-bold tracking-[-0.02em] text-copper-hi transition-colors duration-300 hover:text-white"
+      >
+        contact@xtenzium.com
+      </a>
+      <p class="font-mono text-[11px] uppercase tracking-[0.14em] text-white/35">
+        Karachi, Pakistan — UTC+5
+      </p>
+    </div>
   </div>
-</header>
+</div>
 
 <style>
-  /* Once anything is scrolled behind it, the nav stops being a floating
-     translucent pill and becomes a solid bar. Colour and shadow only —
-     animating padding here would relayout the whole header on scroll. */
+  /* The shell reads as a physical object because of the two inset shadows,
+     not the blur: a bright rim along the top edge where light would catch,
+     and a soft lift along the bottom. Remove them and it flattens into a
+     translucent rectangle immediately. */
+  .nav-shell {
+    background-color: color-mix(in srgb, var(--color-carbon) 58%, transparent);
+    border: 1px solid color-mix(in srgb, #ffffff 16%, transparent);
+    backdrop-filter: blur(40px) saturate(140%);
+    -webkit-backdrop-filter: blur(40px) saturate(140%);
+    box-shadow:
+      0 14px 45px rgb(0 0 0 / 0.45),
+      inset 0 1px 1px rgb(255 255 255 / 0.14),
+      inset 0 -8px 16px rgb(255 255 255 / 0.04);
+    transition:
+      background-color 300ms var(--ease-brand),
+      border-color 300ms var(--ease-brand),
+      box-shadow 300ms var(--ease-brand);
+  }
   .nav-shell.is-scrolled {
-    background-color: color-mix(in srgb, var(--color-carbon) 92%, transparent);
-    border-color: color-mix(in srgb, #ffffff 18%, transparent);
-    box-shadow: 0 10px 40px -14px rgb(0 0 0 / 0.75);
+    background-color: color-mix(in srgb, var(--color-carbon) 84%, transparent);
+    border-color: color-mix(in srgb, #ffffff 22%, transparent);
+    box-shadow:
+      0 18px 50px rgb(0 0 0 / 0.6),
+      inset 0 1px 1px rgb(255 255 255 / 0.16),
+      inset 0 -8px 16px rgb(255 255 255 / 0.05);
+  }
+
+  /* Active page gets a copper underline rather than a filled pill — a pill
+     would compete with the three real buttons on the right. */
+  .nav-link[aria-current='page'] { color: #fff; }
+  .nav-link[aria-current='page']::after {
+    content: '';
+    position: absolute;
+    left: 0.875rem;
+    right: 0.875rem;
+    bottom: 0.3rem;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--color-copper-hi);
+  }
+  .menu-link[aria-current='page'] .menu-label { color: var(--color-copper-hi); }
+
+  .nav-icon {
+    color: rgb(255 255 255 / 0.8);
+    border: 1px solid color-mix(in srgb, #ffffff 16%, transparent);
+    background-color: rgb(255 255 255 / 0.04);
+    transition:
+      background-color 250ms var(--ease-brand),
+      border-color 250ms var(--ease-brand),
+      color 250ms var(--ease-brand);
+  }
+  .nav-icon:hover {
+    color: #fff;
+    border-color: color-mix(in srgb, #ffffff 40%, transparent);
+    background-color: rgb(255 255 255 / 0.1);
+  }
+  .nav-icon--solid {
+    color: #fff;
+    background-color: var(--color-copper);
+    border-color: var(--color-copper);
+  }
+  .nav-icon--solid:hover {
+    background-color: var(--color-copper-hover);
+    border-color: var(--color-copper-hover);
+  }
+
+  /* The header is centred by transform, so it must carry the -50% at all
+     times — including as the animation's end state. */
+  .nav-drop { transform: translate(-50%, 0); }
+
+  /* Drops in once, after the hero headline has started. Desktop only: on a
+     phone it is already at the top of a short viewport and the motion reads
+     as a glitch rather than an entrance. */
+  @media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
+    .nav-drop { animation: navDrop 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.35s backwards; }
+  }
+  @keyframes navDrop {
+    from { transform: translate(-50%, -200%); }
+    to   { transform: translate(-50%, 0); }
   }
 </style>
