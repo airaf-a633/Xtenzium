@@ -66,6 +66,7 @@ const ogImage = new URL(image, Astro.site).href;
       import { initSmoothScroll, destroySmoothScroll, syncSmoothScroll } from '../lib/smooth-scroll';
       import { initReveal, destroyReveal } from '../lib/reveal';
       import { initStatementPanels, destroyStatementPanels } from '../lib/statement-panel';
+      import { initHero, destroyHero } from '../lib/hero';
 
       let running = false;
 
@@ -77,6 +78,7 @@ const ogImage = new URL(image, Astro.site).href;
         if (running) return;
         running = true;
         initSmoothScroll();
+        initHero();
         initReveal();
         initStatementPanels();
         if (import.meta.env.DEV) {
@@ -90,6 +92,7 @@ const ogImage = new URL(image, Astro.site).href;
       function stop() {
         if (!running) return;
         running = false;
+        destroyHero();
         destroyReveal();
         destroyStatementPanels();
         destroySmoothScroll();

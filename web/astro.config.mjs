@@ -1,6 +1,5 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
-import react from '@astrojs/react';
 import sitemap from '@astrojs/sitemap';
 import tailwindcss from '@tailwindcss/vite';
 
@@ -8,7 +7,6 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
   site: 'https://www.xtenzium.com',
   integrations: [
-    react(),
     sitemap({
       filter: (page) => !page.includes('/crm') && !page.includes('/admin'),
     }),

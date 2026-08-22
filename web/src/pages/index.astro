@@ -1,7 +1,8 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import StatementPanel from '../components/StatementPanel.astro';
-import Hero from '../components/Hero.tsx';
+
+const heroLines = ['We architect', 'long-term', 'success.'];
 
 const services = [
   {
@@ -44,9 +45,62 @@ const stats = [
 >
   <main>
     <!-- ── Hero ─────────────────────────────────────────────── -->
-    <section class="relative flex min-h-[92vh] items-end bg-bg-tint pb-20 pt-32">
-      <div class="container-x">
-        <Hero client:load />
+    <section
+      data-hero
+      class="on-carbon relative flex min-h-screen items-end overflow-hidden bg-carbon pb-20 pt-36"
+    >
+      <canvas
+        data-hero-canvas
+        aria-hidden="true"
+        class="pointer-events-none absolute inset-0 h-full w-full"></canvas>
+
+      <!-- Keeps the headline legible over the densest routing. -->
+      <div
+        class="pointer-events-none absolute inset-0 bg-gradient-to-r from-carbon via-carbon/85 to-transparent"
+      >
+      </div>
+
+      <div class="container-x relative z-10">
+        <p data-hero-eyebrow class="eyebrow !text-white/55">
+          Karachi, Pakistan — Software &amp; Hardware
+        </p>
+
+        <h1
+          class="mt-5 max-w-4xl font-display text-[clamp(2.5rem,7vw,5.25rem)] font-bold leading-[1.0] tracking-[-0.035em] text-white"
+        >
+          {
+            heroLines.map((line, i) => (
+              <span data-hero-mask class="block overflow-hidden pb-2 -mb-2">
+                <span data-hero-line class="block">
+                  {i === 1 ? <span class="text-copper-hi">{line}</span> : line}
+                </span>
+              </span>
+            ))
+          }
+        </h1>
+
+        <p data-hero-body class="mt-8 max-w-xl text-lg leading-relaxed text-white/65">
+          A digital agency building web products and the custom hardware
+          underneath them. Sixty-five projects delivered for teams across four
+          continents.
+        </p>
+
+        <div class="mt-10 flex flex-col items-start gap-3 sm:flex-row">
+          <a
+            data-hero-cta
+            href="/contact"
+            class="inline-flex w-full items-center justify-center rounded-pill bg-copper px-7 py-3.5 text-sm font-bold text-white transition-colors duration-300 hover:bg-copper-hi sm:w-auto"
+          >
+            Start a project
+          </a>
+          <a
+            data-hero-cta
+            href="/work"
+            class="inline-flex w-full items-center justify-center rounded-pill border border-white/60 bg-white/5 px-7 py-3.5 text-sm font-bold text-white backdrop-blur-sm transition-colors duration-300 hover:bg-white hover:text-carbon sm:w-auto"
+          >
+            See our work
+          </a>
+        </div>
       </div>
     </section>
 
