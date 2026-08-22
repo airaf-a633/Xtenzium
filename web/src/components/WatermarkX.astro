@@ -1,0 +1,66 @@
+---
+/**
+ * The Xtenzium mark, oversized and bled off an edge, sitting behind content.
+ *
+ * The parent section must be `relative overflow-hidden`, and its content
+ * must carry a stacking context above this — `relative z-10` is enough.
+ *
+ * Opacity is intentionally low. This is a ground, not an element: if you can
+ * read it as a logo while reading the copy, it is too strong.
+ */
+interface Props {
+  /** Which edge it bleeds off. */
+  side?: 'left' | 'right';
+  /** Square size in rem. */
+  size?: number;
+  /** 0–100. Anything above ~10 starts competing with text. */
+  opacity?: number;
+  /** Vertical travel across the section pass, in percent. */
+  drift?: number;
+  /** Degrees of counter-rotation across the pass. */
+  spin?: number;
+  tone?: 'brand' | 'light' | 'dark';
+}
+
+const {
+  side = 'right',
+  size = 34,
+  opacity = 6,
+  drift = 10,
+  spin = 6,
+  tone = 'brand',
+} = Astro.props;
+
+const LIGHT = 'M6,24 L19.5,15 L19.5,27 L6,36 Z';
+const DARK = 'M6,4 L19.5,13 L19.5,25 L6,16 Z';
+
+const fills = {
+  brand: { light: 'var(--color-copper-hi)', dark: 'var(--color-copper)' },
+  light: { light: '#FFFFFF', dark: '#FFFFFF' },
+  dark: { light: 'var(--color-ink)', dark: 'var(--color-ink)' },
+}[tone];
+---
+
+<div
+  data-watermark
+  data-watermark-drift={drift}
+  data-watermark-spin={spin}
+  aria-hidden="true"
+  class:list={[
+    'pointer-events-none absolute select-none',
+    side === 'right' ? 'right-0 translate-x-1/4' : 'left-0 -translate-x-1/4',
+    'top-1/2 -translate-y-1/2',
+  ]}
+  style={`width:${size}rem;height:${size}rem;opacity:${opacity / 100}`}
+>
+  <svg viewBox="0 0 40 40" class="h-full w-full">
+    <g fill={fills.light}>
+      <path d={LIGHT} />
+      <path d={LIGHT} transform="rotate(180 20 20)" />
+    </g>
+    <g fill={fills.dark}>
+      <path d={DARK} />
+      <path d={DARK} transform="rotate(180 20 20)" />
+    </g>
+  </svg>
+</div>

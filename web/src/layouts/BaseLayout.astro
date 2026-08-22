@@ -74,6 +74,7 @@ const ogImage = new URL(image, Astro.site).href;
       import { initCoverflow, destroyCoverflow } from '../lib/coverflow';
       import { initEstimate } from '../lib/estimate';
       import { initContact } from '../lib/contact';
+      import { initWatermarks, destroyWatermarks } from '../lib/watermark';
       import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
       let running = false;
@@ -96,6 +97,7 @@ const ogImage = new URL(image, Astro.site).href;
         initCoverflow();
         initEstimate();
         initContact();
+        initWatermarks();
 
         // Pins add scroll length, which invalidates the geometry of every
         // trigger further down the page. Modules are initialised in DOM
@@ -133,6 +135,7 @@ const ogImage = new URL(image, Astro.site).href;
         destroyStackingCards();
         destroyHorizontalGallery();
         destroyCoverflow();
+        destroyWatermarks();
         destroySmoothScroll();
       }
 

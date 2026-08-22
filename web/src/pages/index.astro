@@ -7,6 +7,7 @@ import HorizontalGallery from '../components/HorizontalGallery.astro';
 import StackingCards from '../components/StackingCards.astro';
 import Coverflow from '../components/Coverflow.astro';
 import Testimonial from '../components/Testimonial.astro';
+import WatermarkX from '../components/WatermarkX.astro';
 import { unverified } from '../lib/placeholder';
 import { services as servicesData } from '../data/services';
 
@@ -125,7 +126,7 @@ const stats = [
           <a
             data-hero-cta
             href="/work"
-            class="inline-flex w-full items-center justify-center rounded-pill bg-copper px-7 py-3.5 text-sm font-bold text-white transition-colors duration-300 hover:bg-copper-hi sm:w-auto"
+            class="inline-flex w-full items-center justify-center rounded-pill bg-copper px-7 py-3.5 text-sm font-bold text-white transition-colors duration-300 hover:bg-copper-hover sm:w-auto"
           >
             See the work
           </a>
@@ -237,8 +238,9 @@ const stats = [
     <!-- ═══ 07 · Stats ══════════════════════════════════════════ -->
     <!-- Numbers this big are the content. Boxing them shrinks them, so
          they run edge to edge on carbon and break the run of light. -->
-    <section class="on-carbon bg-carbon py-20 md:py-24">
-      <div class="container-x">
+    <section class="on-carbon relative overflow-hidden bg-carbon py-20 md:py-24">
+      <WatermarkX side="right" size={40} opacity={7} drift={12} spin={7} />
+      <div class="container-x relative z-10">
         <div data-reveal-group>
           <p class="eyebrow !text-white/45" data-reveal="eyebrow">Track record</p>
         </div>
@@ -335,8 +337,9 @@ const stats = [
     />
 
     <!-- ═══ 11 · Contact — graduated commitment ═════════════════ -->
-    <section id="contact" class="bg-bg py-24 md:py-32">
-      <div class="container-x">
+    <section id="contact" class="relative overflow-hidden bg-bg py-24 md:py-32">
+      <WatermarkX side="left" size={36} opacity={5} drift={9} spin={5} tone="dark" />
+      <div class="container-x relative z-10">
         <div data-reveal-group class="max-w-3xl">
           <p class="eyebrow" data-reveal="eyebrow">Start here</p>
           <h2
@@ -402,7 +405,7 @@ const stats = [
             </p>
             <a
               href="/contact"
-              class="mt-6 inline-flex items-center justify-center rounded-pill bg-copper px-6 py-3 text-sm font-bold text-white transition-colors duration-300 hover:bg-copper-hi"
+              class="mt-6 inline-flex items-center justify-center rounded-pill bg-copper px-6 py-3 text-sm font-bold text-white transition-colors duration-300 hover:bg-copper-hover"
             >
               Pick a time
             </a>

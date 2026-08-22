@@ -24,18 +24,24 @@
   --color-line:        #E3E0DC;
   --color-line-strong: #D3CEC7;
 
-  /* ── Logo — the mark's two values ──
-     These are the mark's own pair and are deliberately NOT the same as the
-     site accent below. See the note in the token block: the two oranges
-     currently coexist and should be reconciled once the mark is signed off. */
-  --color-logo-dark:  #B8430F;
-  --color-logo-light: #F2895C;
+  /* ── Copper — derived from the mark, not alongside it ──
+     The mark's two values ARE the accent. Same hue (18deg), same
+     saturation (85%), two lightnesses — and they map onto the two grounds
+     the site actually has:
 
-  /* ── Copper — the single accent ── */
-  --color-copper:      #C2621B;
-  --color-copper-hi:   #D9762C;
-  --color-copper-lo:   #FBF0E6;
-  --color-copper-line: #EFD9C2;
+       copper     #B8430F  5.46:1 on white   — accent on light
+       copper-hi  #F2895C  8.06:1 on carbon  — accent on dark
+
+     This replaces #C2621B, which measured 4.15:1 on white and therefore
+     failed WCAG AA for normal text everywhere it was used.
+
+     `copper-hover` goes DARKER, not lighter. Buttons are white-on-copper,
+     so lightening on hover would drop white text to 2.47:1. */
+  --color-copper:       #B8430F;
+  --color-copper-hover: #94360B;
+  --color-copper-hi:    #F2895C;
+  --color-copper-lo:    #FDF2ED;
+  --color-copper-line:  #F7D7C9;
 
   /* ── Type ── */
   --font-display: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif;

@@ -4,6 +4,7 @@ import Navbar from '../components/Navbar.astro';
 import Footer from '../components/Footer.astro';
 import Faq from '../components/Faq.astro';
 import StatementPanel from '../components/StatementPanel.astro';
+import WatermarkX from '../components/WatermarkX.astro';
 import { unverified } from '../lib/placeholder';
 
 const principles = [
@@ -122,13 +123,13 @@ const faqs = [
       <div
         aria-hidden="true"
         class="pointer-events-none absolute inset-0 opacity-40"
-        style="background-image: radial-gradient(circle at center, rgba(194,98,27,0.4) 1px, transparent 1px); background-size: 34px 34px;"
+        style="background-image: radial-gradient(circle at center, rgba(184,67,15,0.4) 1px, transparent 1px); background-size: 34px 34px;"
       >
       </div>
       <div
         aria-hidden="true"
         class="pointer-events-none absolute inset-0"
-        style="background: radial-gradient(85% 60% at 15% 0%, rgba(194,98,27,0.20) 0%, rgba(10,9,8,0) 62%);"
+        style="background: radial-gradient(85% 60% at 15% 0%, rgba(184,67,15,0.20) 0%, rgba(10,9,8,0) 62%);"
       >
       </div>
 
@@ -227,8 +228,9 @@ const faqs = [
     </section>
 
     <!-- ── Where / when / what ──────────────────────────────── -->
-    <section class="on-carbon bg-carbon py-20 md:py-28">
-      <div class="container-x">
+    <section class="on-carbon relative overflow-hidden bg-carbon py-20 md:py-28">
+      <WatermarkX side="left" size={40} opacity={7} drift={12} spin={7} />
+      <div class="container-x relative z-10">
         <div class="max-w-2xl" data-reveal-group>
           <p class="eyebrow !text-white/45" data-reveal="eyebrow">The practical bit</p>
           <h2
@@ -284,7 +286,7 @@ const faqs = [
                 >
                   <div
                     aria-hidden="true"
-                    class="mb-6 h-32 w-full rounded-2xl bg-[radial-gradient(120%_90%_at_30%_20%,#C2621B33_0%,#3A1E0A22_40%,#0A0908_80%)]"
+                    class="mb-6 h-32 w-full rounded-2xl bg-[radial-gradient(120%_90%_at_30%_20%,#B8430F33_0%,#3A1E0A22_40%,#0A0908_80%)]"
                   />
                   <h3 class="font-display text-lg font-bold tracking-[-0.02em] text-ink">
                     {m.name}
@@ -321,7 +323,7 @@ const faqs = [
           <div class="mt-8 flex flex-col gap-3 sm:flex-row" data-reveal="body">
             <a
               href="/contact"
-              class="inline-flex items-center justify-center rounded-pill bg-copper px-7 py-3.5 text-sm font-bold text-white transition-colors duration-300 hover:bg-copper-hi"
+              class="inline-flex items-center justify-center rounded-pill bg-copper px-7 py-3.5 text-sm font-bold text-white transition-colors duration-300 hover:bg-copper-hover"
             >
               Book a scoping call
             </a>

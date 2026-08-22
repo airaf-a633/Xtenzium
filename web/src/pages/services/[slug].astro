@@ -3,6 +3,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import Navbar from '../../components/Navbar.astro';
 import Footer from '../../components/Footer.astro';
 import Faq from '../../components/Faq.astro';
+import WatermarkX from '../../components/WatermarkX.astro';
 import { services } from '../../data/services';
 
 export function getStaticPaths() {
@@ -66,13 +67,13 @@ const { service: s, next } = Astro.props;
       <div
         aria-hidden="true"
         class="pointer-events-none absolute inset-0 opacity-40"
-        style="background-image: radial-gradient(circle at center, rgba(194,98,27,0.4) 1px, transparent 1px); background-size: 34px 34px;"
+        style="background-image: radial-gradient(circle at center, rgba(184,67,15,0.4) 1px, transparent 1px); background-size: 34px 34px;"
       >
       </div>
       <div
         aria-hidden="true"
         class="pointer-events-none absolute inset-0"
-        style="background: radial-gradient(85% 60% at 12% 0%, rgba(194,98,27,0.20) 0%, rgba(10,9,8,0) 60%);"
+        style="background: radial-gradient(85% 60% at 12% 0%, rgba(184,67,15,0.20) 0%, rgba(10,9,8,0) 60%);"
       >
       </div>
 
@@ -100,7 +101,7 @@ const { service: s, next } = Astro.props;
         <div class="mt-9 flex flex-col gap-3 sm:flex-row" data-reveal="body">
           <a
             href="/contact"
-            class="inline-flex items-center justify-center rounded-pill bg-copper px-7 py-3.5 text-sm font-bold text-white transition-colors duration-300 hover:bg-copper-hi"
+            class="inline-flex items-center justify-center rounded-pill bg-copper px-7 py-3.5 text-sm font-bold text-white transition-colors duration-300 hover:bg-copper-hover"
           >
             Book a scoping call
           </a>
@@ -179,8 +180,9 @@ const { service: s, next } = Astro.props;
     </section>
 
     <!-- ── What you get ─────────────────────────────────────── -->
-    <section class="on-carbon bg-carbon py-20 md:py-28">
-      <div class="container-x">
+    <section class="on-carbon relative overflow-hidden bg-carbon py-20 md:py-28">
+      <WatermarkX side="right" size={38} opacity={7} drift={11} spin={6} />
+      <div class="container-x relative z-10">
         <div class="grid gap-12 lg:grid-cols-[minmax(0,22rem)_1fr]">
           <div data-reveal-group>
             <p class="eyebrow !text-white/45" data-reveal="eyebrow">What you get</p>
