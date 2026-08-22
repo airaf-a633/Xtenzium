@@ -169,6 +169,27 @@ const stats = [
       eyebrow="The difference"
       lines={['We build the', 'software and the', 'board it runs on.']}
       accentWord="board"
+      meet="One team, one protocol"
+      proof={[
+        {
+          label: 'The board',
+          items: [
+            'Schematic capture and PCB layout',
+            'Firmware, RTOS and bootloaders',
+            'LoRa, BLE, Zigbee, MQTT',
+            'Design for manufacture and test fixtures',
+          ],
+        },
+        {
+          label: 'The software',
+          items: [
+            'React, Next.js and Astro',
+            'Node, PostgreSQL and APIs',
+            'Fleet dashboards and monitoring',
+            'Over-the-air update pipelines',
+          ],
+        },
+      ]}
     />
 
     <!-- ═══ 05 · Process — sticky stacking cards ══════════════ -->
@@ -324,8 +345,10 @@ const stats = [
     <!-- ═══ 09 · Statement — 'focus' ════════════════════════════ -->
     <StatementPanel
       variant="focus"
+      eyebrow="Built, not assembled"
       lines={['Your brand deserves', 'more than a template.']}
       accentWord="template"
+      cta={{ label: 'See how we scope it', href: '/estimate' }}
     />
 
     <!-- ═══ 10 · Industries — 3D coverflow ════════════════════ -->

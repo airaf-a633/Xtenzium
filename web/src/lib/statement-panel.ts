@@ -144,6 +144,54 @@ export function initStatementPanels() {
         });
       }
     });
+    // ── Proof columns converge on the seam ─────────────────────────
+    //
+    // The claim on these panels is that two disciplines meet. Sliding the
+    // two halves inward until they do is the one piece of motion here that
+    // carries meaning rather than decorating — so it is scrubbed to scroll
+    // rather than fired once, and it settles exactly as the seam centres.
+    panels.forEach((panel) => {
+      const left = panel.querySelector<HTMLElement>('[data-statement-proof="left"]');
+      const right = panel.querySelector<HTMLElement>('[data-statement-proof="right"]');
+      const seam = panel.querySelector<HTMLElement>('[data-statement-seam]');
+      if (!left || !right) return;
+
+      gsap.set([left, right], { willChange: 'transform, opacity' });
+      gsap.fromTo(
+        left,
+        { xPercent: -14, opacity: 0 },
+        {
+          xPercent: 0,
+          opacity: 1,
+          ease: 'none',
+          scrollTrigger: { trigger: left, start: 'top 88%', end: 'top 45%', scrub: 0.6 },
+        },
+      );
+      gsap.fromTo(
+        right,
+        { xPercent: 14, opacity: 0 },
+        {
+          xPercent: 0,
+          opacity: 1,
+          ease: 'none',
+          scrollTrigger: { trigger: right, start: 'top 88%', end: 'top 45%', scrub: 0.6 },
+        },
+      );
+
+      if (seam) {
+        gsap.fromTo(
+          seam,
+          { scaleY: 0.3, opacity: 0 },
+          {
+            scaleY: 1,
+            opacity: 1,
+            duration: 0.5,
+            ease: 'power2.out',
+            scrollTrigger: { trigger: seam, start: 'top 78%', once: true },
+          },
+        );
+      }
+    });
   });
 }
 
