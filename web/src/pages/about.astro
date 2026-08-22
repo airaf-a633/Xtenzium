@@ -1,0 +1,341 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Navbar from '../components/Navbar.astro';
+import Footer from '../components/Footer.astro';
+import Faq from '../components/Faq.astro';
+import StatementPanel from '../components/StatementPanel.astro';
+import { unverified } from '../lib/placeholder';
+
+const principles = [
+  {
+    n: '01',
+    title: 'We learn the business first',
+    body: 'Before any code, we map how your team actually operates. The documented process and the real one are rarely the same, and the gap between them is where most projects quietly fail.',
+  },
+  {
+    n: '02',
+    title: 'One team, one conversation',
+    body: 'No account managers relaying messages. You talk to the people building your project, every time, which is only possible because we stay small on purpose.',
+  },
+  {
+    n: '03',
+    title: 'Honest scoping, not upselling',
+    body: 'Sometimes the answer is a simple site rather than a platform, or a phase rather than the whole thing. We say so, even when it means a smaller invoice.',
+  },
+  {
+    n: '04',
+    title: 'It works after we leave',
+    body: 'You own the repositories, the schematics, the credentials and the infrastructure from day one. No hostage code and no mandatory retainer.',
+  },
+];
+
+const timeline = [
+  { year: 'Karachi', label: 'Where we are', body: 'One studio in Karachi, Sindh. Everything is built here rather than brokered out to whoever is cheapest that month.' },
+  { year: 'UTC+5', label: 'When we overlap', body: 'Most of the European working day and the morning on the US East Coast. Everything runs in English.' },
+  { year: 'Both', label: 'What we build', body: 'Software and the hardware underneath it. That combination is unusual for an agency and is the reason most clients pick us.' },
+];
+
+// UNVERIFIED: roles and bios are placeholders. Four photos exist in the old
+// site's public folder (Airaf.png, Saad.png, Umar.png, sharab.png) but are
+// referenced nowhere, and no page carries names or roles — so these are a
+// structure to fill, not facts. Gated until confirmed.
+const team = [
+  { name: 'Airaf Adil', role: 'Chief Executive Officer', focus: 'Full-stack engineering and delivery' },
+  { name: 'Team member', role: 'Chief Operating Officer', focus: 'Operations and client delivery' },
+  { name: 'Team member', role: 'Chief Marketing Officer', focus: 'Growth and brand' },
+  { name: 'Team member', role: 'Electronics Lead', focus: 'PCB design, firmware and IoT' },
+];
+
+const faqs = [
+  {
+    q: 'How big is the team?',
+    a: 'A small senior core, extended with trusted specialists per project. That is a deliberate shape: it is why you talk to the people building your work rather than to an account manager, and we scale up around the core when a project needs it.',
+  },
+  {
+    q: 'Why does an agency do hardware?',
+    a: 'Because connected products usually involve two vendors who blame each other. When one team owns the board and the software talking to it, the protocol between them gets designed rather than negotiated — and that is normally what makes the battery last.',
+  },
+  {
+    q: 'Do you work with clients outside Pakistan?',
+    a: 'Most of our work is international. Being in Karachi means we overlap several hours with both the European working day and the US-Eastern morning, which covers the majority of our clients.',
+  },
+  {
+    q: 'What does an engagement usually look like?',
+    a: 'A free scoping call, then a written scope you keep either way. From there it is a fixed price for tightly-scoped work, phased pricing for larger builds, or a monthly retainer for ongoing capacity.',
+  },
+  {
+    q: 'What if we already have a development team?',
+    a: 'Then we work alongside them rather than around them. Often the most useful thing we bring is the part they cannot staff — hardware, a specific integration, or a second opinion on architecture.',
+  },
+];
+---
+
+<BaseLayout
+  title="About — Xtenzium"
+  description="A small senior studio in Karachi building web products and the custom hardware underneath them. How we work, and why the combination is unusual."
+  path="/about"
+>
+  <Fragment slot="head">
+    <script
+      is:inline
+      type="application/ld+json"
+      set:html={JSON.stringify({
+        '@context': 'https://schema.org',
+        '@graph': [
+          {
+            '@type': 'AboutPage',
+            name: 'About Xtenzium',
+            url: 'https://www.xtenzium.com/about',
+          },
+          {
+            '@type': 'Organization',
+            name: 'Xtenzium',
+            url: 'https://www.xtenzium.com',
+            email: 'contact@xtenzium.com',
+            slogan: 'We Architect Long-Term Success.',
+            address: {
+              '@type': 'PostalAddress',
+              addressLocality: 'Karachi',
+              addressRegion: 'Sindh',
+              addressCountry: 'PK',
+            },
+            areaServed: 'Worldwide',
+          },
+          {
+            '@type': 'FAQPage',
+            mainEntity: faqs.map((f) => ({
+              '@type': 'Question',
+              name: f.q,
+              acceptedAnswer: { '@type': 'Answer', text: f.a },
+            })),
+          },
+        ],
+      })}
+    />
+  </Fragment>
+
+  <Navbar />
+
+  <main>
+    <!-- ── Header ───────────────────────────────────────────── -->
+    <section class="on-carbon relative overflow-hidden bg-carbon pb-20 pt-40 md:pb-28 md:pt-48">
+      <div
+        aria-hidden="true"
+        class="pointer-events-none absolute inset-0 opacity-40"
+        style="background-image: radial-gradient(circle at center, rgba(194,98,27,0.4) 1px, transparent 1px); background-size: 34px 34px;"
+      >
+      </div>
+      <div
+        aria-hidden="true"
+        class="pointer-events-none absolute inset-0"
+        style="background: radial-gradient(85% 60% at 15% 0%, rgba(194,98,27,0.20) 0%, rgba(10,9,8,0) 62%);"
+      >
+      </div>
+
+      <div class="container-x relative" data-reveal-group>
+        <p class="eyebrow !text-copper-hi" data-reveal="eyebrow">About</p>
+        <h1
+          class="mt-4 max-w-3xl font-display text-[clamp(2.25rem,6vw,4.25rem)] font-bold leading-[1.02] tracking-[-0.035em] text-white"
+        >
+          <span class="block" data-reveal="line">A small studio that</span>
+          <span class="block" data-reveal="line">builds both halves.</span>
+        </h1>
+        <p class="mt-7 max-w-xl text-lg leading-relaxed text-white/60" data-reveal="body">
+          Most agencies stop at the browser. We keep going — through firmware,
+          onto the board, and back again. That combination is unusual, and it
+          is the reason most of our clients came to us.
+        </p>
+      </div>
+    </section>
+
+    <!-- ── The premise ──────────────────────────────────────── -->
+    <section class="bg-bg py-20 md:py-28">
+      <div class="container-x">
+        <div class="grid gap-12 lg:grid-cols-[minmax(0,18rem)_1fr]" data-reveal-group>
+          <p class="eyebrow" data-reveal="eyebrow">The premise</p>
+          <div class="max-w-2xl">
+            <p
+              class="font-display text-[clamp(1.3rem,2.6vw,1.75rem)] font-bold leading-relaxed tracking-[-0.025em] text-ink"
+              data-reveal="line"
+            >
+              Xtenzium exists because the gap between a good idea and a working
+              product is almost never a design problem or a code problem. It is
+              a handover problem.
+            </p>
+            <p class="mt-6 text-lg leading-relaxed text-ink-2" data-reveal="body">
+              Work gets passed between an agency, a contractor, a hardware firm
+              and an internal team, and every handover loses something —
+              context, intent, or a decision nobody wrote down. By the time it
+              ships, the thing that exists is not quite the thing anyone
+              specified.
+            </p>
+            <p class="mt-5 text-lg leading-relaxed text-ink-2" data-reveal="body">
+              We built the studio to remove as many of those handovers as
+              possible. One team from the schematic to the interface, small
+              enough that the person you brief is the person who builds it, and
+              disciplined enough to write down why.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Statement ────────────────────────────────────────── -->
+    <StatementPanel
+      variant="rise"
+      eyebrow="What makes us different"
+      lines={['We build the', 'software and the', 'board it runs on.']}
+      accentWord="board"
+    />
+
+    <!-- ── Principles ───────────────────────────────────────── -->
+    <section class="bg-bg py-20 md:py-28">
+      <div class="container-x">
+        <div class="max-w-2xl" data-reveal-group>
+          <p class="eyebrow" data-reveal="eyebrow">How we work</p>
+          <h2
+            class="mt-3 font-display text-[clamp(1.6rem,3.4vw,2.25rem)] font-bold tracking-[-0.03em] text-ink"
+          >
+            <span class="block" data-reveal="line">Four commitments, and</span>
+            <span class="block" data-reveal="line">we will hold you to them.</span>
+          </h2>
+        </div>
+
+        <ol data-reveal-cards class="mt-14 grid gap-4 md:grid-cols-2">
+          {
+            principles.map((p) => (
+              <li
+                data-reveal="card"
+                class="relative overflow-hidden rounded-card border border-line bg-surface p-8"
+              >
+                <span
+                  aria-hidden="true"
+                  class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-copper/60 via-copper/15 to-transparent"
+                />
+                <div class="flex items-baseline gap-4">
+                  <span class="font-mono text-xs text-copper">{p.n}</span>
+                  <h3 class="font-display text-xl font-bold tracking-[-0.025em] text-ink">
+                    {p.title}
+                  </h3>
+                </div>
+                <p class="mt-4 pl-9 text-[0.95rem] leading-relaxed text-ink-2">{p.body}</p>
+              </li>
+            ))
+          }
+        </ol>
+      </div>
+    </section>
+
+    <!-- ── Where / when / what ──────────────────────────────── -->
+    <section class="on-carbon bg-carbon py-20 md:py-28">
+      <div class="container-x">
+        <div class="max-w-2xl" data-reveal-group>
+          <p class="eyebrow !text-white/45" data-reveal="eyebrow">The practical bit</p>
+          <h2
+            class="mt-3 font-display text-[clamp(1.6rem,3.4vw,2.25rem)] font-bold tracking-[-0.03em] text-white"
+          >
+            <span class="block" data-reveal="line">Karachi, and most</span>
+            <span class="block" data-reveal="line">of our clients are not.</span>
+          </h2>
+        </div>
+
+        <div data-reveal-cards class="mt-14 grid divide-y divide-white/10 md:grid-cols-3 md:divide-x md:divide-y-0">
+          {
+            timeline.map((t, i) => (
+              <div
+                data-reveal="card"
+                class:list={['py-8 md:py-0', i === 0 ? 'md:pr-10' : 'md:px-10', i === 2 && 'md:pr-0']}
+              >
+                <p class="font-display text-3xl font-bold tracking-[-0.035em] text-copper-hi">
+                  {t.year}
+                </p>
+                <p class="eyebrow mt-3 !text-white/45">{t.label}</p>
+                <p class="mt-3 text-[0.95rem] leading-relaxed text-white/60">{t.body}</p>
+              </div>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Team ─────────────────────────────────────────────── -->
+    <!-- Gated: names, roles and focus areas are placeholders. -->
+    {
+      unverified(team) && (
+        <section class="bg-bg-tint py-20 md:py-28">
+          <div class="container-x">
+            <div class="max-w-2xl" data-reveal-group>
+              <p class="eyebrow" data-reveal="eyebrow">The people</p>
+              <h2 class="mt-3 font-display text-[clamp(1.6rem,3.4vw,2.25rem)] font-bold tracking-[-0.03em] text-ink">
+                <span class="block" data-reveal="line">A senior core, extended</span>
+                <span class="block" data-reveal="line">with specialists per project.</span>
+              </h2>
+              <p class="mt-4 leading-relaxed text-ink-2" data-reveal="body">
+                Staying small is a choice. It is why the person who scopes your
+                project is the person who builds it.
+              </p>
+            </div>
+
+            <div data-reveal-cards class="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {team.map((m) => (
+                <div
+                  data-reveal="card"
+                  class="rounded-card border border-line bg-surface p-7"
+                >
+                  <div
+                    aria-hidden="true"
+                    class="mb-6 h-32 w-full rounded-2xl bg-[radial-gradient(120%_90%_at_30%_20%,#C2621B33_0%,#3A1E0A22_40%,#0A0908_80%)]"
+                  />
+                  <h3 class="font-display text-lg font-bold tracking-[-0.02em] text-ink">
+                    {m.name}
+                  </h3>
+                  <p class="mt-1 font-mono text-[11px] uppercase tracking-[0.14em] text-copper">
+                    {m.role}
+                  </p>
+                  <p class="mt-3 text-sm leading-relaxed text-ink-2">{m.focus}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )
+    }
+
+    <Faq eyebrow="Questions" heading={['About the studio.']} items={faqs} />
+
+    <!-- ── CTA ──────────────────────────────────────────────── -->
+    <section class="border-t border-white/10 bg-carbon py-20 md:py-28">
+      <div class="container-x" data-reveal-group>
+        <div class="max-w-2xl">
+          <p class="eyebrow !text-copper-hi" data-reveal="eyebrow">Work with us</p>
+          <h2
+            class="mt-3 font-display text-[clamp(1.75rem,4vw,2.75rem)] font-bold tracking-[-0.035em] text-white"
+          >
+            <span class="block" data-reveal="line">Tell us what you're</span>
+            <span class="block" data-reveal="line">trying to build.</span>
+          </h2>
+          <p class="mt-5 max-w-lg leading-relaxed text-white/60" data-reveal="body">
+            A free scoping call, and a written scope you keep whether or not
+            you hire us.
+          </p>
+          <div class="mt-8 flex flex-col gap-3 sm:flex-row" data-reveal="body">
+            <a
+              href="/contact"
+              class="inline-flex items-center justify-center rounded-pill bg-copper px-7 py-3.5 text-sm font-bold text-white transition-colors duration-300 hover:bg-copper-hi"
+            >
+              Book a scoping call
+            </a>
+            <a
+              href="/work"
+              class="inline-flex items-center justify-center rounded-pill border border-white/25 px-7 py-3.5 text-sm font-bold text-white transition-colors duration-300 hover:bg-white hover:text-carbon"
+            >
+              See the work
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <Footer />
+</BaseLayout>
