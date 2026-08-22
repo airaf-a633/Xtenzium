@@ -5,6 +5,7 @@ import Footer from '../components/Footer.astro';
 import { QUESTIONS } from '../lib/estimate';
 import Faq from '../components/Faq.astro';
 import Testimonial from '../components/Testimonial.astro';
+import { unverified } from '../lib/placeholder';
 
 const drivers = [
   { n: '01', title: 'What it is', body: 'A marketing site and a connected-hardware fleet are different orders of magnitude. This sets the floor; everything else scales it.' },
@@ -22,6 +23,7 @@ const included = [
   'No mandatory retainer afterwards',
 ];
 
+// UNVERIFIED: invented figures. Replace with real bands, then drop the wrapper.
 const bands = [
   { type: 'Marketing website', range: '$6k – $18k', note: 'Brochure through to a full content site with CMS' },
   { type: 'Web application', range: '$18k – $60k', note: 'Dashboards, portals, internal tooling, SaaS' },
@@ -292,6 +294,8 @@ const faqs = [
     </section>
 
     <!-- ── Typical bands ────────────────────────────────────── -->
+    <!-- Gated: these numbers are placeholders and must not ship. -->
+    {unverified(bands) && (
     <section class="bg-bg py-20 md:py-28">
       <div class="container-x">
         <div class="max-w-2xl" data-reveal-group>
@@ -328,6 +332,7 @@ const faqs = [
         </div>
       </div>
     </section>
+    )}
 
     <!-- ── What's included ──────────────────────────────────── -->
     <section class="bg-bg-tint py-20 md:py-28">
@@ -363,11 +368,14 @@ const faqs = [
       </div>
     </section>
 
-    <Testimonial
-      quote="They told us the smaller option would do the job. It did. That conversation is the reason we came back twice."
-      attribution="Operations Director"
-      role="Logistics client"
-    />
+    {/* Gated: invented quote and attribution. */}
+    {unverified(true) && (
+      <Testimonial
+        quote="They told us the smaller option would do the job. It did. That conversation is the reason we came back twice."
+        attribution="Operations Director"
+        role="Logistics client"
+      />
+    )}
 
     <Faq eyebrow="Questions" heading={['Before you ask.']} items={faqs} tone="dark" />
 

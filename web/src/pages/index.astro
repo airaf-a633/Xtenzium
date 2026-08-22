@@ -7,6 +7,7 @@ import HorizontalGallery from '../components/HorizontalGallery.astro';
 import StackingCards from '../components/StackingCards.astro';
 import Coverflow from '../components/Coverflow.astro';
 import Testimonial from '../components/Testimonial.astro';
+import { unverified } from '../lib/placeholder';
 
 const heroLines = ['We architect', 'long-term', 'success.'];
 
@@ -251,11 +252,14 @@ const stats = [
     </section>
 
     <!-- ═══ 06b · Testimonial ═════════════════════════════════ -->
+    {/* Gated: invented quote and attribution. */}
+    {unverified(true) && (
     <Testimonial
       quote="They didn't just ship a website. They built the thing our operations actually run on, and then handed it over so we could keep going without them."
       attribution="Operations Director"
       role="Fleet telematics client"
     />
+    )}
 
     <!-- ═══ 07 · Stats ══════════════════════════════════════════ -->
     <!-- Numbers this big are the content. Boxing them shrinks them, so

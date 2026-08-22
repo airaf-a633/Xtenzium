@@ -5,9 +5,11 @@ import Footer from '../../components/Footer.astro';
 import Faq from '../../components/Faq.astro';
 import Testimonial from '../../components/Testimonial.astro';
 import { getWork } from '../../lib/content';
+import { unverified } from '../../lib/placeholder';
 
 const entries = await getWork();
 
+// UNVERIFIED: '9 industries' is invented; confirm the others before shipping.
 const proof = [
   { v: '65+', count: 65, suffix: '+', l: 'Projects delivered' },
   { v: '36%', count: 36, suffix: '%', l: 'Average first-year ROI' },
@@ -105,6 +107,7 @@ const faqs = [
     </section>
 
     <!-- ── Proof bar ────────────────────────────────────────── -->
+    {unverified(proof) && (
     <section class="on-carbon border-t border-white/10 bg-carbon pb-20 md:pb-24">
       <div class="container-x">
         <div
@@ -131,6 +134,7 @@ const faqs = [
         </div>
       </div>
     </section>
+    )}
 
     <!-- ── Index ────────────────────────────────────────────── -->
     <section class="bg-bg py-20 md:py-28">
@@ -264,11 +268,14 @@ const faqs = [
       </div>
     </section>
 
-    <Testimonial
-      quote="The write-up they published was the same document they gave us privately. Nothing was smoothed over. That is rarer than it should be."
-      attribution="Head of Product"
-      role="Clinical SaaS client"
-    />
+    {/* Gated: invented quote and attribution. */}
+    {unverified(true) && (
+      <Testimonial
+        quote="The write-up they published was the same document they gave us privately. Nothing was smoothed over. That is rarer than it should be."
+        attribution="Head of Product"
+        role="Clinical SaaS client"
+      />
+    )}
 
     <Faq eyebrow="Questions" heading={['About the work.']} items={faqs} />
 
