@@ -24,6 +24,13 @@
   --color-line:        #E3E0DC;
   --color-line-strong: #D3CEC7;
 
+  /* ── Logo — the mark's two values ──
+     These are the mark's own pair and are deliberately NOT the same as the
+     site accent below. See the note in the token block: the two oranges
+     currently coexist and should be reconciled once the mark is signed off. */
+  --color-logo-dark:  #B8430F;
+  --color-logo-light: #F2895C;
+
   /* ── Copper — the single accent ── */
   --color-copper:      #C2621B;
   --color-copper-hi:   #D9762C;

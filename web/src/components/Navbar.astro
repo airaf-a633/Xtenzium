@@ -1,4 +1,6 @@
 ---
+import Logo from './Logo.astro';
+
 const links = [
   { href: '/work', label: 'Work' },
   { href: '/services', label: 'Services' },
@@ -13,8 +15,11 @@ const links = [
       data-nav-shell
       class="pointer-events-auto flex items-center justify-between gap-5 rounded-pill border border-white/12 bg-carbon/70 py-2 pl-5 pr-2 shadow-[0_8px_32px_-12px_rgba(0,0,0,0.6)] backdrop-blur-xl transition-[background-color,border-color] duration-300"
     >
-      <a href="/" class="font-display text-base font-bold tracking-[-0.03em] text-white">
-        Xtenzium
+      <a href="/" class="flex items-center gap-2.5" aria-label="Xtenzium — home">
+        <Logo size={26} labelled={false} />
+        <span class="font-display text-base font-bold tracking-[-0.03em] text-white">
+          Xtenzium
+        </span>
       </a>
 
       <ul class="hidden items-center gap-6 md:flex">

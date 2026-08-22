@@ -1,4 +1,6 @@
 ---
+import Logo from './Logo.astro';
+
 const columns = [
   {
     title: 'Services',
@@ -27,7 +29,10 @@ const year = new Date().getFullYear();
   <div class="container-x">
     <div class="grid gap-12 md:grid-cols-[1.5fr_1fr_1fr]">
       <div>
-        <p class="font-display text-2xl font-bold tracking-[-0.03em]">Xtenzium</p>
+        <div class="flex items-center gap-3">
+          <Logo size={34} labelled={false} />
+          <p class="font-display text-2xl font-bold tracking-[-0.03em]">Xtenzium</p>
+        </div>
         <p class="mt-4 max-w-xs text-sm leading-relaxed text-white/55">
           We architect long-term success — software, hardware, and the systems
           that connect them.
