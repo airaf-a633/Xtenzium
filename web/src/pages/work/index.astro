@@ -1,0 +1,136 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Navbar from '../../components/Navbar.astro';
+import Footer from '../../components/Footer.astro';
+import { getWork } from '../../lib/content';
+
+const entries = await getWork();
+---
+
+<BaseLayout
+  title="Work — Xtenzium"
+  description="Case studies from Xtenzium: what we scoped, what we built, what it cost, and what it returned. Web products, IoT hardware, and the systems between them."
+  path="/work"
+>
+  <Navbar />
+
+  <main>
+    <!-- ── Header ───────────────────────────────────────────── -->
+    <section class="on-carbon bg-carbon pb-20 pt-40 md:pb-28 md:pt-48">
+      <div class="container-x" data-reveal-group>
+        <p class="eyebrow !text-copper-hi" data-reveal="eyebrow">Selected work</p>
+        <h1
+          class="mt-4 max-w-3xl font-display text-[clamp(2.25rem,6vw,4.25rem)] font-bold leading-[1.02] tracking-[-0.035em] text-white"
+        >
+          <span class="block" data-reveal="line">What we scoped, what</span>
+          <span class="block" data-reveal="line">it cost, what it returned.</span>
+        </h1>
+        <p class="mt-7 max-w-xl text-lg leading-relaxed text-white/60" data-reveal="body">
+          Every study covers the brief, the decisions, and the numbers — including
+          the parts that went sideways. No logo walls.
+        </p>
+      </div>
+    </section>
+
+    <!-- ── Index ────────────────────────────────────────────── -->
+    <section class="bg-bg py-20 md:py-28">
+      <div class="container-x">
+        {
+          entries.length === 0 ? (
+            <div class="rounded-card border border-dashed border-line-strong bg-surface p-14 text-center">
+              <p class="eyebrow">Nothing published yet</p>
+              <h2 class="mt-4 font-display text-2xl font-bold tracking-[-0.025em] text-ink">
+                Case studies are being written.
+              </h2>
+              <p class="mx-auto mt-3 max-w-md leading-relaxed text-ink-2">
+                In the meantime, tell us what you're building and we'll send the
+                two most relevant to your project.
+              </p>
+              <a
+                href="/contact"
+                class="mt-7 inline-flex rounded-pill bg-copper px-7 py-3.5 text-sm font-bold text-white transition-colors duration-300 hover:bg-copper-hi"
+              >
+                Ask for relevant work
+              </a>
+            </div>
+          ) : (
+            <ol data-reveal-cards class="flex flex-col">
+              {entries.map((entry, i) => (
+                <li data-reveal="card">
+                  <a
+                    href={`/work/${entry.id}`}
+                    class="group grid items-start gap-6 border-t border-line py-10 transition-colors duration-300 hover:border-copper md:grid-cols-[auto_1fr_auto] md:gap-10 md:py-12"
+                  >
+                    <span class="font-mono text-xs text-ink-3 md:pt-3">
+                      {String(i + 1).padStart(2, '0')}
+                    </span>
+
+                    <div class="max-w-2xl">
+                      <p class="eyebrow">
+                        {entry.data.sector} — {entry.data.year}
+                      </p>
+                      <h2
+                        transition:name={`case-${entry.id}`}
+                        class="mt-3 font-display text-[clamp(1.75rem,3.6vw,2.75rem)] font-bold leading-[1.05] tracking-[-0.03em] text-ink transition-colors duration-300 group-hover:text-copper"
+                      >
+                        {entry.data.client}
+                      </h2>
+                      <p class="mt-3 leading-relaxed text-ink-2">{entry.data.summary}</p>
+
+                      <div class="mt-5 flex flex-wrap gap-2">
+                        {entry.data.services.map((s) => (
+                          <span class="rounded-pill border border-line px-3 py-1 font-mono text-[11px] text-ink-2">
+                            {s}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div class="md:pt-3 md:text-right">
+                      <div class="font-display text-3xl font-bold tracking-[-0.03em] text-copper tabular-nums md:text-4xl">
+                        {entry.data.headline.value}
+                      </div>
+                      <p class="mt-1.5 text-xs text-ink-2">{entry.data.headline.label}</p>
+                    </div>
+                  </a>
+                </li>
+              ))}
+              <li class="border-t border-line" />
+            </ol>
+          )
+        }
+      </div>
+    </section>
+
+    <!-- ── CTA ──────────────────────────────────────────────── -->
+    <section class="bg-bg-tint py-20 md:py-28">
+      <div class="container-x" data-reveal-group>
+        <div class="max-w-2xl">
+          <p class="eyebrow" data-reveal="eyebrow">Your turn</p>
+          <h2
+            class="mt-3 font-display text-[clamp(1.75rem,4vw,2.75rem)] font-bold tracking-[-0.03em] text-ink"
+          >
+            <span class="block" data-reveal="line">Tell us what you're</span>
+            <span class="block" data-reveal="line">trying to build.</span>
+          </h2>
+          <div class="mt-8 flex flex-col gap-3 sm:flex-row" data-reveal="body">
+            <a
+              href="/contact"
+              class="inline-flex items-center justify-center rounded-pill bg-copper px-7 py-3.5 text-sm font-bold text-white transition-colors duration-300 hover:bg-copper-hi"
+            >
+              Book a scoping call
+            </a>
+            <a
+              href="/estimate"
+              class="inline-flex items-center justify-center rounded-pill border border-line-strong px-7 py-3.5 text-sm font-bold text-ink transition-colors duration-300 hover:bg-ink hover:text-bg"
+            >
+              Estimate a project
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <Footer />
+</BaseLayout>
