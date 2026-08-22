@@ -1,4 +1,5 @@
 import gsap from 'gsap';
+import { submitLead } from './supabase';
 
 /**
  * Project estimator.
@@ -206,42 +207,54 @@ export function initEstimate() {
     const btn = form.querySelector<HTMLButtonElement>('button[type="submit"]');
     if (!statusEl || !btn) return;
 
+    const email = String(new FormData(form).get('email') || '').trim();
+    if (!email) {
+      statusEl.textContent = 'We need an email to send the breakdown to.';
+      statusEl.dataset.state = 'error';
+      return;
+    }
+
     btn.disabled = true;
     statusEl.textContent = 'Sending your breakdown…';
     statusEl.dataset.state = 'pending';
 
-    const payload = {
-      email: new FormData(form).get('email'),
-      answers: Object.fromEntries(Object.entries(answers).map(([k, v]) => [k, v.label])),
-      low: lowEl?.textContent,
-      high: highEl?.textContent,
-    };
+    const picked = QUESTIONS.filter((q) => answers[q.id]).map(
+      (q) => `${q.prompt} ${answers[q.id].label}`,
+    );
+    const low = lowEl?.textContent ?? '';
+    const high = highEl?.textContent ?? '';
 
-    try {
-      const endpoint = form.getAttribute('action');
-      // No endpoint configured yet — see the note on the page. Rather than
-      // pretend it sent, say so plainly.
-      if (!endpoint || endpoint === '#') {
-        throw new Error('not-configured');
-      }
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) throw new Error(String(res.status));
+    // The `leads` table requires a name and a message, and the estimator
+    // asks for neither. Rather than loosen the schema — which the CRM and
+    // admin both read — synthesise both so the lead is readable in the
+    // existing inbox with no changes anywhere else.
+    const res = await submitLead({
+      name: email.split('@')[0] || 'Estimate enquiry',
+      email,
+      message: [`Estimator range: ${low} – ${high}`, '', ...picked].join('\n'),
+      source: 'estimate',
+      payload: {
+        low,
+        high,
+        answers: Object.fromEntries(
+          Object.entries(answers).map(([k, v]) => [k, v.label]),
+        ),
+      },
+    });
 
+    if (res.ok) {
       statusEl.textContent = 'Sent. Check your inbox in the next few minutes.';
       statusEl.dataset.state = 'ok';
       form.reset();
-    } catch (err) {
-      const notConfigured = (err as Error).message === 'not-configured';
-      statusEl.textContent = notConfigured
-        ? 'This form has no endpoint wired up yet. Email contact@xtenzium.com and we will send the breakdown.'
-        : 'That did not send. Email contact@xtenzium.com and we will get it to you.';
-      statusEl.dataset.state = 'error';
-      btn.disabled = false;
+      return;
     }
+
+    btn.disabled = false;
+    statusEl.textContent =
+      res.reason === 'not-configured'
+        ? 'This form is not connected yet. Email contact@xtenzium.com and we will send the breakdown.'
+        : 'That did not send. Email contact@xtenzium.com and we will get it to you.';
+    statusEl.dataset.state = 'error';
   });
 
   paint();

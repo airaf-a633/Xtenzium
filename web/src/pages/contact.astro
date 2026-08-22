@@ -1,0 +1,328 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Navbar from '../components/Navbar.astro';
+import Footer from '../components/Footer.astro';
+import Faq from '../components/Faq.astro';
+import { services } from '../data/services';
+
+const sorted = [...services].sort((a, b) => a.order - b.order);
+
+const expect = [
+  { n: '01', title: 'A reply within one working day', body: 'From someone who would work on it, not a scheduling assistant. Usually the same day if you write during Karachi hours.' },
+  { n: '02', title: 'Thirty minutes, not a pitch', body: 'We ask about the problem and the constraints. There is no deck, and we do not need you to have a spec.' },
+  { n: '03', title: 'A written scope afterwards', body: 'What we think it takes, what it would cost, and what we would do first. Yours to keep either way.' },
+];
+
+const faqs = [
+  { q: 'Do I need a spec before contacting you?', a: 'No. Most people arrive with a problem rather than a specification, and turning one into the other is the first thing we do. A paragraph about what is going wrong is plenty.' },
+  { q: 'What if I only want advice?', a: 'That is a real engagement and we are happy to scope it. A short advisory review is often the cheapest way to avoid an expensive mistake.' },
+  { q: 'How quickly can you start?', a: 'Depends on the month. We will tell you our honest availability on the first call rather than promising a start date we then slip.' },
+  { q: 'Do you sign NDAs?', a: 'Yes, routinely, and we can sign yours before the first call if the subject is sensitive.' },
+  { q: 'What time zone are you in?', a: 'Pakistan Standard Time, UTC+5. That overlaps most of the European working day and the morning on the US East Coast. Everything runs in English.' },
+];
+---
+
+<BaseLayout
+  title="Contact — Xtenzium"
+  description="Tell us what you are building. A reply within one working day, a thirty-minute scoping call, and a written scope you keep either way."
+  path="/contact"
+>
+  <Fragment slot="head">
+    <script
+      is:inline
+      type="application/ld+json"
+      set:html={JSON.stringify({
+        '@context': 'https://schema.org',
+        '@graph': [
+          {
+            '@type': 'ContactPage',
+            name: 'Contact Xtenzium',
+            url: 'https://www.xtenzium.com/contact',
+          },
+          {
+            '@type': 'Organization',
+            name: 'Xtenzium',
+            url: 'https://www.xtenzium.com',
+            email: 'contact@xtenzium.com',
+            address: {
+              '@type': 'PostalAddress',
+              addressLocality: 'Karachi',
+              addressRegion: 'Sindh',
+              addressCountry: 'PK',
+            },
+            contactPoint: {
+              '@type': 'ContactPoint',
+              email: 'contact@xtenzium.com',
+              contactType: 'sales',
+              areaServed: 'Worldwide',
+              availableLanguage: 'English',
+            },
+          },
+          {
+            '@type': 'FAQPage',
+            mainEntity: faqs.map((f) => ({
+              '@type': 'Question',
+              name: f.q,
+              acceptedAnswer: { '@type': 'Answer', text: f.a },
+            })),
+          },
+        ],
+      })}
+    />
+  </Fragment>
+
+  <Navbar />
+
+  <main>
+    <!-- ── Header + form ────────────────────────────────────── -->
+    <section class="on-carbon relative overflow-hidden bg-carbon pb-20 pt-36 md:pb-28 md:pt-44">
+      <div
+        aria-hidden="true"
+        class="pointer-events-none absolute inset-0 opacity-40"
+        style="background-image: radial-gradient(circle at center, rgba(194,98,27,0.4) 1px, transparent 1px); background-size: 34px 34px;"
+      >
+      </div>
+      <div
+        aria-hidden="true"
+        class="pointer-events-none absolute inset-0"
+        style="background: radial-gradient(85% 60% at 20% 0%, rgba(194,98,27,0.20) 0%, rgba(10,9,8,0) 62%);"
+      >
+      </div>
+
+      <div class="container-x relative">
+        <div class="grid gap-14 lg:grid-cols-[minmax(0,26rem)_1fr] lg:gap-20">
+          <!-- Left: the pitch and the direct routes -->
+          <div data-reveal-group>
+            <p class="eyebrow !text-copper-hi" data-reveal="eyebrow">Contact</p>
+            <h1
+              class="mt-4 font-display text-[clamp(2rem,5vw,3.25rem)] font-bold leading-[1.04] tracking-[-0.035em] text-white"
+            >
+              <span class="block" data-reveal="line">Tell us what you're</span>
+              <span class="block" data-reveal="line">trying to build.</span>
+            </h1>
+            <p class="mt-6 leading-relaxed text-white/60" data-reveal="body">
+              No pitch deck and no discovery fee. A conversation about scope,
+              and an honest answer about whether we are the right team for it.
+            </p>
+
+            <div class="mt-10 flex flex-col gap-5 border-t border-white/10 pt-8">
+              <div>
+                <p class="eyebrow !text-white/40">Email</p>
+                <a
+                  href="mailto:contact@xtenzium.com"
+                  class="mt-2 inline-block font-display text-lg font-bold tracking-[-0.02em] text-copper-hi transition-colors duration-300 hover:text-white"
+                >
+                  contact@xtenzium.com
+                </a>
+              </div>
+              <div>
+                <p class="eyebrow !text-white/40">Studio</p>
+                <p class="mt-2 text-[0.95rem] leading-relaxed text-white/65">
+                  Karachi, Sindh, Pakistan<br />
+                  <span class="text-white/40">UTC+5 — overlaps Europe and US-Eastern mornings</span>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: the form -->
+          <div
+            class="rounded-card border border-white/12 bg-white/[0.03] p-7 backdrop-blur-sm md:p-9"
+          >
+            <form data-contact-form novalidate>
+              <div class="grid gap-5 sm:grid-cols-2">
+                <div class="sm:col-span-1">
+                  <label for="c-name" class="block text-sm font-medium text-white/80">
+                    Your name
+                  </label>
+                  <input
+                    id="c-name"
+                    name="name"
+                    type="text"
+                    required
+                    autocomplete="name"
+                    class="mt-2 min-h-[3rem] w-full rounded-2xl border border-white/15 bg-white/[0.04] px-4 text-[0.95rem] text-white placeholder:text-white/25 focus:border-copper focus:outline-none"
+                    placeholder="Jane Okafor"
+                  />
+                </div>
+
+                <div class="sm:col-span-1">
+                  <label for="c-email" class="block text-sm font-medium text-white/80">
+                    Work email
+                  </label>
+                  <input
+                    id="c-email"
+                    name="email"
+                    type="email"
+                    required
+                    autocomplete="email"
+                    class="mt-2 min-h-[3rem] w-full rounded-2xl border border-white/15 bg-white/[0.04] px-4 text-[0.95rem] text-white placeholder:text-white/25 focus:border-copper focus:outline-none"
+                    placeholder="jane@company.com"
+                  />
+                </div>
+
+                <div class="sm:col-span-2">
+                  <label for="c-company" class="block text-sm font-medium text-white/80">
+                    Company <span class="font-normal text-white/35">— optional</span>
+                  </label>
+                  <input
+                    id="c-company"
+                    name="company"
+                    type="text"
+                    autocomplete="organization"
+                    class="mt-2 min-h-[3rem] w-full rounded-2xl border border-white/15 bg-white/[0.04] px-4 text-[0.95rem] text-white placeholder:text-white/25 focus:border-copper focus:outline-none"
+                    placeholder="Acme Ltd"
+                  />
+                </div>
+
+                <div class="sm:col-span-1">
+                  <label for="c-service" class="block text-sm font-medium text-white/80">
+                    What it's about <span class="font-normal text-white/35">— optional</span>
+                  </label>
+                  <select
+                    id="c-service"
+                    name="service"
+                    class="mt-2 min-h-[3rem] w-full rounded-2xl border border-white/15 bg-white/[0.04] px-4 text-[0.95rem] text-white focus:border-copper focus:outline-none"
+                  >
+                    <option value="" class="bg-carbon">Not sure yet</option>
+                    {
+                      sorted.map((s) => (
+                        <option value={s.title} class="bg-carbon">
+                          {s.title}
+                        </option>
+                      ))
+                    }
+                  </select>
+                </div>
+
+                <div class="sm:col-span-1">
+                  <label for="c-budget" class="block text-sm font-medium text-white/80">
+                    Budget <span class="font-normal text-white/35">— optional</span>
+                  </label>
+                  <select
+                    id="c-budget"
+                    name="budget"
+                    class="mt-2 min-h-[3rem] w-full rounded-2xl border border-white/15 bg-white/[0.04] px-4 text-[0.95rem] text-white focus:border-copper focus:outline-none"
+                  >
+                    <option value="" class="bg-carbon">Rather not say</option>
+                    <option value="under-10k" class="bg-carbon">Under $10k</option>
+                    <option value="10-25k" class="bg-carbon">$10k – $25k</option>
+                    <option value="25-50k" class="bg-carbon">$25k – $50k</option>
+                    <option value="50-100k" class="bg-carbon">$50k – $100k</option>
+                    <option value="100k-plus" class="bg-carbon">$100k+</option>
+                    <option value="unknown" class="bg-carbon">Need help working it out</option>
+                  </select>
+                </div>
+
+                <div class="sm:col-span-2">
+                  <label for="c-message" class="block text-sm font-medium text-white/80">
+                    What are you trying to build?
+                  </label>
+                  <textarea
+                    id="c-message"
+                    name="message"
+                    rows="5"
+                    required
+                    class="mt-2 w-full rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3.5 text-[0.95rem] leading-relaxed text-white placeholder:text-white/25 focus:border-copper focus:outline-none"
+                    placeholder="A paragraph is plenty. What is going wrong, or what do you want to exist that doesn't?"
+                  ></textarea>
+                  <p class="mt-2 text-xs text-white/35">
+                    No spec needed. Turning a problem into a scope is the first
+                    thing we do.
+                  </p>
+                </div>
+              </div>
+
+              <!-- Honeypot. Hidden from people and from assistive tech; bots
+                   fill it because they read the DOM. -->
+              <div aria-hidden="true" class="absolute left-[-9999px] h-0 w-0 overflow-hidden">
+                <label for="c-website">Website</label>
+                <input id="c-website" data-contact-hp name="website" type="text" tabindex="-1" autocomplete="off" />
+              </div>
+
+              <button
+                type="submit"
+                class="mt-7 min-h-[3rem] w-full rounded-pill bg-copper px-7 text-sm font-bold text-white transition-colors duration-300 hover:bg-copper-hi disabled:opacity-50 sm:w-auto"
+              >
+                Send it
+              </button>
+
+              <p
+                data-contact-status
+                role="status"
+                aria-live="polite"
+                class="mt-4 text-sm leading-relaxed text-white/50 data-[state=error]:text-copper-hi data-[state=ok]:text-emerald-400"
+              >
+              </p>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── What happens next ────────────────────────────────── -->
+    <section class="bg-bg py-20 md:py-28">
+      <div class="container-x">
+        <div class="max-w-2xl" data-reveal-group>
+          <p class="eyebrow" data-reveal="eyebrow">What happens next</p>
+          <h2
+            class="mt-3 font-display text-[clamp(1.6rem,3.4vw,2.25rem)] font-bold tracking-[-0.03em] text-ink"
+          >
+            <span class="block" data-reveal="line">Three steps, and none</span>
+            <span class="block" data-reveal="line">of them cost anything.</span>
+          </h2>
+        </div>
+
+        <ol data-reveal-cards class="mt-14 grid gap-4 md:grid-cols-3">
+          {
+            expect.map((e) => (
+              <li
+                data-reveal="card"
+                class="relative overflow-hidden rounded-card border border-line bg-surface p-8"
+              >
+                <span
+                  aria-hidden="true"
+                  class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-copper/60 via-copper/15 to-transparent"
+                />
+                <span class="font-mono text-xs text-copper">{e.n}</span>
+                <h3 class="mt-4 font-display text-xl font-bold tracking-[-0.025em] text-ink">
+                  {e.title}
+                </h3>
+                <p class="mt-3 text-[0.95rem] leading-relaxed text-ink-2">{e.body}</p>
+              </li>
+            ))
+          }
+        </ol>
+      </div>
+    </section>
+
+    <!-- ── Prefer a number first ────────────────────────────── -->
+    <section class="bg-bg-tint py-16 md:py-20">
+      <div class="container-x">
+        <div
+          class="flex flex-col items-start justify-between gap-6 rounded-card border border-line bg-surface p-8 sm:flex-row sm:items-center md:p-10"
+        >
+          <div class="max-w-lg">
+            <p class="eyebrow">Not ready to talk?</p>
+            <h2 class="mt-3 font-display text-2xl font-bold tracking-[-0.03em] text-ink">
+              Get a range in four questions.
+            </h2>
+            <p class="mt-3 leading-relaxed text-ink-2">
+              No call, no email required until the number is already on screen.
+            </p>
+          </div>
+          <a
+            href="/estimate"
+            class="shrink-0 rounded-pill border border-line-strong px-7 py-3.5 text-sm font-bold text-ink transition-colors duration-300 hover:bg-ink hover:text-bg"
+          >
+            Estimate a project
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <Faq eyebrow="Questions" heading={['Before you write.']} items={faqs} tone="dark" />
+  </main>
+
+  <Footer />
+</BaseLayout>
