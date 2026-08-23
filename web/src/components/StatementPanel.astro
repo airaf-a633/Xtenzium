@@ -20,6 +20,9 @@
  *
  * Animation lives in `src/lib/statement-panel.ts`. Zero framework JS.
  */
+import BleedImage from './BleedImage.astro';
+import type { Imagery } from '../data/imagery';
+
 interface ProofGroup {
   label: string;
   items: string[];
@@ -30,6 +33,8 @@ interface Props {
   variant?: 'default' | 'rise' | 'focus';
   image?: string;
   alt?: string;
+  /** Photograph over generated art, duotoned to the palette. */
+  imagery?: Imagery;
   eyebrow?: string;
   /** Highlights one word in copper. Matched case-insensitively. */
   accentWord?: string;
@@ -45,6 +50,7 @@ const {
   variant = 'default',
   image,
   alt = '',
+  imagery,
   eyebrow,
   accentWord,
   proof,
@@ -53,7 +59,7 @@ const {
 } = Astro.props;
 
 const hasProof = Array.isArray(proof) && proof.length === 2;
-const hasBody = hasProof || !!cta || !!image;
+const hasBody = hasProof || !!cta || !!image || !!imagery;
 
 // `focus` splits into individual words; the others animate whole lines.
 const units =
@@ -86,7 +92,9 @@ const isAccent = (t: string) =>
   <div data-statement-media class="absolute inset-0 overflow-hidden bg-carbon">
     <div data-statement-inner class="absolute inset-0">
       {
-        image ? (
+        imagery ? (
+          <BleedImage image={imagery} scrim="strong" class="!static" />
+        ) : image ? (
           <img
             src={image}
             alt={alt}

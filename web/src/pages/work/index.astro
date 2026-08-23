@@ -1,4 +1,6 @@
 ---
+import { imagery } from '../../data/imagery';
+import BleedImage from '../../components/BleedImage.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Navbar from '../../components/Navbar.astro';
 import Footer from '../../components/Footer.astro';
@@ -90,8 +92,9 @@ const faqs = [
 
   <main>
     <!-- ── Header ───────────────────────────────────────────── -->
-    <section class="on-carbon bg-carbon pb-20 pt-40 md:pb-24 md:pt-48">
-      <div class="container-x" data-reveal-group>
+    <section class="on-carbon relative overflow-hidden bg-carbon pb-20 pt-40 md:pb-24 md:pt-48">
+      <BleedImage image={imagery.headerWork} scrim="soft" eager />
+      <div class="container-x relative z-10" data-reveal-group>
         <p class="eyebrow !text-copper-hi" data-reveal="eyebrow">Selected work</p>
         <h1
           class="mt-4 max-w-3xl font-display text-[clamp(2.25rem,6vw,4.25rem)] font-bold leading-[1.02] tracking-[-0.035em] text-white"

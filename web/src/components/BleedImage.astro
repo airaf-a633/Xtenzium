@@ -1,0 +1,101 @@
+---
+import type { Imagery } from '../data/imagery';
+
+/**
+ * Full-bleed image ground.
+ *
+ * Two layers: generated art painted first, photograph over it. The art is the
+ * fallback — if the photo is slow, blocked or removed, the slot still reads
+ * as designed instead of going black, and there is no layout shift either way.
+ *
+ * The photo is desaturated and has copper blended over it, so twelve
+ * unrelated stock photographs read as one branded set rather than a stock
+ * library. Turn that off with treatment="none" once real commissioned
+ * photography exists that is already on-palette.
+ */
+interface Props {
+  image: Imagery;
+  /** Darkens for legibility. Statement panels need more than headers. */
+  scrim?: 'none' | 'soft' | 'strong' | 'left';
+  treatment?: 'duotone' | 'none';
+  eager?: boolean;
+  class?: string;
+}
+
+const {
+  image,
+  scrim = 'soft',
+  treatment = 'duotone',
+  eager = false,
+  class: className = '',
+} = Astro.props;
+
+const scrims: Record<string, string> = {
+  none: '',
+  soft: 'bg-gradient-to-t from-carbon via-carbon/55 to-carbon/70',
+  strong: 'bg-gradient-to-t from-carbon via-carbon/75 to-carbon/85',
+  left: 'bg-gradient-to-r from-carbon via-carbon/80 to-carbon/40',
+};
+---
+
+<div
+  class:list={['pointer-events-none absolute inset-0 overflow-hidden bg-carbon', className]}
+  aria-hidden="true"
+>
+  {/* Ground: always present, paints instantly, survives a dead photo. */}
+  <img
+    src={image.art}
+    alt=""
+    aria-hidden="true"
+    decoding="async"
+    class="absolute inset-0 h-full w-full object-cover"
+  />
+
+  {
+    image.photo && (
+      <div class:list={['absolute inset-0', treatment === 'duotone' && 'duotone']}>
+        <img
+          src={image.photo}
+          srcset={`${image.photoSmall} 900w, ${image.photo} 2000w`}
+          sizes="100vw"
+          alt={image.alt}
+          loading={eager ? 'eager' : 'lazy'}
+          fetchpriority={eager ? 'high' : 'auto'}
+          decoding="async"
+          class="absolute inset-0 h-full w-full object-cover"
+        />
+      </div>
+    )
+  }
+
+  {scrim !== 'none' && <div class:list={['absolute inset-0', scrims[scrim]]} />}
+</div>
+
+<style>
+  /* Luminance from the photograph, hue from the brand. `color` blending is
+     what makes this a true duotone rather than a copper wash — a plain
+     translucent overlay would just fog the image. */
+  .duotone img {
+    filter: grayscale(1) contrast(1.12) brightness(0.62);
+  }
+  .duotone::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--color-copper);
+    mix-blend-mode: color;
+    opacity: 0.85;
+  }
+  /* A soft copper lift so the darkest areas do not read as flat black. */
+  .duotone::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: radial-gradient(
+      90% 70% at 25% 35%,
+      color-mix(in srgb, var(--color-copper) 26%, transparent) 0%,
+      transparent 62%
+    );
+  }
+</style>

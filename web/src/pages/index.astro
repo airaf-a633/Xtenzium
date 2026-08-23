@@ -10,6 +10,8 @@ import Testimonial from '../components/Testimonial.astro';
 import WatermarkX from '../components/WatermarkX.astro';
 import { unverified } from '../lib/placeholder';
 import { services as servicesData } from '../data/services';
+import { imagery } from '../data/imagery';
+import { serviceImage } from '../data/imagery';
 
 const heroLines = ['We architect', 'long-term', 'success.'];
 
@@ -29,7 +31,7 @@ const services = servicesData
     title: sv.title,
     href: `/services/${sv.slug}`,
     body: sv.summary,
-    image: undefined as string | undefined,
+    image: serviceImage(sv.slug),
   }));
 
 // A real sequence, so the numbering carries information the reader needs.
@@ -169,6 +171,7 @@ const stats = [
       eyebrow="The difference"
       lines={['We build the', 'software and the', 'board it runs on.']}
       accentWord="board"
+      imagery={imagery.statementDuality}
       meet="One team, one protocol"
       proof={[
         {
@@ -348,6 +351,7 @@ const stats = [
       eyebrow="Built, not assembled"
       lines={['Your brand deserves', 'more than a template.']}
       accentWord="template"
+      imagery={imagery.statementTemplate}
       cta={{ label: 'See how we scope it', href: '/estimate' }}
     />
 

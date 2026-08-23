@@ -6,6 +6,8 @@ import Faq from '../components/Faq.astro';
 import StatementPanel from '../components/StatementPanel.astro';
 import WatermarkX from '../components/WatermarkX.astro';
 import { unverified } from '../lib/placeholder';
+import { imagery } from '../data/imagery';
+import BleedImage from '../components/BleedImage.astro';
 
 const principles = [
   {
@@ -120,12 +122,7 @@ const faqs = [
   <main>
     <!-- ── Header ───────────────────────────────────────────── -->
     <section class="on-carbon relative overflow-hidden bg-carbon pb-20 pt-40 md:pb-28 md:pt-48">
-      <div
-        aria-hidden="true"
-        class="pointer-events-none absolute inset-0 opacity-40"
-        style="background-image: radial-gradient(circle at center, rgba(184,67,15,0.4) 1px, transparent 1px); background-size: 34px 34px;"
-      >
-      </div>
+      <BleedImage image={imagery.headerAbout} scrim="soft" eager />
       <div
         aria-hidden="true"
         class="pointer-events-none absolute inset-0"
@@ -187,6 +184,7 @@ const faqs = [
       eyebrow="What makes us different"
       lines={['We build the', 'software and the', 'board it runs on.']}
       accentWord="board"
+      imagery={imagery.statementDuality}
       meet="One team, one protocol"
       proof={[
         {
