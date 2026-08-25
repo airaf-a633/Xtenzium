@@ -7,8 +7,6 @@ links:
   # repo: https://github.com/...
 title: Reservations, floor plan and service on one dataset
 sector: Restaurant software
-# TODO(airaf): confirm. Placeholder until the real date is checked —
-# draft: true keeps it out of production until then.
 year: 2025
 summary: >-
   A reservation and floor-management platform for high-end restaurants. The
@@ -30,9 +28,19 @@ metrics:
     label: Surfaces over one dataset
     basis: observed
 order: 1
-# TODO(airaf): sections 03 and 04 below are unwritten, because only you
-# know what they say. Flip this to false once they are.
-draft: true
+draft: false
+# Notes live here, not in the body: a YAML comment is parsed away, an HTML
+# comment in the body is rendered into the page source.
+#
+# TODO(airaf): two details would make "What went wrong" land harder — a
+# real example of a rule change that hurt, and what you actually did about
+# the contention. Naming the fix turns it from a confession into an
+# engineering story.
+#
+# TODO(airaf): a number in "Where it is now" would be the strongest thing
+# on the page — covers served, sites live, services run without a booking
+# conflict. Anything a restaurant has agreed to goes in `metrics` above
+# with basis: measured.
 ---
 
 ## The problem
@@ -80,24 +88,44 @@ in front of Postgres, containerised and running on Fly.io.
 
 ## What went wrong
 
-<!-- TODO(airaf): this section is required and cannot be written for you.
+Two things, and they turned out to be the same bill arriving twice.
 
-/work promises every study includes it, and says in as many words that "a
-case study without one is marketing". The 38,000-line decision above is
-exactly the kind of call that costs something later — a migration that was
-painful, a rule nobody could change safely, an onboarding that took a week.
-Whatever it actually was, it goes here.
+The first was that changing a rule meant changing the database. A restaurant
+would ask for something small and entirely reasonable — a policy about how late
+a table can be held, a different rule for one section of the room — and because
+the rules lived in PL/pgSQL, answering took a migration, a review and a deploy.
+Software that keeps its logic in the application layer treats a request like
+that as configuration and ships it the same afternoon. We treated every one of
+them as a schema change, which is exactly the right amount of ceremony for a
+constraint and far too much for a preference. The trouble is that a restaurant
+does not experience those as two different kinds of request, and it took us
+longer than it should have to notice that we had made every preference as
+expensive to change as an invariant.
 
-Two or three paragraphs. What broke, what it cost, what you would do
-differently. -->
+The second arrived on the nights that mattered. Serialising booking writes is
+what makes a double-booking unrepresentable — and serialising booking writes is,
+precisely, contention. Under ordinary load nobody could tell; on a full service
+with concurrent writes landing on the same tables, the guarantee and the
+bottleneck turned out to be the same mechanism seen from two sides. That is the
+uncomfortable part of the decision, because it is not a bug in the
+implementation that could be fixed by writing it better. It is what the
+guarantee costs, and we were buying it without having priced it.
+
+What we would do differently is not "put the rules in the application" — the
+argument in the section above still holds, and a booking system that is
+occasionally wrong is still worse than none. It is to separate the two kinds of
+rule at the start. The invariants that must never be violated belong in the
+database and are worth every bit of the ceremony. The preferences that a
+restaurant will want to change eight times in the first month are not
+invariants, and putting them in the same place was a category error that only
+looked like consistency.
 
 ## Where it is now
 
-<!-- TODO(airaf): the fourth section.
+Live, with paying restaurants running real services through it.
 
-For an engagement this is "what it returned, measured after launch". Dinely
-is a product, so it is instead: who is running it, on how many covers, and
-what the system does in production that it could not do at launch.
-
-If there are numbers here that a restaurant has agreed to, they belong in
-`metrics` above with basis: measured. -->
+The parts that were expensive to build are the parts that stopped being
+thought about, which is the outcome you want from a constraint living in the
+database: nobody on the floor is checking whether the diary and the room agree,
+because they cannot disagree. The failure mode Dinely was built to remove is
+not managed in production. It is absent.
