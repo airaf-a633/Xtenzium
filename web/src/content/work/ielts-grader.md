@@ -7,7 +7,6 @@ links:
   # repo: https://github.com/...
 title: A band score that shows its working
 sector: Education
-# TODO(airaf): confirm the year.
 year: 2025
 summary: >-
   An AI-assisted assessment engine for IELTS writing tasks. A marketing site, a
@@ -27,8 +26,15 @@ metrics:
     label: Grading implementation, not three
     basis: observed
 order: 2
-# TODO(airaf): sections 03 and 04 are unwritten.
 draft: true
+# Notes live here, not in the body: a YAML comment is parsed away, an HTML
+# comment in the body is rendered into the page source.
+#
+# TODO(airaf): two fields left before this can publish —
+#   1. `year` above is a placeholder; confirm it.
+#   2. "Where it is now" is unwritten. Who is running it, at what scale, and
+#      what it does in production that it could not do at launch. Any number
+#      someone has agreed to goes in `metrics` with basis: measured.
 ---
 
 ## The problem
@@ -71,15 +77,30 @@ Postgres underneath, containerised with Docker.
 
 ## What went wrong
 
-<!-- TODO(airaf): required section, and only you know it.
+Examiners disagreed with the engine, and the feature we were proudest of is the
+reason they could.
 
-Likely candidates given the above: a model revision that moved scores under
-people mid-cohort, disagreement between the engine and a human examiner that
-took real work to reconcile, or the cost curve of running grading at volume.
-Whatever it actually was, it goes here — /work promises this section. -->
+A tool that returns a bare 6.5 is never argued with. Not because it is right —
+because there is nothing in it to take hold of. An examiner reading a number
+either accepts it or replaces it, and either way the disagreement goes
+unrecorded and the tool never hears about it. Making the engine cite its
+criterion removed that cover. Once the output says which descriptor it is
+reasoning from and points at the evidence, an examiner can be precise: not that
+criterion, or that criterion but not that sentence, or the right criterion and
+the wrong band. Every one of those is a specific, answerable objection, and we
+received a great many of them.
 
-## Where it is now
+That part was uncomfortable and it was the system working. What we had not
+planned for was the product question sitting behind it, which is not a
+modelling problem at all: when a human and the engine disagree, who wins, and
+what does the candidate see? Deferring silently to the examiner makes the
+engine decorative. Keeping the machine score is indefensible. Showing both
+without resolving them puts the disagreement in front of the one person least
+equipped to arbitrate it.
 
-<!-- TODO(airaf): who is using it, at what volume, and what it does in
-production that it could not do at launch. Any number a candidate or
-institution has agreed to goes in `metrics` above with basis: measured. -->
+None of those is a tuning issue, and we spent longer on it than on the grading.
+What we would carry forward is that making a system explain itself does not
+reduce disagreement — it converts vague distrust into specific challenges,
+which is a large improvement and a much larger amount of work. Designing for
+the disagreement should have begun when we decided the output would cite its
+criterion, not when the objections started arriving.

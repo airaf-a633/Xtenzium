@@ -42,12 +42,19 @@ export async function getWork(): Promise<WorkEntry[]> {
   // only biting after deploy.
   const leaking = entries.filter((e) => !e.data.draft && e.body?.includes('<!--'));
   if (leaking.length) {
-    throw new Error(
+    const message =
       `Published case ${leaking.length > 1 ? 'studies' : 'study'} still ` +
-        `carrying working notes in the body: ${leaking.map((e) => e.id).join(', ')}. ` +
-        `An HTML comment in markdown is rendered into the page source. ` +
-        `Move the note into the frontmatter as a YAML comment, which is not.`,
-    );
+      `carrying working notes in the body: ${leaking.map((e) => e.id).join(', ')}. ` +
+      `An HTML comment in markdown is rendered into the page source. ` +
+      `Move the note into the frontmatter as a YAML comment, which is not.`;
+
+    // Loud in the build, quiet in the editor. Throwing here in dev takes
+    // the whole page down behind an error overlay for a problem that is
+    // invisible on the rendered page — and the dev server's content cache
+    // can lag a fix, so the overlay outlives the mistake. The build is
+    // where this has to be fatal, because the build is what ships.
+    if (import.meta.env.PROD) throw new Error(message);
+    console.warn(`[work] ${message}`);
   }
 
   return entries.sort((a, b) => a.data.order - b.data.order);

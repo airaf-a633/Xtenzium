@@ -6,13 +6,13 @@ links:
   # No public repo — closed source, so no repo link.
 title: Three audiences, one scheduling core
 sector: Healthcare
-# TODO(airaf): confirm the year.
 year: 2025
 summary: >-
   A maternal and infant care platform connecting parents with clinical experts.
   Parents booking support, experts running a practice and clinics onboarding
-  staff each get their own surface, over shared scheduling and profile data
-  rather than three products that have to agree with each other.
+  staff each get their own surface over shared scheduling and profile data, with
+  an assistant that answers from the experts and courses actually on the
+  platform rather than from the internet.
 services:
   - Web Development
   - UI/UX Design
@@ -23,8 +23,15 @@ headline:
   label: Audiences on one scheduling core
   basis: observed
 order: 4
-# TODO(airaf): sections 03 and 04 are unwritten.
 draft: true
+# Notes live here, not in the body: a YAML comment is parsed away, an HTML
+# comment in the body is rendered into the page source.
+#
+# TODO(airaf): two fields left before this can publish —
+#   1. `year` above is a placeholder; confirm it.
+#   2. "Where it is now" is unwritten. Who is running it, at what scale, and
+#      what it does in production that it could not do at launch. Any number
+#      someone has agreed to goes in `metrics` with basis: measured.
 ---
 
 ## The problem
@@ -66,14 +73,41 @@ dialogs and date pickers, and keyboard and screen-reader behaviour on those is
 not something to hand-roll for an audience that includes people operating
 one-handed at three in the morning.
 
+Sitting across all three is an assistant, and it is the part that caused the
+most trouble.
+
 ## What went wrong
 
-<!-- TODO(airaf): required. Candidate areas: timezone handling across clinics,
-the permission model once clinics could act on behalf of experts, or the
-migration when a second audience arrived after the first shipped. -->
+The assistant had to answer from the platform, not from the internet, and the
+distance between those two things is most of the work.
 
-## Where it is now
+A general model already knows a great deal about maternal and infant care, and
+almost all of it is useless here — worse than useless, because a plausible
+answer drawn from general knowledge is indistinguishable, to a parent reading
+it, from one grounded in the experts and courses actually on the platform. The
+job was never to make it knowledgeable. It was to make it answer only from a
+corpus that changes every time an expert edits a course or updates their
+availability, and to make refusal the behaviour when the corpus has nothing to
+say.
 
-<!-- TODO(airaf): experts on the platform, clinics onboarded, bookings served.
-Anything a clinic has agreed to publish goes in `metrics` with basis:
-measured. -->
+It did not do that at first. It recommended things that did not exist —
+experts, courses, guidance with nobody behind it. In most products that is an
+embarrassing bug with a funny screenshot attached. In maternal and infant care
+it is not, and the difference is worth being precise about: a parent acting on
+a confidently phrased recommendation at three in the morning is the exact user
+the product was designed for, and a fabricated answer reaches them through the
+same interface, in the same tone, as a real one. The failure is silent on our
+side and load-bearing on theirs.
+
+Fixing it was less about prompting than about grounding: constraining answers
+to retrieved material, and treating "I don't have anything on that, here is how
+to reach someone who does" as a correct answer rather than a fallback. That is
+a worse demo and a better product. An assistant that declines is doing its job;
+an assistant that always has something to say is the failure mode wearing a
+friendly face.
+
+The unglamorous half was keeping what the assistant knew in step with what the
+platform held. Experts add courses, revise them, change what they offer. Every
+one of those edits is a cache invalidation problem wearing a content-management
+costume, and an assistant confidently describing a course that was withdrawn
+last week is the same class of error as inventing one.

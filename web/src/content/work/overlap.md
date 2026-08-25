@@ -7,7 +7,6 @@ links:
   # repo: https://github.com/...
 title: A studio site that argues in clocks
 sector: Software
-# TODO(airaf): confirm the year.
 year: 2025
 summary: >-
   The studio site for an engineering practice working US hours from Pakistan.
@@ -23,8 +22,15 @@ headline:
   label: Hours the two working days share
   basis: observed
 order: 5
-# TODO(airaf): sections 03 and 04 are unwritten.
 draft: true
+# Notes live here, not in the body: a YAML comment is parsed away, an HTML
+# comment in the body is rendered into the page source.
+#
+# TODO(airaf): two fields left before this can publish —
+#   1. `year` above is a placeholder; confirm it.
+#   2. "Where it is now" is unwritten. Who is running it, at what scale, and
+#      what it does in production that it could not do at launch. Any number
+#      someone has agreed to goes in `metrics` with basis: measured.
 ---
 
 ## The problem
@@ -62,13 +68,24 @@ doing work: React on Vite, Tailwind, Lenis for the scroll, Vercel.
 
 ## What went wrong
 
-<!-- TODO(airaf): required. Likely: DST. The overlap window is not a constant
-— it shifts twice a year on the US side and Pakistan does not observe it, so
-"six hours" is true for part of the year and not the rest. If the first
-version hard-coded the band, that is the story. -->
+The page made its argument well, and the argument was not what stood in the
+way.
 
-## Where it is now
+That is an awkward thing to publish about your own work and it is the honest
+account. The clocks do what they were built to do: they answer the timezone
+objection, immediately and checkably, in a way prose cannot. What we had
+assumed — without ever testing it — is that the timezone objection was the one
+holding enquiries back. It was the objection people *said*, which is not the
+same thing, and a site can only answer the objections it is pointed at.
 
-<!-- TODO(airaf): live, and whether the clocks actually changed how enquiries
-arrive — the useful measure here is whether prospects stopped asking about
-timezone at all. -->
+The failure was upstream of the build. We took a stated objection at face value
+and engineered a very good answer to it, and the thing that actually needed
+work was the offer behind the site rather than the site. A studio page can make
+a scheduling argument beautifully and still not resolve the questions a
+prospect is really weighing: whether this team has done the specific thing
+before, who is accountable if it slips, and what happens when it does.
+
+The engineering lesson is small and the other one is not. The component is
+still the right idea, and we would build it again. We would not again treat
+"what do prospects object to" as answered by asking them, or assume that the
+most articulable objection is the binding one.

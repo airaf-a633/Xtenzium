@@ -7,13 +7,12 @@ links:
   # repo: https://github.com/...
 title: One car at a time, at showroom scale
 sector: Automotive
-# TODO(airaf): confirm the year.
 year: 2025
 summary: >-
-  A cinematic-first automotive marketplace. A listing gets the weight it would
-  have on a showroom floor — full-bleed imagery and scroll-driven sequencing —
-  and the browsing model is built around one vehicle at a time rather than a
-  grid of results.
+  A cinematic-first automotive marketplace with live auctions. A listing gets
+  the weight it would have on a showroom floor — full-bleed imagery, scroll-driven
+  sequencing, one vehicle at a time rather than a grid — and then has to hold a
+  real-time bidding system inside that same presentation.
 services:
   - Web Development
   - Design & Branding
@@ -23,8 +22,15 @@ headline:
   label: Vehicle on screen at a time
   basis: observed
 order: 3
-# TODO(airaf): sections 03 and 04 are unwritten.
 draft: true
+# Notes live here, not in the body: a YAML comment is parsed away, an HTML
+# comment in the body is rendered into the page source.
+#
+# TODO(airaf): two fields left before this can publish —
+#   1. `year` above is a placeholder; confirm it.
+#   2. "Where it is now" is unwritten. Who is running it, at what scale, and
+#      what it does in production that it could not do at launch. Any number
+#      someone has agreed to goes in `metrics` with basis: measured.
 ---
 
 ## The problem
@@ -61,15 +67,38 @@ Next.js 15 and Tailwind v4, with Framer Motion driving the sequencing. Motion
 rather than GSAP here because the sequencing is component-local and tied to
 React's lifecycle rather than to a single page-wide scroll timeline.
 
+Then the auction goes inside all of that, which is where it gets interesting.
+
 ## What went wrong
 
-<!-- TODO(airaf): required. The obvious pressure points on this decision:
-image weight and LCP on a full-bleed presentation, and whether sellers with
-large inventories rejected the one-at-a-time model outright. What actually
-bit? -->
+The auction and the presentation want opposite things from the reader, and we
+did not fully appreciate that until both existed.
 
-## Where it is now
+Everything above is an argument for slowing down. Full-bleed imagery, an
+ordered sequence, one car at a time — the entire design says take your time,
+look properly, decide when you are ready. An auction says the opposite, in the
+strongest terms available: decide now, because somebody else is deciding now.
+Putting a countdown inside a presentation built for contemplation is not a
+layout problem, it is two products with different metabolisms sharing a page,
+and every decision about where to put the current bid was really a decision
+about which of those two we meant.
 
-<!-- TODO(airaf): listings live, sellers on it, and whether the browsing model
-survived contact with real inventory. There is also a React Native app in
-this repo family — say how the two relate if they ship together. -->
+The mechanics were the harder half. Bidding is concurrent by definition, so the
+usual questions arrived on schedule and were not optional: two bids landing in
+the same instant, the current price staying consistent across every viewer
+watching the same lot, and a bid that arrives while the page is mid-render. A
+marketplace can tolerate a stale price for a second. An auction cannot, because
+the stale number is the one somebody just bid against.
+
+Timing was worse than the concurrency, because timing is where an auction meets
+people. A countdown has to be accurate to the second across clients whose clocks
+disagree. Last-second bids need the close to extend, or the auction rewards
+whoever has the better connection rather than whoever wants the car. And every
+extension has to reach the people who care about it, immediately — a
+notification that arrives forty seconds late is not a slow notification, it is a
+bidder who lost for a reason that had nothing to do with bidding.
+
+The other cost was the one the design invited. Full-bleed photography at
+showroom weight is heavy, and the presentation is the product, so the obvious
+lever — send smaller images — is the one lever that damages the thing we were
+selling. That tension does not resolve cleanly. It gets managed.

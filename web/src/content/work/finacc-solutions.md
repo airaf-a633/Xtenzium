@@ -7,7 +7,6 @@ links:
   # repo: https://github.com/...
 title: Gated content that never reaches the browser
 sector: Financial services
-# TODO(airaf): confirm the year.
 year: 2024
 summary: >-
   A financial and accounting services platform, server-rendered throughout.
@@ -22,8 +21,15 @@ headline:
   label: Gated bytes reaching an unauthorised browser
   basis: observed
 order: 6
-# TODO(airaf): sections 03 and 04 are unwritten.
 draft: true
+# Notes live here, not in the body: a YAML comment is parsed away, an HTML
+# comment in the body is rendered into the page source.
+#
+# TODO(airaf): two fields left before this can publish —
+#   1. `year` above is a placeholder; confirm it.
+#   2. "Where it is now" is unwritten. Who is running it, at what scale, and
+#      what it does in production that it could not do at launch. Any number
+#      someone has agreed to goes in `metrics` with basis: measured.
 ---
 
 ## The problem
@@ -66,13 +72,27 @@ on the server.
 
 ## What went wrong
 
-<!-- TODO(airaf): required. Candidates: session refresh at the middleware
-boundary, caching a server-rendered page that turned out to be per-user, or
-the point where a legitimately interactive feature had to break the SSR
-model. -->
+Nothing broke, and that is the part worth writing about.
 
-## Where it is now
+There is no incident here. No leak, no session bug, no cache serving one
+person's filings to another. Saying so in a section titled "what went wrong" is
+uncomfortable, because an absence of failure reads as a brag and it is not one
+— it is the outcome the architecture was bought for, and it came at a price
+worth stating plainly.
 
-<!-- TODO(airaf): live, who runs on it, and what the gated tier actually
-serves today. Any number the client has agreed to goes in `metrics` with
-basis: measured. -->
+The price is that everything is a round trip. A server-rendered application
+with auth in middleware cannot do the thing that makes modern web apps feel
+quick, which is to answer from state it already holds in the browser. Every
+gated view is a request. Every navigation waits on a server that has to resolve
+who you are before it will assemble anything. Framer Motion and Lenis are on
+this project as compensation, not decoration: they make navigation read as
+continuous over a model that is genuinely re-rendering each page, and without
+them the correctness would have been noticeably less pleasant to use.
+
+The second cost is that the rule only holds while it holds absolutely. The
+security property is "the content was never produced", and it survives exactly
+as long as nobody adds a convenient client-side fetch for a panel that seemed
+harmless. That is not a technical safeguard, it is a standing constraint on
+everybody who touches the codebase afterwards, and the honest risk on this
+project is not that the middleware was wrong. It is that a future feature is
+allowed to route around it.
