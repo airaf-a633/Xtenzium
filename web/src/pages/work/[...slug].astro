@@ -3,6 +3,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import Navbar from '../../components/Navbar.astro';
 import Footer from '../../components/Footer.astro';
 import { getWork } from '../../lib/content';
+import { countAttrs } from '../../lib/metric';
 import { render } from 'astro:content';
 
 export async function getStaticPaths() {
@@ -16,6 +17,11 @@ export async function getStaticPaths() {
 const { entry, next } = Astro.props;
 const { Content } = await render(entry);
 const d = entry.data;
+
+// The headline number leads the rail, the supporting ones follow. Building
+// one array keeps the markup to a single loop, so the headline can never
+// drift out of sync with the cells beside it.
+const rail = [d.headline, ...d.metrics];
 ---
 
 <BaseLayout
@@ -58,12 +64,16 @@ const d = entry.data;
 
         <h1
           transition:name={`case-${entry.id}`}
+          data-reveal="line"
           class="mt-4 max-w-4xl font-display text-[clamp(2.25rem,6vw,4.25rem)] font-bold leading-[1.02] tracking-[-0.035em] text-white"
         >
           {d.client}
         </h1>
 
-        <p class="mt-4 max-w-2xl font-display text-xl font-bold tracking-[-0.02em] text-white/80">
+        <p
+          data-reveal="line"
+          class="mt-4 max-w-2xl font-display text-xl font-bold tracking-[-0.02em] text-white/80"
+        >
           {d.title}
         </p>
 
@@ -77,16 +87,19 @@ const d = entry.data;
     <section class="on-carbon border-t border-white/10 bg-carbon pb-20 md:pb-24">
       <div class="container-x">
         <div data-reveal-cards class="grid gap-px overflow-hidden rounded-card bg-white/10 sm:grid-cols-2 lg:grid-cols-4">
-          <div data-reveal="card" class="bg-carbon p-7">
-            <div class="font-display text-3xl font-bold tracking-[-0.03em] text-copper-hi tabular-nums">
-              {d.headline.value}
-            </div>
-            <p class="mt-2 text-xs text-white/50">{d.headline.label}</p>
-          </div>
           {
-            d.metrics.map((m) => (
+            rail.map((m, i) => (
               <div data-reveal="card" class="bg-carbon p-7">
-                <div class="font-display text-3xl font-bold tracking-[-0.03em] text-white tabular-nums">
+                {/* The value ships rendered. countAttrs only adds the
+                    rewind when the string holds a single number, so a
+                    before/after value stays put instead of counting. */}
+                <div
+                  {...countAttrs(m.value)}
+                  class:list={[
+                    'font-display text-3xl font-bold tracking-[-0.03em] tabular-nums',
+                    i === 0 ? 'text-copper-hi' : 'text-white',
+                  ]}
+                >
                   {m.value}
                 </div>
                 <p class="mt-2 text-xs text-white/50">{m.label}</p>
@@ -100,13 +113,16 @@ const d = entry.data;
     <!-- ── Body ─────────────────────────────────────────────── -->
     <section class="bg-bg py-20 md:py-28">
       <div class="container-x">
-        <div class="grid gap-14 lg:grid-cols-[1fr_240px]">
-          <article class="prose-case max-w-[68ch]">
+        <!-- One group, one fade. The case study is the thing the reader
+             came for, so the prose is not staggered paragraph by
+             paragraph — that turns reading into waiting. -->
+        <div data-reveal-group class="grid gap-14 lg:grid-cols-[1fr_240px]">
+          <article data-reveal="body" class="prose-case max-w-[68ch]">
             <Content />
           </article>
 
           <aside class="lg:pt-2">
-            <p class="eyebrow">Services</p>
+            <p class="eyebrow" data-reveal="eyebrow">Services</p>
             <ul class="mt-4 flex flex-col gap-2">
               {d.services.map((s) => <li class="text-sm text-ink-2">{s}</li>)}
             </ul>
@@ -114,7 +130,7 @@ const d = entry.data;
             {
               d.stack.length > 0 && (
                 <>
-                  <p class="eyebrow mt-9">Stack</p>
+                  <p class="eyebrow mt-9" data-reveal="eyebrow">Stack</p>
                   <div class="mt-4 flex flex-wrap gap-2">
                     {d.stack.map((t) => (
                       <span class="rounded-pill border border-line px-3 py-1 font-mono text-[11px] text-ink-2">
@@ -134,13 +150,18 @@ const d = entry.data;
     {
       next && next.id !== entry.id && (
         <section class="border-t border-line bg-bg-tint py-16 md:py-20">
-          <div class="container-x">
+          <div class="container-x" data-reveal-group>
             <a href={`/work/${next.id}`} class="group flex flex-col gap-3">
-              <p class="eyebrow">Next case study</p>
-              <h2 class="font-display text-[clamp(1.75rem,4vw,2.75rem)] font-bold tracking-[-0.03em] text-ink transition-colors duration-300 group-hover:text-copper">
+              <p class="eyebrow" data-reveal="eyebrow">Next case study</p>
+              <h2
+                data-reveal="line"
+                class="font-display text-[clamp(1.75rem,4vw,2.75rem)] font-bold tracking-[-0.03em] text-ink transition-colors duration-300 group-hover:text-copper"
+              >
                 {next.data.client}
               </h2>
-              <p class="max-w-xl leading-relaxed text-ink-2">{next.data.summary}</p>
+              <p class="max-w-xl leading-relaxed text-ink-2" data-reveal="body">
+                {next.data.summary}
+              </p>
             </a>
           </div>
         </section>

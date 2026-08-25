@@ -85,12 +85,18 @@ const [lead, ...rest] = withMeta;
       <div class="container-x">
         {
           withMeta.length === 0 ? (
-            <div class="rounded-card border border-dashed border-line-strong bg-surface p-10 text-center md:p-14">
-              <p class="eyebrow">Nothing published yet</p>
-              <h2 class="mx-auto mt-4 max-w-xl font-display text-[clamp(1.5rem,3vw,2rem)] font-bold tracking-[-0.03em] text-ink">
+            <div
+              data-reveal-group
+              class="rounded-card border border-dashed border-line-strong bg-surface p-10 text-center md:p-14"
+            >
+              <p class="eyebrow" data-reveal="eyebrow">Nothing published yet</p>
+              <h2
+                data-reveal="line"
+                class="mx-auto mt-4 max-w-xl font-display text-[clamp(1.5rem,3vw,2rem)] font-bold tracking-[-0.03em] text-ink"
+              >
                 The first pieces are being written.
               </h2>
-              <p class="mx-auto mt-4 max-w-md leading-relaxed text-ink-2">
+              <p class="mx-auto mt-4 max-w-md leading-relaxed text-ink-2" data-reveal="body">
                 Posts are published from the studio and appear here on the next
                 deploy. In the meantime, the case studies cover most of the same
                 ground.
