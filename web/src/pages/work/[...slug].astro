@@ -64,7 +64,7 @@ const rail = [d.headline, ...d.metrics];
 
         <h1
           transition:name={`case-${entry.id}`}
-          data-reveal="line"
+          data-split="words"
           class="mt-4 max-w-4xl font-display text-[clamp(2.25rem,6vw,4.25rem)] font-bold leading-[1.02] tracking-[-0.035em] text-white"
         >
           {d.client}
@@ -154,7 +154,7 @@ const rail = [d.headline, ...d.metrics];
             <a href={`/work/${next.id}`} class="group flex flex-col gap-3">
               <p class="eyebrow" data-reveal="eyebrow">Next case study</p>
               <h2
-                data-reveal="line"
+                data-split="words"
                 class="font-display text-[clamp(1.75rem,4vw,2.75rem)] font-bold tracking-[-0.03em] text-ink transition-colors duration-300 group-hover:text-copper"
               >
                 {next.data.client}

@@ -70,6 +70,7 @@ const ogImage = new URL(image, Astro.site).href;
     <script>
       import { initSmoothScroll, destroySmoothScroll, syncSmoothScroll } from '../lib/smooth-scroll';
       import { initReveal, destroyReveal } from '../lib/reveal';
+      import { initSplit, destroySplit } from '../lib/split';
       import { initStatementPanels, destroyStatementPanels } from '../lib/statement-panel';
       import { initHero, destroyHero } from '../lib/hero';
       import { initCounters, destroyCounters } from '../lib/counter';
@@ -98,6 +99,7 @@ const ogImage = new URL(image, Astro.site).href;
         initSmoothScroll();
         initHero();
         initReveal();
+        initSplit();
         initStatementPanels();
         initCounters();
         initParallax();
@@ -142,6 +144,10 @@ const ogImage = new URL(image, Astro.site).href;
         running = false;
         destroyHero();
         destroyReveal();
+        // Reverts the split, putting the original text back in the DOM
+        // before the page swaps — a view transition must never capture
+        // generated line wrappers.
+        destroySplit();
         destroyStatementPanels();
         destroyCounters();
         destroyParallax();

@@ -290,13 +290,16 @@ const { service: s, next } = Astro.props;
 
     <!-- ── Next service ─────────────────────────────────────── -->
     <section class="border-t border-line bg-bg py-16 md:py-20">
-      <div class="container-x">
+      <div class="container-x" data-reveal-group>
         <a href={`/services/${next.slug}`} class="group flex flex-col gap-3">
-          <p class="eyebrow">Next service</p>
-          <h2 class="font-display text-[clamp(1.75rem,4vw,2.75rem)] font-bold tracking-[-0.03em] text-ink transition-colors duration-300 group-hover:text-copper">
+          <p class="eyebrow" data-reveal="eyebrow">Next service</p>
+          <h2
+            data-split="words"
+            class="font-display text-[clamp(1.75rem,4vw,2.75rem)] font-bold tracking-[-0.03em] text-ink transition-colors duration-300 group-hover:text-copper"
+          >
             {next.title}
           </h2>
-          <p class="max-w-xl leading-relaxed text-ink-2">{next.summary}</p>
+          <p class="max-w-xl leading-relaxed text-ink-2" data-reveal="body">{next.summary}</p>
         </a>
       </div>
     </section>

@@ -80,7 +80,7 @@ const description =
 
         <h1
           transition:name={`post-${post.slug}`}
-          data-reveal="line"
+          data-split
           class="mt-4 max-w-4xl font-display text-[clamp(2rem,5.4vw,3.75rem)] font-bold leading-[1.04] tracking-[-0.035em] text-white"
         >
           {post.title}
@@ -150,7 +150,7 @@ const description =
             <a href={`/journal/${next.slug}`} class="group flex flex-col gap-3">
               <p class="eyebrow" data-reveal="eyebrow">Next post</p>
               <h2
-                data-reveal="line"
+                data-split
                 class="max-w-2xl font-display text-[clamp(1.6rem,3.6vw,2.5rem)] font-bold leading-[1.1] tracking-[-0.03em] text-ink transition-colors duration-300 group-hover:text-copper"
               >
                 {next.title}
