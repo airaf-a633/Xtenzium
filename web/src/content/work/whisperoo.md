@@ -1,6 +1,9 @@
 ---
 kind: product
 name: Whisperoo
+links:
+  site: https://whisperoo.app
+  # No public repo — closed source, so no repo link.
 title: Three audiences, one scheduling core
 sector: Healthcare
 # TODO(airaf): confirm the year.

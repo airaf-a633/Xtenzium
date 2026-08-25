@@ -19,12 +19,41 @@ const creditSectors = [...new Set(credits.map((c) => c.sector))].map((sector) =>
   items: credits.filter((c) => c.sector === sector),
 }));
 
-// UNVERIFIED: '9 industries' is invented; confirm the others before shipping.
+/**
+ * The proof bar, counted rather than claimed.
+ *
+ * It used to assert 65+ projects, 36% average first-year ROI, 9 industries
+ * and 4 continents. One of those was marked invented in a comment, none of
+ * them could be checked by a reader, and all four were gated out of
+ * production — which meant the section had never actually shipped.
+ *
+ * These two are derived from the data the page itself renders, so a
+ * visitor can scroll down and count them, and they cannot drift when work
+ * is added: the number and the list it describes have one source.
+ *
+ * `entries` is draft-filtered, so in production this counts what is
+ * genuinely published rather than what exists on disk. That is the honest
+ * behaviour even though it reads lower — the claim is about what you can
+ * see, not what we have in a folder.
+ */
+const named = entries.length + credits.length;
+const sectorsShipped = new Set([
+  ...entries.map((e) => e.data.sector),
+  ...credits.map((c) => c.sector),
+]).size;
+
 const proof = [
+  { v: `${named}`, count: named, suffix: '', l: 'Projects named on this page' },
+  { v: `${sectorsShipped}`, count: sectorsShipped, suffix: '', l: 'Sectors shipped in' },
+];
+
+/**
+ * Claims we cannot show. They stay behind the gate until there is
+ * something behind them — see lib/placeholder.ts.
+ */
+const claimed = [
   { v: '65+', count: 65, suffix: '+', l: 'Projects delivered' },
   { v: '36%', count: 36, suffix: '%', l: 'Average first-year ROI' },
-  { v: '9', count: 9, suffix: '', l: 'Industries served' },
-  { v: '4', count: 4, suffix: '', l: 'Continents shipped to' },
 ];
 
 const anatomy = [
@@ -118,18 +147,20 @@ const faqs = [
     </section>
 
     <!-- ── Proof bar ────────────────────────────────────────── -->
-    {unverified(proof) && (
+    <!-- Counted, not claimed. Everything here is derived from the lists
+         further down the page, so the reader can check it by scrolling.
+         The unverifiable claims sit behind the gate below. -->
     <section class="on-carbon border-t border-white/10 bg-carbon pb-20 md:pb-24">
       <div class="container-x">
         <div
           data-reveal-cards
-          class="grid divide-y divide-white/10 sm:grid-cols-2 sm:divide-x lg:grid-cols-4 lg:divide-y-0"
+          class="grid divide-y divide-white/10 sm:grid-cols-2 sm:divide-x sm:divide-y-0"
         >
           {
-            proof.map((p, i) => (
+            [...proof, ...(unverified(claimed) ?? [])].map((p, i) => (
               <div
                 data-reveal="card"
-                class:list={['py-7 sm:py-0', i === 0 ? 'lg:pr-8' : 'lg:px-8', i === 3 && 'lg:pr-0']}
+                class:list={['py-7 sm:py-0', i === 0 ? 'sm:pr-8' : 'sm:px-8']}
               >
                 <div
                   data-count-to={p.count}
@@ -145,7 +176,6 @@ const faqs = [
         </div>
       </div>
     </section>
-    )}
 
     <!-- ── Index ────────────────────────────────────────────── -->
     <section class="bg-bg py-20 md:py-28">
@@ -286,19 +316,29 @@ const faqs = [
                 </p>
                 <ul class="mt-4 flex flex-col">
                   {items.map((c) => (
-                    <li class="grid gap-x-8 gap-y-2 border-t border-line py-5 md:grid-cols-[minmax(0,14rem)_1fr_auto] md:items-baseline">
-                      <p class="font-display text-base font-bold tracking-[-0.02em] text-ink">
-                        {c.name}
-                      </p>
-                      <p class="text-[0.95rem] leading-relaxed text-ink-2">{c.what}</p>
-                      <div class="flex flex-wrap items-center gap-2 md:justify-end">
-                        <span class="font-mono text-[11px] text-ink-3">{c.contribution}</span>
-                        {c.deliveredUnder && (
-                          <span class="font-mono text-[11px] text-ink-3">
-                            · {c.deliveredUnder}
+                    <li>
+                      <a
+                        href={c.site}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="row-link grid gap-x-8 gap-y-2 border-t border-line py-5 md:grid-cols-[minmax(0,14rem)_1fr_auto] md:items-baseline"
+                      >
+                        <p class="font-display text-base font-bold tracking-[-0.02em] text-ink">
+                          {c.name}
+                          <span aria-hidden="true" class="row-arrow ml-1.5 text-ink-3">
+                            &#8599;
                           </span>
-                        )}
-                      </div>
+                        </p>
+                        <p class="text-[0.95rem] leading-relaxed text-ink-2">{c.what}</p>
+                        <div class="flex flex-wrap items-center gap-2 md:justify-end">
+                          <span class="font-mono text-[11px] text-ink-3">{c.contribution}</span>
+                          {c.deliveredUnder && (
+                            <span class="font-mono text-[11px] text-ink-3">
+                              · {c.deliveredUnder}
+                            </span>
+                          )}
+                        </div>
+                      </a>
                     </li>
                   ))}
                   <li class="border-t border-line" />

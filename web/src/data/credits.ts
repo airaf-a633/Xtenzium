@@ -37,6 +37,12 @@ export type Studio =
 
 export interface Credit {
   name: string;
+  /**
+   * The live site. Every URL here was checked to resolve before it went
+   * in — a credit that 404s is worse than no credit, because it invites
+   * the reader to wonder what else on the page has rotted.
+   */
+  site: string;
   /** What the thing is, in one line. Not a pitch. */
   what: string;
   sector: string;
@@ -58,6 +64,7 @@ export const credits: Credit[] = [
   // ── Healthcare ────────────────────────────────────────────────
   {
     name: 'Doctor On Calls',
+    site: 'https://doctoroncalls.ae',
     what: 'Telemedicine booking for online consultations.',
     sector: 'Healthcare',
     stack: ['React', 'WordPress', 'PHP'],
@@ -65,6 +72,7 @@ export const credits: Credit[] = [
   },
   {
     name: 'UHC Dubai',
+    site: 'https://uhcdubai.com',
     what: 'Healthcare group site with appointment scheduling.',
     sector: 'Healthcare',
     stack: ['React', 'WordPress', 'PHP'],
@@ -74,6 +82,7 @@ export const credits: Credit[] = [
   // ── Logistics & fleet ─────────────────────────────────────────
   {
     name: 'GoTrack UAE',
+    site: 'https://gotrack.ae',
     what: 'Fleet tracking and GPS monitoring service.',
     sector: 'Logistics',
     stack: ['WordPress', 'JavaScript', 'MySQL'],
@@ -81,6 +90,7 @@ export const credits: Credit[] = [
   },
   {
     name: 'Alpha Cargo',
+    site: 'https://alphacargo.ae',
     what: 'Logistics and shipment tracking.',
     sector: 'Logistics',
     stack: ['React', 'WordPress', 'PHP'],
@@ -90,6 +100,7 @@ export const credits: Credit[] = [
   // ── Commerce ──────────────────────────────────────────────────
   {
     name: 'Swiss Arabian UAE',
+    site: 'https://uae.swissarabian.com',
     what: 'Fragrance house storefront.',
     sector: 'E-commerce',
     stack: ['WooCommerce', 'WordPress'],
@@ -97,6 +108,7 @@ export const credits: Credit[] = [
   },
   {
     name: 'Madame Pakistan',
+    site: 'https://madame.pk',
     what: 'Fashion retail storefront.',
     sector: 'E-commerce',
     stack: ['Shopify', 'Liquid'],
@@ -104,6 +116,7 @@ export const credits: Credit[] = [
   },
   {
     name: 'Me Naturals',
+    site: 'https://menaturals.net',
     what: 'Skincare storefront.',
     sector: 'E-commerce',
     stack: ['WooCommerce', 'WordPress'],
@@ -113,6 +126,7 @@ export const credits: Credit[] = [
   // ── Hospitality & facilities ──────────────────────────────────
   {
     name: 'Speakeasy UAE',
+    site: 'https://speakeasy.ae',
     what: 'Bar and restaurant site with reservations.',
     sector: 'Hospitality',
     stack: ['WordPress'],
@@ -120,6 +134,7 @@ export const credits: Credit[] = [
   },
   {
     name: 'SGS Cleaning',
+    site: 'https://sgscleaning.ae',
     what: 'Facilities services site with online booking.',
     sector: 'Facilities',
     stack: ['WordPress'],
@@ -129,6 +144,7 @@ export const credits: Credit[] = [
   // ── Media & industry ──────────────────────────────────────────
   {
     name: 'Nadia Khan Official',
+    site: 'https://nadiakhanofficial.com',
     what: 'Media personality site with content management.',
     sector: 'Media',
     stack: ['Next.js', 'React', 'CMS'],
@@ -136,6 +152,7 @@ export const credits: Credit[] = [
   },
   {
     name: 'Friends Industries',
+    site: 'https://friendsindustries.com.pk',
     what: 'Manufacturing and trading platform.',
     sector: 'Manufacturing',
     stack: ['React', 'Node.js', 'MySQL'],
@@ -143,6 +160,7 @@ export const credits: Credit[] = [
   },
   {
     name: 'LIT Co Industries',
+    site: 'https://litcoindustries.ae',
     what: 'Industrial manufacturer with a product catalogue.',
     sector: 'Manufacturing',
     stack: ['Next.js', 'TypeScript'],
@@ -152,6 +170,7 @@ export const credits: Credit[] = [
   // ── Studios & platforms ───────────────────────────────────────
   {
     name: 'Davis Interior',
+    site: 'https://davisinterior.com',
     what: 'Interior design studio portfolio.',
     sector: 'Design',
     stack: ['Next.js', 'Tailwind CSS', 'TypeScript'],
@@ -159,6 +178,7 @@ export const credits: Credit[] = [
   },
   {
     name: 'The Original Creator',
+    site: 'https://theoriginalcreator.com',
     what: 'Creative agency portfolio platform.',
     sector: 'Design',
     stack: ['Next.js', 'Tailwind CSS', 'TypeScript'],
@@ -166,6 +186,7 @@ export const credits: Credit[] = [
   },
   {
     name: 'Flying Tech',
+    site: 'https://flyingtech.co.uk',
     what: 'Technology services company site.',
     sector: 'Software',
     stack: ['Next.js', 'Tailwind CSS', 'TypeScript'],
@@ -173,6 +194,7 @@ export const credits: Credit[] = [
   },
   {
     name: 'Crude Oil Capitol',
+    site: 'https://crudeoilcapitol.com',
     what: 'Commodity trading information platform.',
     sector: 'Commodities',
     stack: ['Next.js', 'Node.js', 'TypeScript'],

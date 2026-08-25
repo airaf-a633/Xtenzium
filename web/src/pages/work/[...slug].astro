@@ -136,6 +136,42 @@ const rail = [d.headline, ...d.metrics].filter(publishable);
             {
               d.stack.length > 0 && (
                 <>
+                  <p class="eyebrow mt-9" data-reveal="eyebrow">Go and look</p>
+                  <div class="mt-4 flex flex-col gap-2">
+                    {d.links.site && (
+                      <a
+                        href={d.links.site}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="group inline-flex items-center gap-1.5 text-sm font-bold text-copper"
+                      >
+                        Live site
+                        <span
+                          aria-hidden="true"
+                          class="transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+                        >
+                          &#8599;
+                        </span>
+                      </a>
+                    )}
+                    {d.links.repo && (
+                      <a
+                        href={d.links.repo}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="group inline-flex items-center gap-1.5 text-sm font-bold text-ink-2 transition-colors duration-300 hover:text-ink"
+                      >
+                        Source
+                        <span
+                          aria-hidden="true"
+                          class="transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+                        >
+                          &#8599;
+                        </span>
+                      </a>
+                    )}
+                  </div>
+
                   <p class="eyebrow mt-9" data-reveal="eyebrow">Stack</p>
                   <div class="mt-4 flex flex-wrap gap-2">
                     {d.stack.map((t) => (

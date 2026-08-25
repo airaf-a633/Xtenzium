@@ -59,9 +59,25 @@ const attribution = {
   contribution: z.string().optional(),
 };
 
+/**
+ * Where to go and see it.
+ *
+ * Both optional, and both meaningful by their absence. A product with no
+ * `site` is not public yet; one with no `repo` is closed source. Neither
+ * is a gap to be filled with a placeholder — an outbound link that 404s
+ * costs more credibility than the link was ever going to earn.
+ */
+const links = z
+  .object({
+    site: z.string().url().optional(),
+    repo: z.string().url().optional(),
+  })
+  .default({});
+
 const base = {
   /** Leads the card: a product name, or the client's name. */
   name: z.string(),
+  links,
   title: z.string(),
   sector: z.string(),
   year: z.number(),

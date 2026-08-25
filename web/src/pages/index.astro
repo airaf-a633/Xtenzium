@@ -9,6 +9,8 @@ import Coverflow from '../components/Coverflow.astro';
 import Testimonial from '../components/Testimonial.astro';
 import WatermarkX from '../components/WatermarkX.astro';
 import { unverified } from '../lib/placeholder';
+import { getWork, publishable } from '../lib/content';
+import { credits } from '../data/credits';
 import { services as servicesData } from '../data/services';
 import { imagery } from '../data/imagery';
 import { serviceImage } from '../data/imagery';
@@ -42,11 +44,40 @@ const process = [
   { n: '04', title: 'Handover', body: 'Documented, audited, and yours. Every credential, every repo, every decision written down.' },
 ];
 
-const work = [
-  { client: 'Meridian Logistics', sector: 'Fleet telematics', result: 'Cut dispatch time 41%', body: 'Custom LoRaWAN trackers and a live routing dashboard — hardware and software from one team.' },
-  { client: 'Aster Health', sector: 'Clinical SaaS', result: '3.2s → 0.8s load', body: 'Rebuilt a stalling patient portal on Next.js, with an audited migration and zero downtime.' },
-  { client: 'Kiln & Co', sector: 'D2C commerce', result: '+36% conversion', body: 'Brand system, storefront, and the internal tooling to run it without a developer on call.' },
-];
+/**
+ * Selected work, from the same source /work reads.
+ *
+ * This used to be three hardcoded clients — Meridian, Aster, Kiln — with
+ * outcome numbers to match, none of which existed. They were invented as
+ * layout filler alongside the sample case studies, and unlike the rest of
+ * the invented copy on the site they were never routed through
+ * `unverified()`, so they were shipping to production with made-up client
+ * names attached to made-up percentages.
+ *
+ * Published case studies lead when there are any. Until then the section
+ * shows real client work from data/credits.ts: named, live, linked, and
+ * carrying the contribution rather than an outcome, because none of those
+ * outcomes was measured by us.
+ */
+const published = await getWork();
+
+const work = published.length
+  ? published.slice(0, 3).map((e) => ({
+      name: e.data.name,
+      sector: e.data.sector,
+      note: publishable(e.data.headline) ? e.data.headline.value : e.data.services[0],
+      body: e.data.summary,
+      href: `/work/${e.id}`,
+      external: false,
+    }))
+  : credits.slice(0, 3).map((c) => ({
+      name: c.name,
+      sector: c.sector,
+      note: c.contribution,
+      body: c.what,
+      href: c.site,
+      external: true,
+    }));
 
 const differentiators = [
   { title: 'We learn the business first', body: 'Before any code, we map how your team actually operates. Most agencies skip this and build the wrong thing beautifully.' },
@@ -230,17 +261,24 @@ const stats = [
           {
             work.map((w) => (
               <a
-                href="/work"
+                href={w.href}
+                target={w.external ? '_blank' : undefined}
+                rel={w.external ? 'noopener noreferrer' : undefined}
                 data-reveal="card"
                 class="group flex flex-col rounded-card border border-line bg-surface p-8 transition-colors duration-300 hover:border-copper-line"
               >
                 <p class="eyebrow">{w.sector}</p>
                 <h3 class="mt-4 font-display text-xl font-bold tracking-[-0.025em] text-ink">
-                  {w.client}
+                  {w.name}
+                  {w.external && (
+                    <span aria-hidden="true" class="ml-1.5 text-ink-3">
+                      &#8599;
+                    </span>
+                  )}
                 </h3>
                 <p class="mt-3 flex-1 text-[0.95rem] leading-relaxed text-ink-2">{w.body}</p>
-                <p class="mt-6 font-display text-2xl font-bold tracking-[-0.03em] text-copper tabular-nums">
-                  {w.result}
+                <p class="mt-6 font-display text-lg font-bold tracking-[-0.03em] text-copper">
+                  {w.note}
                 </p>
               </a>
             ))

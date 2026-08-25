@@ -1,6 +1,10 @@
 ---
 kind: product
 name: Overlap
+links:
+  site: https://overlap-gules.vercel.app
+  # TODO(airaf): public repo exists; paste its URL to show a source link.
+  # repo: https://github.com/...
 title: A studio site that argues in clocks
 sector: Software
 # TODO(airaf): confirm the year.

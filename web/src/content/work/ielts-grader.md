@@ -1,6 +1,10 @@
 ---
 kind: product
 name: IELTS Grader
+links:
+  site: https://ieltsgrader.com
+  # TODO(airaf): public repo exists; paste its URL to show a source link.
+  # repo: https://github.com/...
 title: A band score that shows its working
 sector: Education
 # TODO(airaf): confirm the year.
