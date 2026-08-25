@@ -57,6 +57,11 @@ export function initSmoothScroll() {
     wheelMultiplier: 1.2,
     touchMultiplier: 1.35,
     easing,
+    // No `anchors` option here on purpose. Astro's ClientRouter takes
+    // same-page link clicks off `document` before Lenis ever sees them, so
+    // the option looks set and never fires. anchor-scroll.ts owns that
+    // click instead — one owner, in the capture phase, where it actually
+    // wins.
   });
 
   window.__lenis = lenis;

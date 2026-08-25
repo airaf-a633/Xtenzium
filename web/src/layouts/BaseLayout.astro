@@ -72,6 +72,7 @@ const ogImage = new URL(image, Astro.site).href;
       import { initReveal, destroyReveal } from '../lib/reveal';
       import { initSplit, destroySplit } from '../lib/split';
       import { initSectionExit, destroySectionExit } from '../lib/section-exit';
+      import { initAnchorScroll, destroyAnchorScroll } from '../lib/anchor-scroll';
       import { initStatementPanels, destroyStatementPanels } from '../lib/statement-panel';
       import { initHero, destroyHero } from '../lib/hero';
       import { initCounters, destroyCounters } from '../lib/counter';
@@ -102,6 +103,7 @@ const ogImage = new URL(image, Astro.site).href;
         initReveal();
         initSplit();
         initSectionExit();
+        initAnchorScroll();
         initStatementPanels();
         initCounters();
         initParallax();
@@ -151,6 +153,7 @@ const ogImage = new URL(image, Astro.site).href;
         // generated line wrappers.
         destroySplit();
         destroySectionExit();
+        destroyAnchorScroll();
         destroyStatementPanels();
         destroyCounters();
         destroyParallax();
@@ -201,9 +204,37 @@ const ogImage = new URL(image, Astro.site).href;
       // ── Lifecycle ───────────────────────────────────────────────────
       // No direct start() call — `astro:page-load` fires on first load too.
 
+      // The page has to fade OUT before it is replaced, and `before-swap`
+      // is too late for that — it fires with the new document already in
+      // hand, so anything added there is painted for a single frame at
+      // most. That is why `.page-leaving` existed in the stylesheet with a
+      // 300ms transition on it and was never once applied: the class was
+      // written for a moment in the navigation that nothing had hooked.
+      //
+      // `before-preparation` is that moment. Wrapping its loader lets the
+      // fade and the fetch run together, so navigation costs the longer of
+      // the two rather than both, and a page that is already prefetched
+      // still waits out the fade instead of snapping.
+      document.addEventListener('astro:before-preparation', (event) => {
+        const e = event as unknown as { loader: () => Promise<void> };
+        const load = e.loader;
+
+        e.loader = async () => {
+          // Reduced motion: no fade to wait for, so do not sit on a
+          // delay that only ever reads as lag.
+          if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            await load();
+            return;
+          }
+          document.body.classList.remove('page-visible');
+          document.body.classList.add('page-leaving');
+          await Promise.all([load(), new Promise((r) => setTimeout(r, 300))]);
+        };
+      });
+
       document.addEventListener('astro:before-swap', () => {
         stop();
-        document.body.classList.remove('page-visible');
+        document.body.classList.remove('page-visible', 'page-leaving');
         document.body.classList.add('page-entering');
       });
 
