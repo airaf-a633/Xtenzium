@@ -137,11 +137,47 @@ html.lenis, html.lenis body { height: auto; }
 .lenis.lenis-stopped { overflow: hidden; }
 
 /* ───────────────────────────────────────────────────────────────
-   Page transition — matches the reference's 320ms out / fade in.
+   Page transition.
+
+   This was a full-page opacity fade — the whole document to 0, then the
+   whole document back to 1, ~680ms end to end. Three things were wrong
+   with it, and the third is the one that mattered:
+
+   1. It was slow enough to feel like a page load, which is the exact
+      impression a client-side router exists to avoid.
+   2. It faded the navigation with everything else, so the one element
+      that should be continuous blinked on every click.
+   3. Seven headings across the site carry `transition:name` — a work row
+      morphing into a case-study title, a service row into its page. A
+      full-page fade paints straight over the top of them, so the good
+      transition already in the markup was invisible on every navigation.
+
+   So the ground and the chrome stay, and only the content moves: out
+   upward and short, in from below and slightly longer, because arriving
+   should read as more deliberate than leaving. Named elements are left
+   alone to morph, which is the whole reason they were named.
    ─────────────────────────────────────────────────────────────── */
-body.page-leaving  { opacity: 0; transition: opacity 300ms var(--ease-brand); }
-body.page-entering { opacity: 0; }
-body.page-visible  { opacity: 1; transition: opacity 380ms var(--ease-brand); }
+@keyframes page-out {
+  to { opacity: 0; transform: translateY(-10px); }
+}
+@keyframes page-in {
+  from { opacity: 0; transform: translateY(14px); }
+}
+
+::view-transition-old(root) {
+  animation: page-out 200ms var(--ease-brand) both;
+}
+::view-transition-new(root) {
+  animation: page-in 320ms var(--ease-brand) both;
+}
+
+/* The navbar is continuous chrome, not page content. Giving it its own
+   layer keeps it out of the root snapshot so it never animates. */
+::view-transition-old(nav),
+::view-transition-new(nav) {
+  animation: none;
+  mix-blend-mode: normal;
+}
 
 /* ───────────────────────────────────────────────────────────────
    Reduced motion — kill every transition and animation outright.
@@ -155,7 +191,13 @@ body.page-visible  { opacity: 1; transition: opacity 380ms var(--ease-brand); }
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
-  body.page-leaving, body.page-entering, body.page-visible { opacity: 1; }
+  /* Cut the page transition outright rather than letting the blanket rule
+     above compress it to 0.01ms, which still runs a snapshot and can
+     flash. */
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none !important;
+  }
 }
 
 /* ───────────────────────────────────────────────────────────────

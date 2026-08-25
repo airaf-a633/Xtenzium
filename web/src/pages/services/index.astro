@@ -57,7 +57,7 @@ const faqs = [
     <section class="on-carbon relative overflow-hidden bg-carbon pb-20 pt-40 md:pb-24 md:pt-48">
       <BleedImage image={imagery.headerServices} scrim="soft" eager />
 
-      <div class="container-x relative" data-reveal-group>
+      <div class="container-x relative" data-reveal-group data-exit>
         <p class="eyebrow !text-copper-hi" data-reveal="eyebrow">Services</p>
         <h1
           class="mt-4 max-w-3xl font-display text-[clamp(2.25rem,6vw,4.25rem)] font-bold leading-[1.02] tracking-[-0.035em] text-white"
@@ -74,7 +74,7 @@ const faqs = [
 
     <!-- ── Index ────────────────────────────────────────────── -->
     <section class="bg-bg py-20 md:py-28">
-      <div class="container-x">
+      <div class="container-x" data-exit>
         <ol data-reveal-cards>
           {
             sorted.map((s, i) => (
@@ -118,7 +118,7 @@ const faqs = [
 
     <!-- ── CTA ──────────────────────────────────────────────── -->
     <section class="border-t border-white/10 bg-carbon py-20 md:py-28">
-      <div class="container-x" data-reveal-group>
+      <div class="container-x" data-reveal-group data-exit>
         <div class="max-w-2xl">
           <p class="eyebrow !text-copper-hi" data-reveal="eyebrow">Not sure which</p>
           <h2

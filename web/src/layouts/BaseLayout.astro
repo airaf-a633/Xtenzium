@@ -59,7 +59,7 @@ const ogImage = new URL(image, Astro.site).href;
     <slot name="head" />
   </head>
 
-  <body class="page-visible">
+  <body>
     <!-- Reading progress. Driven by scale, never width. -->
     <div aria-hidden="true" class="pointer-events-none fixed inset-x-0 top-0 z-[60] h-[2px]">
       <div data-progress class="h-full origin-left bg-copper" style="scale: 0 1;"></div>
@@ -204,38 +204,18 @@ const ogImage = new URL(image, Astro.site).href;
       // ── Lifecycle ───────────────────────────────────────────────────
       // No direct start() call — `astro:page-load` fires on first load too.
 
-      // The page has to fade OUT before it is replaced, and `before-swap`
-      // is too late for that — it fires with the new document already in
-      // hand, so anything added there is painted for a single frame at
-      // most. That is why `.page-leaving` existed in the stylesheet with a
-      // 300ms transition on it and was never once applied: the class was
-      // written for a moment in the navigation that nothing had hooked.
+      // The transition itself is CSS now — ::view-transition-old/new in
+      // global.css. The browser snapshots the old page, swaps, and
+      // animates between the two, which is both faster than driving
+      // opacity from JS and the only way the `transition:name` headings
+      // can morph: a full-page fade painted straight over them.
       //
-      // `before-preparation` is that moment. Wrapping its loader lets the
-      // fade and the fetch run together, so navigation costs the longer of
-      // the two rather than both, and a page that is already prefetched
-      // still waits out the fade instead of snapping.
-      document.addEventListener('astro:before-preparation', (event) => {
-        const e = event as unknown as { loader: () => Promise<void> };
-        const load = e.loader;
-
-        e.loader = async () => {
-          // Reduced motion: no fade to wait for, so do not sit on a
-          // delay that only ever reads as lag.
-          if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-            await load();
-            return;
-          }
-          document.body.classList.remove('page-visible');
-          document.body.classList.add('page-leaving');
-          await Promise.all([load(), new Promise((r) => setTimeout(r, 300))]);
-        };
-      });
-
+      // Nothing here delays navigation any more. The previous version
+      // held the loader open for 300ms to let a fade finish, which made
+      // every click cost that 300ms even when the page was already
+      // prefetched.
       document.addEventListener('astro:before-swap', () => {
         stop();
-        document.body.classList.remove('page-visible', 'page-leaving');
-        document.body.classList.add('page-entering');
       });
 
       document.addEventListener('astro:after-swap', () => {
@@ -244,10 +224,6 @@ const ogImage = new URL(image, Astro.site).href;
 
       document.addEventListener('astro:page-load', () => {
         start();
-        requestAnimationFrame(() => {
-          document.body.classList.remove('page-entering', 'page-leaving');
-          document.body.classList.add('page-visible');
-        });
       });
 
       let resizeTimer: number;

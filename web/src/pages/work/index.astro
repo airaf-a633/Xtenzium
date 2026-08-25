@@ -131,7 +131,7 @@ const faqs = [
     <!-- ── Header ───────────────────────────────────────────── -->
     <section class="on-carbon relative overflow-hidden bg-carbon pb-20 pt-40 md:pb-24 md:pt-48">
       <BleedImage image={imagery.headerWork} scrim="soft" eager />
-      <div class="container-x relative z-10" data-reveal-group>
+      <div class="container-x relative z-10" data-reveal-group data-exit>
         <p class="eyebrow !text-copper-hi" data-reveal="eyebrow">Selected work</p>
         <h1
           class="mt-4 max-w-3xl font-display text-[clamp(2.25rem,6vw,4.25rem)] font-bold leading-[1.02] tracking-[-0.035em] text-white"
@@ -151,7 +151,7 @@ const faqs = [
          further down the page, so the reader can check it by scrolling.
          The unverifiable claims sit behind the gate below. -->
     <section class="on-carbon border-t border-white/10 bg-carbon pb-20 md:pb-24">
-      <div class="container-x">
+      <div class="container-x" data-exit>
         <div
           data-reveal-cards
           class="grid divide-y divide-white/10 sm:grid-cols-2 sm:divide-x sm:divide-y-0"
@@ -179,7 +179,7 @@ const faqs = [
 
     <!-- ── Index ────────────────────────────────────────────── -->
     <section class="bg-bg py-20 md:py-28">
-      <div class="container-x">
+      <div class="container-x" data-exit>
         {
           entries.length === 0 ? (
             <div class="rounded-card border border-dashed border-line-strong bg-surface p-10 md:p-14">
@@ -290,7 +290,7 @@ const faqs = [
          carries an outcome number, because none of it was measured by
          us — those live in case studies or nowhere. -->
     <section class="border-t border-line bg-bg py-20 md:py-28">
-      <div class="container-x">
+      <div class="container-x" data-exit>
         <div class="max-w-2xl" data-reveal-group>
           <p class="eyebrow" data-reveal="eyebrow">Earlier work</p>
           <h2
@@ -352,7 +352,7 @@ const faqs = [
 
     <!-- ── What's in a case study ───────────────────────────── -->
     <section class="bg-bg-tint py-20 md:py-28">
-      <div class="container-x">
+      <div class="container-x" data-exit>
         <div class="max-w-2xl" data-reveal-group>
           <p class="eyebrow" data-reveal="eyebrow">What's in each one</p>
           <h2
@@ -401,7 +401,7 @@ const faqs = [
 
     <!-- ── CTA ──────────────────────────────────────────────── -->
     <section class="border-t border-white/10 bg-carbon py-20 md:py-28">
-      <div class="container-x" data-reveal-group>
+      <div class="container-x" data-reveal-group data-exit>
         <div class="max-w-2xl">
           <p class="eyebrow !text-copper-hi" data-reveal="eyebrow">Your turn</p>
           <h2

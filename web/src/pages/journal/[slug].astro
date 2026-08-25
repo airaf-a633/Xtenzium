@@ -63,7 +63,7 @@ const description =
       >
       </div>
 
-      <div class="container-x relative" data-reveal-group>
+      <div class="container-x relative" data-reveal-group data-exit>
         <a
           href="/journal"
           class="eyebrow !text-white/45 transition-colors duration-300 hover:!text-white"
@@ -99,7 +99,7 @@ const description =
     {
       post.cover_image && (
         <div class="bg-carbon">
-          <div class="container-x">
+          <div class="container-x" data-exit>
             {/* A fixed frame, not a natural-height image. The parallax
                 driver oversizes what it holds and drifts it, which needs
                 something to clip against — and a known aspect also stops
@@ -120,7 +120,7 @@ const description =
       <!-- One fade for the whole article. A post is for reading, so the
            body is not staggered block by block — that would animate the
            reader's eye down the page at a speed they did not choose. -->
-      <div class="container-x" data-reveal-group>
+      <div class="container-x" data-reveal-group data-exit>
         <article
           data-reveal="body"
           class="prose-journal mx-auto max-w-[68ch]"
@@ -146,7 +146,7 @@ const description =
     {
       next && next.slug !== post.slug && (
         <section class="border-t border-line bg-bg-tint py-16 md:py-20">
-          <div class="container-x" data-reveal-group>
+          <div class="container-x" data-reveal-group data-exit>
             <a href={`/journal/${next.slug}`} class="group flex flex-col gap-3">
               <p class="eyebrow" data-reveal="eyebrow">Next post</p>
               <h2

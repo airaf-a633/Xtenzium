@@ -80,7 +80,7 @@ const { service: s, next } = Astro.props;
       >
       </div>
 
-      <div class="container-x relative" data-reveal-group>
+      <div class="container-x relative" data-reveal-group data-exit>
         <a
           href="/services"
           class="eyebrow !text-white/45 transition-colors duration-300 hover:!text-white"
@@ -120,7 +120,7 @@ const { service: s, next } = Astro.props;
 
     <!-- ── The problem ──────────────────────────────────────── -->
     <section class="bg-bg py-20 md:py-28">
-      <div class="container-x">
+      <div class="container-x" data-exit>
         <div class="grid gap-12 lg:grid-cols-[minmax(0,18rem)_1fr]" data-reveal-group>
           <p class="eyebrow" data-reveal="eyebrow">Why this exists</p>
           <div class="max-w-2xl">
@@ -146,7 +146,7 @@ const { service: s, next } = Astro.props;
 
     <!-- ── Approach ─────────────────────────────────────────── -->
     <section class="bg-bg-tint py-20 md:py-28">
-      <div class="container-x">
+      <div class="container-x" data-exit>
         <div class="max-w-2xl" data-reveal-group>
           <p class="eyebrow" data-reveal="eyebrow">How it runs</p>
           <h2
@@ -185,7 +185,7 @@ const { service: s, next } = Astro.props;
     <!-- ── What you get ─────────────────────────────────────── -->
     <section class="on-carbon relative overflow-hidden bg-carbon py-20 md:py-28">
       <WatermarkX side="right" size={38} opacity={12} drift={11} spin={6} />
-      <div class="container-x relative z-10">
+      <div class="container-x relative z-10" data-exit>
         <div class="grid gap-12 lg:grid-cols-[minmax(0,22rem)_1fr]">
           <div data-reveal-group>
             <p class="eyebrow !text-white/45" data-reveal="eyebrow">What you get</p>
@@ -219,7 +219,7 @@ const { service: s, next } = Astro.props;
 
     <!-- ── Capabilities ─────────────────────────────────────── -->
     <section class="bg-bg py-20 md:py-28">
-      <div class="container-x">
+      <div class="container-x" data-exit>
         <div class="max-w-2xl" data-reveal-group>
           <p class="eyebrow" data-reveal="eyebrow">Capabilities</p>
           <h2
@@ -249,7 +249,7 @@ const { service: s, next } = Astro.props;
 
     <!-- ── Engagement shapes ────────────────────────────────── -->
     <section class="bg-bg-tint py-20 md:py-28">
-      <div class="container-x">
+      <div class="container-x" data-exit>
         <div class="max-w-2xl" data-reveal-group>
           <p class="eyebrow" data-reveal="eyebrow">How we work together</p>
           <h2
@@ -290,7 +290,7 @@ const { service: s, next } = Astro.props;
 
     <!-- ── Next service ─────────────────────────────────────── -->
     <section class="border-t border-line bg-bg py-16 md:py-20">
-      <div class="container-x" data-reveal-group>
+      <div class="container-x" data-reveal-group data-exit>
         <a href={`/services/${next.slug}`} class="group flex flex-col gap-3">
           <p class="eyebrow" data-reveal="eyebrow">Next service</p>
           <h2

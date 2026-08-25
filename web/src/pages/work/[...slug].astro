@@ -52,7 +52,7 @@ const rail = [d.headline, ...d.metrics].filter(publishable);
   <main>
     <!-- ── Header ───────────────────────────────────────────── -->
     <section class="on-carbon bg-carbon pb-16 pt-40 md:pb-20 md:pt-48">
-      <div class="container-x" data-reveal-group>
+      <div class="container-x" data-reveal-group data-exit>
         <a
           href="/work"
           class="eyebrow !text-white/45 transition-colors duration-300 hover:!text-white"
@@ -87,7 +87,7 @@ const rail = [d.headline, ...d.metrics].filter(publishable);
 
     <!-- ── Metrics rail ─────────────────────────────────────── -->
     <section class="on-carbon border-t border-white/10 bg-carbon pb-20 md:pb-24">
-      <div class="container-x">
+      <div class="container-x" data-exit>
         <div data-reveal-cards class="grid gap-px overflow-hidden rounded-card bg-white/10 sm:grid-cols-2 lg:grid-cols-4">
           {
             rail.map((m, i) => (
@@ -118,7 +118,7 @@ const rail = [d.headline, ...d.metrics].filter(publishable);
 
     <!-- ── Body ─────────────────────────────────────────────── -->
     <section class="bg-bg py-20 md:py-28">
-      <div class="container-x">
+      <div class="container-x" data-exit>
         <!-- One group, one fade. The case study is the thing the reader
              came for, so the prose is not staggered paragraph by
              paragraph — that turns reading into waiting. -->
@@ -192,7 +192,7 @@ const rail = [d.headline, ...d.metrics].filter(publishable);
     {
       next && next.id !== entry.id && (
         <section class="border-t border-line bg-bg-tint py-16 md:py-20">
-          <div class="container-x" data-reveal-group>
+          <div class="container-x" data-reveal-group data-exit>
             <a href={`/work/${next.id}`} class="group flex flex-col gap-3">
               <p class="eyebrow" data-reveal="eyebrow">Next case study</p>
               <h2

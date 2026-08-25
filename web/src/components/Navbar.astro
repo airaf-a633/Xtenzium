@@ -21,8 +21,19 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
 const isActive = (href: string) => path === href || path.startsWith(href + '/');
 ---
 
+{/*
+  Its own view-transition layer, so the page animation underneath never
+  touches it — the nav is continuous chrome and blinking it on every
+  click is what made navigation read as a reload.
+
+  `transition:name` and deliberately not `transition:persist`. Persisting
+  keeps the DOM node itself, which would also keep the active-link state
+  belonging to the page you just left. The nav must re-render to move
+  that highlight; it just must not animate while it does.
+*/}
 <header
   data-nav
+  transition:name="nav"
   class="nav-drop pointer-events-none fixed left-1/2 top-5 z-50 w-full max-w-[min(100vw-1.5rem,34rem)] px-3 md:top-[26px] md:max-w-[min(100vw-3rem,58rem)]"
 >
   <nav
