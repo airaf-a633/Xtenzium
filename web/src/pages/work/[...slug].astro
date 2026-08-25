@@ -2,7 +2,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Navbar from '../../components/Navbar.astro';
 import Footer from '../../components/Footer.astro';
-import { getWork } from '../../lib/content';
+import { getWork, publishable } from '../../lib/content';
 import { countAttrs } from '../../lib/metric';
 import { render } from 'astro:content';
 
@@ -21,11 +21,13 @@ const d = entry.data;
 // The headline number leads the rail, the supporting ones follow. Building
 // one array keeps the markup to a single loop, so the headline can never
 // drift out of sync with the cells beside it.
-const rail = [d.headline, ...d.metrics];
+// Only numbers that carry their own provenance reach the rail. An
+// unverified one is stripped from production rather than quietly shipped.
+const rail = [d.headline, ...d.metrics].filter(publishable);
 ---
 
 <BaseLayout
-  title={`${d.client} — ${d.title} | Xtenzium`}
+  title={`${d.name} — ${d.title} | Xtenzium`}
   description={d.summary}
   path={`/work/${entry.id}`}
 >
@@ -36,7 +38,7 @@ const rail = [d.headline, ...d.metrics];
       set:html={JSON.stringify({
         '@context': 'https://schema.org',
         '@type': 'Article',
-        headline: `${d.client} — ${d.title}`,
+        headline: `${d.name} — ${d.title}`,
         description: d.summary,
         datePublished: `${d.year}-01-01`,
         author: { '@type': 'Organization', name: 'Xtenzium' },
@@ -67,7 +69,7 @@ const rail = [d.headline, ...d.metrics];
           data-split="words"
           class="mt-4 max-w-4xl font-display text-[clamp(2.25rem,6vw,4.25rem)] font-bold leading-[1.02] tracking-[-0.035em] text-white"
         >
-          {d.client}
+          {d.name}
         </h1>
 
         <p
@@ -92,9 +94,13 @@ const rail = [d.headline, ...d.metrics];
               <div data-reveal="card" class="bg-carbon p-7">
                 {/* The value ships rendered. countAttrs only adds the
                     rewind when the string holds a single number, so a
-                    before/after value stays put instead of counting. */}
+                    before/after value stays put instead of counting.
+                    It returns null in that case, and Astro's spread
+                    throws on null rather than ignoring it — hence the
+                    `?? {}`, without which one uncountable metric takes
+                    the whole page down. */}
                 <div
-                  {...countAttrs(m.value)}
+                  {...(countAttrs(m.value) ?? {})}
                   class:list={[
                     'font-display text-3xl font-bold tracking-[-0.03em] tabular-nums',
                     i === 0 ? 'text-copper-hi' : 'text-white',
@@ -157,7 +163,7 @@ const rail = [d.headline, ...d.metrics];
                 data-split="words"
                 class="font-display text-[clamp(1.75rem,4vw,2.75rem)] font-bold tracking-[-0.03em] text-ink transition-colors duration-300 group-hover:text-copper"
               >
-                {next.data.client}
+                {next.data.name}
               </h2>
               <p class="max-w-xl leading-relaxed text-ink-2" data-reveal="body">
                 {next.data.summary}

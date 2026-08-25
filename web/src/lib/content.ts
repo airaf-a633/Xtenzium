@@ -1,6 +1,20 @@
 import { getCollection, type CollectionEntry } from 'astro:content';
+import { SHOW_UNVERIFIED } from './placeholder';
 
 export type WorkEntry = CollectionEntry<'work'>;
+
+/**
+ * Whether a number is allowed on a production page.
+ *
+ * `measured` and `observed` both stand on their own — one was taken after
+ * launch and agreed, the other is true by inspecting the thing. Anything
+ * still marked `unverified` shows in development so the layout can be
+ * reviewed, and is stripped from the build, the same rule
+ * `unverified()` applies to every other unchecked claim on the site.
+ */
+export function publishable(c: { basis: 'measured' | 'observed' | 'unverified' }) {
+  return c.basis !== 'unverified' || SHOW_UNVERIFIED;
+}
 
 /**
  * Case studies, newest-intent first.

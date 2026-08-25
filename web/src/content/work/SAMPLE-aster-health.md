@@ -1,4 +1,6 @@
 ---
+kind: engagement
+name: Aster Health
 client: Aster Health
 title: A patient portal that stopped timing out
 sector: Clinical SaaS

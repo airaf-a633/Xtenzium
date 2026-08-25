@@ -1,4 +1,6 @@
 ---
+kind: engagement
+name: Meridian Logistics
 client: Meridian Logistics
 title: Trackers, dashboard, and one team for both
 sector: Fleet telematics

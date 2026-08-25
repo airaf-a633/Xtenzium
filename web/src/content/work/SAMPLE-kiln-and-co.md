@@ -1,4 +1,6 @@
 ---
+kind: engagement
+name: Kiln & Co
 client: Kiln & Co
 title: A brand system and the tools to run it
 sector: D2C commerce
