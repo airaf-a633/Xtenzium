@@ -215,17 +215,30 @@ function signalField(seed, w, h) {
  * filename always renders identically — and differ in what they draw.
  */
 
-/** Closes every motif the same way: a copper bloom for depth, then a
- *  vignette so type stays readable over the top. */
+/**
+ * Closes every motif the same way: a copper bloom for depth, then a
+ * vignette so type stays readable over the top.
+ *
+ * The vignette is doing two jobs that pull against each other — protect
+ * the type, and let the drawing be seen. It was weighted almost entirely
+ * to the first, at 0.9 over the lower half and 0.18 still sitting across
+ * the middle, which left the motif barely legible behind a heading.
+ *
+ * The fix is not simply less vignette. Type sits low-left in every one of
+ * these slots, so the mask is now steeper rather than lighter: it holds
+ * its weight exactly where the words are and clears quickly above them,
+ * which buys the drawing back without touching contrast where it counts.
+ */
 function finish(w, h, hue, at = [0.3, 0.35]) {
   return (
     `<radialGradient id="bl" cx="${at[0]}" cy="${at[1]}" r="0.8">` +
-    `<stop offset="0" stop-color="${hue}" stop-opacity="0.32"/>` +
+    `<stop offset="0" stop-color="${hue}" stop-opacity="0.42"/>` +
     `<stop offset="1" stop-color="${CARBON}" stop-opacity="0"/></radialGradient>` +
     `<rect width="${w}" height="${h}" fill="url(#bl)"/>` +
     `<linearGradient id="vg2" x1="0" y1="1" x2="0" y2="0">` +
-    `<stop offset="0" stop-color="${CARBON}" stop-opacity="0.9"/>` +
-    `<stop offset="0.62" stop-color="${CARBON}" stop-opacity="0.18"/></linearGradient>` +
+    `<stop offset="0" stop-color="${CARBON}" stop-opacity="0.88"/>` +
+    `<stop offset="0.34" stop-color="${CARBON}" stop-opacity="0.34"/>` +
+    `<stop offset="0.72" stop-color="${CARBON}" stop-opacity="0"/></linearGradient>` +
     `<rect width="${w}" height="${h}" fill="url(#vg2)"/>`
   );
 }
@@ -240,7 +253,7 @@ function moduleGrid(seed, w, h) {
   for (let i = 1; i < 12; i++) {
     parts.push(
       `<line x1="${(col * i).toFixed(0)}" y1="0" x2="${(col * i).toFixed(0)}" y2="${h}" ` +
-        `stroke="${COPPER}" stroke-width="1" stroke-opacity="0.1"/>`,
+        `stroke="${COPPER}" stroke-width="1" stroke-opacity="0.16"/>`,
     );
   }
 
@@ -258,7 +271,7 @@ function moduleGrid(seed, w, h) {
     if (lead) {
       parts.push(
         `<rect x="${(x + 12).toFixed(0)}" y="${(y + 12).toFixed(0)}" width="${(col * span - 24).toFixed(0)}" ` +
-          `height="6" rx="3" fill="${COPPER_HI}" opacity="0.3"/>`,
+          `height="6" rx="3" fill="${COPPER_HI}" opacity="0.43"/>`,
       );
     }
   }
@@ -276,7 +289,7 @@ function typeGrid(seed, w, h) {
   for (let y = base; y < h; y += base) {
     parts.push(
       `<line x1="0" y1="${y}" x2="${w}" y2="${y}" stroke="${COPPER}" ` +
-        `stroke-width="1" stroke-opacity="0.07"/>`,
+        `stroke-width="1" stroke-opacity="0.11"/>`,
     );
   }
 
@@ -288,13 +301,13 @@ function typeGrid(seed, w, h) {
     const measure = w * (0.16 + r() * 0.3);
     parts.push(
       `<rect x="${x.toFixed(0)}" y="${y.toFixed(0)}" width="${(measure * 0.62).toFixed(0)}" ` +
-        `height="${(base * 0.7).toFixed(0)}" fill="${COPPER_HI}" opacity="0.34"/>`,
+        `height="${(base * 0.7).toFixed(0)}" fill="${COPPER_HI}" opacity="0.49"/>`,
     );
     for (let l = 0; l < lines; l++) {
       const ly = y + base * (l + 1.5);
       parts.push(
         `<rect x="${x.toFixed(0)}" y="${ly.toFixed(0)}" width="${(measure * (0.5 + r() * 0.5)).toFixed(0)}" ` +
-          `height="5" rx="2.5" fill="${COPPER}" opacity="0.2"/>`,
+          `height="5" rx="2.5" fill="${COPPER}" opacity="0.29"/>`,
       );
     }
     y += base * (lines + 3.2);
@@ -305,7 +318,7 @@ function typeGrid(seed, w, h) {
   parts.push(
     `<path d="M0,${(h * 0.78).toFixed(0)} C${(w * 0.3).toFixed(0)},${(h * 0.4).toFixed(0)} ` +
       `${(w * 0.62).toFixed(0)},${(h * 0.95).toFixed(0)} ${w},${(h * 0.5).toFixed(0)}" ` +
-      `fill="none" stroke="${COPPER_HI}" stroke-width="2.4" stroke-opacity="0.4"/>`,
+      `fill="none" stroke="${COPPER_HI}" stroke-width="2.4" stroke-opacity="0.62"/>`,
   );
   parts.push(finish(w, h, COPPER, [0.72, 0.3]));
   return svg(w, h, parts.join(''));
@@ -340,12 +353,12 @@ function nodeGraph(seed, w, h) {
       parts.push(
         `<path d="M${from.x.toFixed(0)},${from.y.toFixed(0)} L${midX.toFixed(0)},${from.y.toFixed(0)} ` +
           `L${midX.toFixed(0)},${to.y.toFixed(0)} L${to.x.toFixed(0)},${to.y.toFixed(0)}" ` +
-          `fill="none" stroke="${COPPER}" stroke-width="1.6" stroke-opacity="0.3" stroke-linejoin="round"/>`,
+          `fill="none" stroke="${COPPER}" stroke-width="1.6" stroke-opacity="0.46" stroke-linejoin="round"/>`,
       );
       parts.push(
         `<path d="M${(to.x - 11).toFixed(0)},${(to.y - 5).toFixed(0)} L${to.x.toFixed(0)},${to.y.toFixed(0)} ` +
           `L${(to.x - 11).toFixed(0)},${(to.y + 5).toFixed(0)}" fill="none" stroke="${COPPER_HI}" ` +
-          `stroke-width="1.6" stroke-opacity="0.42" stroke-linejoin="round"/>`,
+          `stroke-width="1.6" stroke-opacity="0.65" stroke-linejoin="round"/>`,
       );
     }
   }
@@ -374,12 +387,12 @@ function plotField(seed, w, h) {
     const y = padY + ((h - padY * 2) / 6) * i;
     parts.push(
       `<line x1="${padX.toFixed(0)}" y1="${y.toFixed(0)}" x2="${(w - padX).toFixed(0)}" y2="${y.toFixed(0)}" ` +
-        `stroke="${COPPER}" stroke-width="1" stroke-opacity="0.1"/>`,
+        `stroke="${COPPER}" stroke-width="1" stroke-opacity="0.16"/>`,
     );
   }
   parts.push(
     `<line x1="${padX.toFixed(0)}" y1="${padY.toFixed(0)}" x2="${padX.toFixed(0)}" y2="${(h - padY).toFixed(0)}" ` +
-      `stroke="${COPPER}" stroke-width="1.6" stroke-opacity="0.3"/>`,
+      `stroke="${COPPER}" stroke-width="1.6" stroke-opacity="0.46"/>`,
   );
 
   // Two series: a stepped one and a smoother one climbing past it.
@@ -394,7 +407,7 @@ function plotField(seed, w, h) {
     parts.push(via(nx, sy, 5, 0.5));
   }
   parts.push(
-    `<path d="${d}" fill="none" stroke="${COPPER_HI}" stroke-width="2.6" stroke-opacity="0.5" ` +
+    `<path d="${d}" fill="none" stroke="${COPPER_HI}" stroke-width="2.6" stroke-opacity="0.7" ` +
       `stroke-linejoin="round" stroke-linecap="round"/>`,
   );
 
@@ -406,7 +419,7 @@ function plotField(seed, w, h) {
     d2 += ` L${nx.toFixed(0)},${by.toFixed(0)}`;
   }
   parts.push(
-    `<path d="${d2}" fill="none" stroke="${COPPER}" stroke-width="1.6" stroke-opacity="0.28" ` +
+    `<path d="${d2}" fill="none" stroke="${COPPER}" stroke-width="1.6" stroke-opacity="0.43" ` +
       `stroke-dasharray="7 6"/>`,
   );
   parts.push(finish(w, h, COPPER, [0.68, 0.3]));
@@ -437,7 +450,7 @@ function broadcast(seed, w, h) {
     parts.push(
       `<line x1="${ox.toFixed(0)}" y1="${oy.toFixed(0)}" ` +
         `x2="${(ox + Math.cos(a) * len).toFixed(0)}" y2="${(oy + Math.sin(a) * len).toFixed(0)}" ` +
-        `stroke="${COPPER}" stroke-width="1.3" stroke-opacity="0.16"/>`,
+        `stroke="${COPPER}" stroke-width="1.3" stroke-opacity="0.25"/>`,
     );
   }
   parts.push(via(ox, oy, 11, 0.7));
