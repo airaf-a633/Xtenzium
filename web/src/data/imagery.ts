@@ -1,94 +1,85 @@
 /**
  * Full-bleed imagery.
  *
- * Every slot carries TWO sources:
+ * Generated brand art, one motif per subject. `scripts/make-art.mjs`
+ * renders these from the same routing language as the hero canvas —
+ * carbon ground, copper geometry, seeded so a filename always produces
+ * the same image and the build stays reproducible.
  *
- *   photo  a real photograph, hotlinked from the Unsplash CDN
- *   art    generated SVG from `scripts/make-art.mjs`, sitting behind it
+ * ── Why there are no photographs here any more ─────────────────────
  *
- * The art is not decoration — it is the fallback ground. It paints first, so
- * if a photo is slow, blocked, or ever 404s, the slot still reads as designed
- * rather than as a black hole. That also means no layout shift: the ground is
- * already the right size before the photo arrives.
+ * Every slot used to carry a hotlinked Unsplash photo painted over the
+ * art, treated with a copper duotone strong enough to replace the hue
+ * outright. Three problems, and they compounded:
  *
- * ── Licence ────────────────────────────────────────────────────────
- * Unsplash photos are free for commercial use and require no attribution.
- * Every URL below was loaded and confirmed to return a 1600px image before
- * being committed; none are guessed.
+ *  - The photographs were generic stock — as the previous version of
+ *    this file said in its own comment, "generic stock in green, blue
+ *    and grey", which "untreated look pasted onto the brand". The
+ *    duotone existed to hide that, and hid the subject along with it.
+ *  - An agency whose whole argument is that it builds the board should
+ *    not illustrate that claim with a stock photograph of somebody
+ *    else's board. Anyone who would be impressed by the claim is
+ *    exactly the person who can tell.
+ *  - They were hotlinked, which the same comment flagged as "fine for
+ *    staging; not something to ship" — a third-party request on every
+ *    page view, sitting on the largest contentful paint.
  *
- * ── Before launch ──────────────────────────────────────────────────
- * These should be downloaded and self-hosted. Hotlinking means a third-party
- * request on every page view, no control if an image is removed, and a
- * dependency on someone else's CDN for your largest contentful paint.
- * Fine for staging; not something to ship.
- *
- * ── Treatment ──────────────────────────────────────────────────────
- * The photographs are generic stock in green, blue and grey. Untreated they
- * look pasted onto the brand. `.duotone` desaturates them and blends copper
- * over the top, so the image keeps its luminance and takes its hue from the
- * palette. That is what makes twelve unrelated photos read as one set.
+ * The art answers all three. It is on-brand by construction, self-hosted,
+ * and 93 KB for the whole set. Photography can come back the day there
+ * are real photographs of real work: add `photo` and `photoSmall` to a
+ * slot and BleedImage layers it over the art again, with the art as the
+ * fallback ground it was always designed to be.
  */
 
-const CDN = 'https://images.unsplash.com/';
-const PARAMS = 'auto=format&fit=crop&q=70';
-
-/** Builds a sized CDN url. Widths are what the slot actually needs. */
-function photo(id: string, w: number) {
-  return `${CDN}${id}?${PARAMS}&w=${w}`;
-}
-
 export interface Imagery {
-  photo: string;
+  /** Optional. Absent means the generated art is the whole image. */
+  photo?: string;
   /** Narrower source for small viewports. */
-  photoSmall: string;
+  photoSmall?: string;
   art: string;
   alt: string;
 }
 
-function slot(id: string, art: string, alt: string, w = 2000): Imagery {
-  return { photo: photo(id, w), photoSmall: photo(id, 900), art, alt };
-}
-
-/** Wide, dramatic moments — statement panels and page headers. */
+/**
+ * Wide, dramatic moments — statement panels and page headers.
+ *
+ * The motif is chosen for the subject, never for variety. A routed board
+ * sits behind "the software and the board it runs on" because that is
+ * literally what the panel is about; the journal gets the typographic
+ * motif because a journal is setting and measure.
+ */
 export const imagery = {
-  statementDuality: slot(
-    'photo-1518770660439-4636190af475',
-    '/art/statement-duality.svg',
-    '',
-    2400,
-  ),
-  statementTemplate: slot(
-    'photo-1592659762303-90081d34b277',
-    '/art/statement-template.svg',
-    '',
-    2400,
-  ),
-  headerWork: slot('photo-1517077304055-6e89abbf09b0', '/art/header-work.svg', ''),
-  headerServices: slot('photo-1563770660941-20978e870e26', '/art/header-services.svg', ''),
-  headerAbout: slot('photo-1562877773-a37120131ec4', '/art/header-about.svg', ''),
-  headerJournal: slot('photo-1517512006864-7edc3b933137', '/art/header-work.svg', ''),
-  headerContact: slot('photo-1563770660941-20978e870e26', '/art/header-services.svg', ''),
-  headerEstimate: slot('photo-1625838144804-300f3907c110', '/art/header-about.svg', ''),
+  statementDuality: { art: '/art/statement-duality.svg', alt: '' },
+  statementTemplate: { art: '/art/statement-template.svg', alt: '' },
+  headerWork: { art: '/art/header-work.svg', alt: '' },
+  headerServices: { art: '/art/header-services.svg', alt: '' },
+  headerAbout: { art: '/art/header-about.svg', alt: '' },
+  headerJournal: { art: '/art/header-journal.svg', alt: '' },
+  headerContact: { art: '/art/header-contact.svg', alt: '' },
+  headerEstimate: { art: '/art/header-estimate.svg', alt: '' },
 } satisfies Record<string, Imagery>;
 
-/** One per service line, keyed by slug. */
+/**
+ * One per service line, keyed by slug.
+ *
+ *   development  modules on a column grid — interfaces and their parts
+ *   design       baseline grid, type masses, one drawn curve
+ *   iot          a routed board, the one place electronics is the subject
+ *   automation   a directed graph — steps, branches, arrows
+ *   consultancy  axes and a plotted climb
+ *   marketing    concentric reach from a point
+ *   support      signal traces, read as uptime rather than as circuitry
+ */
 export const serviceImagery: Record<string, Imagery> = {
-  development: slot('photo-1518773553398-650c184e0bb3', '/art/service-development.svg', '', 1400),
-  design: slot('photo-1517512006864-7edc3b933137', '/art/service-design.svg', '', 1400),
-  iot: slot('photo-1562408590-e32931084e23', '/art/service-iot.svg', '', 1400),
-  automation: slot('photo-1625838144804-300f3907c110', '/art/service-automation.svg', '', 1400),
-  consultancy: slot('photo-1488590528505-98d2b5aba04b', '/art/service-consultancy.svg', '', 1400),
-  marketing: slot('photo-1599837565318-67429bde7162', '/art/service-marketing.svg', '', 1400),
-  support: slot('photo-1564940675711-ea4bac5109a5', '/art/service-support.svg', '', 1400),
+  development: { art: '/art/service-development.svg', alt: '' },
+  design: { art: '/art/service-design.svg', alt: '' },
+  iot: { art: '/art/service-iot.svg', alt: '' },
+  automation: { art: '/art/service-automation.svg', alt: '' },
+  consultancy: { art: '/art/service-consultancy.svg', alt: '' },
+  marketing: { art: '/art/service-marketing.svg', alt: '' },
+  support: { art: '/art/service-support.svg', alt: '' },
 };
 
 export function serviceImage(slug: string): Imagery {
-  return (
-    serviceImagery[slug] ?? {
-      photo: '',
-      photoSmall: '',
-      art: '/art/statement-duality.svg',
-      alt: '',
-    }
-  );
+  return serviceImagery[slug] ?? { art: '/art/statement-duality.svg', alt: '' };
 }
