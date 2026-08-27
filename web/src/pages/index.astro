@@ -37,11 +37,17 @@ const services = servicesData
   }));
 
 // A real sequence, so the numbering carries information the reader needs.
+//
+// Each step carries art matched to what that step actually is — the plot
+// for scoping, the type grid for design, modules for the build, a routed
+// graph for handover. Without an image these cards rendered as a column
+// of text beside an empty half, which is what made the section read as
+// unfinished.
 const process = [
-  { n: '01', title: 'Scope', body: 'We sit with your team and map what actually needs building. You leave with a written scope and a number, free.' },
-  { n: '02', title: 'Design', body: 'Interface and system design, reviewed with you weekly. Nothing gets built from a guess.' },
-  { n: '03', title: 'Build', body: 'Two-week cycles with a working link at the end of each one. You watch it come together.' },
-  { n: '04', title: 'Handover', body: 'Documented, audited, and yours. Every credential, every repo, every decision written down.' },
+  { n: '01', title: 'Scope', body: 'We sit with your team and map what actually needs building. You leave with a written scope and a number, free.', image: '/art/service-consultancy.svg' },
+  { n: '02', title: 'Design', body: 'Interface and system design, reviewed with you weekly. Nothing gets built from a guess.', image: '/art/service-design.svg' },
+  { n: '03', title: 'Build', body: 'Two-week cycles with a working link at the end of each one. You watch it come together.', image: '/art/service-development.svg' },
+  { n: '04', title: 'Handover', body: 'Documented, audited, and yours. Every credential, every repo, every decision written down.', image: '/art/service-automation.svg' },
 ];
 
 /**

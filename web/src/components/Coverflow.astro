@@ -1,5 +1,4 @@
 ---
-import ParallaxImage from './ParallaxImage.astro';
 
 interface Item { tag: string; label: string; image?: string }
 interface Props { eyebrow: string; heading: string[]; blurb?: string; items: Item[]; href?: string }
@@ -25,18 +24,25 @@ const { eyebrow, heading, blurb, items, href = '/work' } = Astro.props;
       data-coverflow-stage
       class="absolute inset-0 [transform-style:preserve-3d] [[data-coverflow-flat]_&]:static [[data-coverflow-flat]_&]:flex [[data-coverflow-flat]_&]:gap-4"
     >
+      {/* Carbon, not surface. These cards were white with white type on
+          them, legible only where a photograph happened to sit behind the
+          words — and none ever did, because `industries` carries no
+          images, so every card fell back to the placeholder. A sector is
+          a label, not a picture, so the card is designed rather than left
+          waiting on art that was never going to arrive. */}
       {
         items.map((item) => (
           <article
             data-coverflow-card
-            class="absolute left-1/2 top-1/2 h-[19rem] w-[14rem] overflow-hidden rounded-card border border-line bg-surface shadow-[0_24px_60px_-24px_rgba(43,38,34,0.4)] [transform-style:preserve-3d] [[data-coverflow-flat]_&]:static [[data-coverflow-flat]_&]:flex-none [[data-coverflow-flat]_&]:snap-start"
+            class="on-carbon absolute left-1/2 top-1/2 h-[19rem] w-[14rem] overflow-hidden rounded-card border border-white/10 bg-carbon shadow-[0_24px_60px_-24px_rgba(10,9,8,0.55)] [transform-style:preserve-3d] [[data-coverflow-flat]_&]:static [[data-coverflow-flat]_&]:flex-none [[data-coverflow-flat]_&]:snap-start"
           >
-            <ParallaxImage
-              src={item.image}
-              alt={item.label}
-              strength={8}
-              scrim="bottom"
-              class="absolute inset-0 h-full w-full"
+            <span
+              aria-hidden="true"
+              class="absolute inset-0 bg-[radial-gradient(120%_90%_at_28%_18%,#B8430F2E_0%,#3A1E0A1F_42%,#0A0908_80%)]"
+            />
+            <span
+              aria-hidden="true"
+              class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-copper/70 via-copper/20 to-transparent"
             />
             <div class="relative z-10 flex h-full flex-col justify-end p-5">
               <p class="eyebrow !text-copper-hi">{item.tag}</p>

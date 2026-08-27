@@ -32,11 +32,15 @@ const { eyebrow, heading, items } = Astro.props;
       data-hgallery-track
       class="flex gap-5 px-6 md:px-10 [[data-hgallery-native]_&]:snap-x [[data-hgallery-native]_&]:snap-mandatory [[data-hgallery-native]_&]:overflow-x-auto [[data-hgallery-native]_&]:pb-4"
     >
+      {/* Cards are shorter than they were: at 30rem the label sat 413px
+          down a 480px card, which on a laptop put every service name
+          below the fold — the reader scrolled past a row of abstract art
+          with nothing to say what any of it was. */}
       {
         items.map((item, i) => (
           <a
             href={item.href}
-            class="group relative flex h-[26rem] w-[19rem] flex-none snap-start flex-col justify-end overflow-hidden rounded-card border border-white/10 md:h-[30rem] md:w-[23rem]"
+            class="group relative flex h-[23rem] w-[19rem] flex-none snap-start flex-col justify-end overflow-hidden rounded-card border border-white/10 md:h-[25rem] md:w-[23rem]"
           >
             {item.image && (
               <BleedImage image={item.image} scrim="soft" class="!absolute" />
@@ -51,7 +55,7 @@ const { eyebrow, heading, items } = Astro.props;
               <h3 class="mt-2.5 font-display text-2xl font-bold tracking-[-0.03em] text-white">
                 {item.title}
               </h3>
-              <p class="mt-2.5 max-h-0 overflow-hidden text-sm leading-relaxed text-white/65 opacity-0 transition-all duration-500 group-hover:max-h-32 group-hover:opacity-100">
+              <p class="mt-2.5 text-sm leading-relaxed text-white/60 transition-colors duration-500 group-hover:text-white/85">
                 {item.body}
               </p>
             </div>

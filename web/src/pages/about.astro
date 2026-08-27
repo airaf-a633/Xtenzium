@@ -5,7 +5,6 @@ import Footer from '../components/Footer.astro';
 import Faq from '../components/Faq.astro';
 import StatementPanel from '../components/StatementPanel.astro';
 import WatermarkX from '../components/WatermarkX.astro';
-import { unverified } from '../lib/placeholder';
 import { imagery } from '../data/imagery';
 import BleedImage from '../components/BleedImage.astro';
 
@@ -36,17 +35,6 @@ const timeline = [
   { year: 'Karachi', label: 'Where we are', body: 'One studio in Karachi, Sindh. Everything is built here rather than brokered out to whoever is cheapest that month.' },
   { year: 'UTC+5', label: 'When we overlap', body: 'Most of the European working day and the morning on the US East Coast. Everything runs in English.' },
   { year: 'Both', label: 'What we build', body: 'Software and the hardware underneath it. That combination is unusual for an agency and is the reason most clients pick us.' },
-];
-
-// UNVERIFIED: roles and bios are placeholders. Four photos exist in the old
-// site's public folder (Airaf.png, Saad.png, Umar.png, sharab.png) but are
-// referenced nowhere, and no page carries names or roles — so these are a
-// structure to fill, not facts. Gated until confirmed.
-const team = [
-  { name: 'Airaf Adil', role: 'Chief Executive Officer', focus: 'Full-stack engineering and delivery' },
-  { name: 'Team member', role: 'Chief Operating Officer', focus: 'Operations and client delivery' },
-  { name: 'Team member', role: 'Chief Marketing Officer', focus: 'Growth and brand' },
-  { name: 'Team member', role: 'Electronics Lead', focus: 'PCB design, firmware and IoT' },
 ];
 
 const faqs = [
@@ -279,48 +267,6 @@ const faqs = [
       </div>
     </section>
 
-    <!-- ── Team ─────────────────────────────────────────────── -->
-    <!-- Gated: names, roles and focus areas are placeholders. -->
-    {
-      unverified(team) && (
-        <section class="bg-bg-tint py-20 md:py-28">
-          <div class="container-x" data-exit>
-            <div class="max-w-2xl" data-reveal-group>
-              <p class="eyebrow" data-reveal="eyebrow">The people</p>
-              <h2 class="mt-3 font-display text-[clamp(1.6rem,3.4vw,2.25rem)] font-bold tracking-[-0.03em] text-ink">
-                <span class="block" data-reveal="line">A senior core, extended</span>
-                <span class="block" data-reveal="line">with specialists per project.</span>
-              </h2>
-              <p class="mt-4 leading-relaxed text-ink-2" data-reveal="body">
-                Staying small is a choice. It is why the person who scopes your
-                project is the person who builds it.
-              </p>
-            </div>
-
-            <div data-reveal-cards class="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {team.map((m) => (
-                <div
-                  data-reveal="card"
-                  class="rounded-card border border-line bg-surface p-7"
-                >
-                  <div
-                    aria-hidden="true"
-                    class="mb-6 h-32 w-full rounded-2xl bg-[radial-gradient(120%_90%_at_30%_20%,#B8430F33_0%,#3A1E0A22_40%,#0A0908_80%)]"
-                  />
-                  <h3 class="font-display text-lg font-bold tracking-[-0.02em] text-ink">
-                    {m.name}
-                  </h3>
-                  <p class="mt-1 font-mono text-[11px] uppercase tracking-[0.14em] text-copper">
-                    {m.role}
-                  </p>
-                  <p class="mt-3 text-sm leading-relaxed text-ink-2">{m.focus}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )
-    }
 
     <Faq eyebrow="Questions" heading={['About the studio.']} items={faqs} />
 
