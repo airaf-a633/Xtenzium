@@ -92,16 +92,20 @@ const differentiators = [
   { title: 'It works after we leave', body: 'You own everything and you understand everything. No hostage code, no mandatory retainer.' },
 ];
 
+// Art per sector rather than per seed: a waveform behind healthcare is a
+// vitals trace and behind energy it is metering; a node graph behind
+// logistics is a route network. Without images these cards fell back to
+// the build placeholder and rendered as blank slabs.
 const industries = [
-  { tag: 'Healthcare', label: 'Clinics & platforms' },
-  { tag: 'Logistics', label: 'Fleet & telematics' },
-  { tag: 'Manufacturing', label: 'Industrial IoT' },
-  { tag: 'E-commerce', label: 'D2C & retail' },
-  { tag: 'Education', label: 'Schools & LMS' },
-  { tag: 'Energy', label: 'Metering & monitoring' },
-  { tag: 'Fintech', label: 'Payments & portals' },
-  { tag: 'Agriculture', label: 'Sensing & automation' },
-  { tag: 'Software', label: 'Products & platforms' },
+  { tag: 'Healthcare', label: 'Clinics & platforms', image: '/art/industry-healthcare.svg' },
+  { tag: 'Logistics', label: 'Fleet & telematics', image: '/art/industry-logistics.svg' },
+  { tag: 'Manufacturing', label: 'Industrial IoT', image: '/art/industry-manufacturing.svg' },
+  { tag: 'E-commerce', label: 'D2C & retail', image: '/art/industry-ecommerce.svg' },
+  { tag: 'Education', label: 'Schools & LMS', image: '/art/industry-education.svg' },
+  { tag: 'Energy', label: 'Metering & monitoring', image: '/art/industry-energy.svg' },
+  { tag: 'Fintech', label: 'Payments & portals', image: '/art/industry-fintech.svg' },
+  { tag: 'Agriculture', label: 'Sensing & automation', image: '/art/industry-agriculture.svg' },
+  { tag: 'Software', label: 'Products & platforms', image: '/art/industry-software.svg' },
 ];
 
 // The final value ships in the HTML so it is present for crawlers and for

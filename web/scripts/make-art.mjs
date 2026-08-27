@@ -484,6 +484,22 @@ const files = {
   'header-contact.svg': broadcast(5501, 2400, 900),
   'header-estimate.svg': plotField(6602, 2400, 900),
 
+  // ── Industries ──
+  // Motif follows the sector, not the seed. A waveform behind healthcare
+  // is a vitals trace; behind energy it is metering. A node graph behind
+  // logistics is a route network. The same five drawings mean different
+  // things depending on what they sit behind, which is the whole reason
+  // to choose them per subject rather than rotate them for variety.
+  'industry-healthcare.svg': signalField(1101, 1200, 1500),
+  'industry-logistics.svg': nodeGraph(1202, 1200, 1500),
+  'industry-manufacturing.svg': boardMacro(1303, 1200, 1500),
+  'industry-ecommerce.svg': moduleGrid(1404, 1200, 1500),
+  'industry-education.svg': typeGrid(1505, 1200, 1500),
+  'industry-energy.svg': signalField(1606, 1200, 1500),
+  'industry-fintech.svg': plotField(1707, 1200, 1500),
+  'industry-agriculture.svg': broadcast(1808, 1200, 1500),
+  'industry-software.svg': moduleGrid(1909, 1200, 1500),
+
   // ── Service lines ──
   'service-development.svg': moduleGrid(101, 1200, 900),
   'service-design.svg': typeGrid(202, 1200, 900),

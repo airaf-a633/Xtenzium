@@ -1,6 +1,10 @@
 ---
-
-interface Item { tag: string; label: string; image?: string }
+interface Item {
+  tag: string;
+  label: string;
+  /** Generated brand art, chosen per sector. */
+  image?: string;
+}
 interface Props { eyebrow: string; heading: string[]; blurb?: string; items: Item[]; href?: string }
 const { eyebrow, heading, blurb, items, href = '/work' } = Astro.props;
 ---
@@ -16,33 +20,40 @@ const { eyebrow, heading, blurb, items, href = '/work' } = Astro.props;
     {blurb && <p class="mx-auto mt-4 max-w-lg leading-relaxed text-ink-2" data-reveal="body">{blurb}</p>}
   </div>
 
+  {/* A perspective stage. Cards are absolutely centred and every one of
+      their transforms comes from JS, so this element only supplies the
+      depth and the bounds. */}
   <div
     data-coverflow
     tabindex="0"
     role="group"
     aria-roledescription="carousel"
     aria-label={`${eyebrow} — drag, or use the arrow keys`}
-    class="relative mx-auto mt-16 h-[30rem] w-full max-w-6xl cursor-grab touch-pan-y select-none [perspective:1800px] focus-visible:outline-none [&.is-dragging]:cursor-grabbing [[data-coverflow-flat]&]:flex [[data-coverflow-flat]&]:h-auto [[data-coverflow-flat]&]:cursor-auto [[data-coverflow-flat]&]:snap-x [[data-coverflow-flat]&]:snap-mandatory [[data-coverflow-flat]&]:gap-4 [[data-coverflow-flat]&]:overflow-x-auto [[data-coverflow-flat]&]:px-6 [[data-coverflow-flat]&]:[perspective:none]"
+    class="relative mx-auto mt-14 h-[26rem] w-full max-w-6xl cursor-grab touch-pan-y select-none [perspective:1800px] focus-visible:outline-none md:h-[30rem] [&.is-dragging]:cursor-grabbing [[data-coverflow-flat]&]:flex [[data-coverflow-flat]&]:h-auto [[data-coverflow-flat]&]:cursor-auto [[data-coverflow-flat]&]:snap-x [[data-coverflow-flat]&]:snap-mandatory [[data-coverflow-flat]&]:gap-5 [[data-coverflow-flat]&]:overflow-x-auto [[data-coverflow-flat]&]:px-6 [[data-coverflow-flat]&]:[perspective:none]"
   >
     <div
       data-coverflow-stage
-      class="absolute inset-0 [transform-style:preserve-3d] [[data-coverflow-flat]_&]:static [[data-coverflow-flat]_&]:flex [[data-coverflow-flat]_&]:gap-4"
+      class="absolute inset-0 [transform-style:preserve-3d] [[data-coverflow-flat]_&]:static [[data-coverflow-flat]_&]:flex [[data-coverflow-flat]_&]:gap-5"
     >
-      {/* Carbon, not surface. These cards were white with white type on
-          them, legible only where a photograph happened to sit behind the
-          words — and none ever did, because `industries` carries no
-          images, so every card fell back to the placeholder. A sector is
-          a label, not a picture, so the card is designed rather than left
-          waiting on art that was never going to arrive. */}
       {
         items.map((item) => (
           <article
             data-coverflow-card
-            class="on-carbon absolute left-1/2 top-1/2 h-[24rem] w-[17rem] cursor-pointer overflow-hidden rounded-card border border-white/10 bg-carbon shadow-[0_24px_60px_-24px_rgba(10,9,8,0.55)] transition-[border-color] duration-300 [transform-style:preserve-3d] [&.is-focused]:border-copper/60 [[data-coverflow-flat]_&]:static [[data-coverflow-flat]_&]:flex-none [[data-coverflow-flat]_&]:snap-start"
+            class="on-carbon group absolute left-1/2 top-1/2 h-[21rem] w-[15rem] overflow-hidden rounded-card border border-white/10 bg-carbon shadow-[0_28px_70px_-28px_rgba(10,9,8,0.6)] transition-[border-color] duration-300 [transform-style:preserve-3d] hover:border-copper/50 md:h-[25rem] md:w-[18rem] [&.is-focused]:border-copper/60 [[data-coverflow-flat]_&]:static [[data-coverflow-flat]_&]:flex-none [[data-coverflow-flat]_&]:snap-start"
           >
+            {item.image && (
+              <img
+                src={item.image}
+                alt=""
+                aria-hidden="true"
+                loading="lazy"
+                decoding="async"
+                class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
+              />
+            )}
             <span
               aria-hidden="true"
-              class="absolute inset-0 bg-[radial-gradient(120%_90%_at_28%_18%,#B8430F2E_0%,#3A1E0A1F_42%,#0A0908_80%)]"
+              class="absolute inset-0 bg-gradient-to-t from-carbon via-carbon/50 to-transparent"
             />
             <span
               aria-hidden="true"
@@ -63,21 +74,16 @@ const { eyebrow, heading, blurb, items, href = '/work' } = Astro.props;
     </div>
   </div>
 
-  {/* The buttons are not a convenience. WCAG 2.2 requires a
-      single-pointer alternative to any drag operation, so these and the
-      arrow keys are the accessible path and the drag is the pleasant
-      one. Siblings of the stage rather than children: the stage is a
-      perspective container full of absolutely positioned cards, and a
-      control placed inside it would be laid out by the same rules as
-      the cards. */}
-  <div
-    data-coverflow-controls
-    class="mt-8 flex items-center justify-center gap-3"
-  >
+  {/* WCAG 2.2 requires a single-pointer alternative to any drag, so these
+      and the arrow keys are the accessible path — the drag is the
+      pleasant one. */}
+  <p data-coverflow-status role="status" aria-live="polite" class="sr-only"></p>
+
+  <div data-coverflow-controls class="mt-8 flex items-center justify-center gap-3">
     <button
       type="button"
       data-coverflow-prev
-      aria-label="Previous industry"
+      aria-label="Previous industries"
       class="grid h-11 w-11 place-items-center rounded-pill border border-line-strong text-ink transition-colors duration-300 hover:border-copper hover:text-copper"
     >
       <span aria-hidden="true">&larr;</span>
@@ -85,14 +91,12 @@ const { eyebrow, heading, blurb, items, href = '/work' } = Astro.props;
     <button
       type="button"
       data-coverflow-next
-      aria-label="Next industry"
+      aria-label="Next industries"
       class="grid h-11 w-11 place-items-center rounded-pill border border-line-strong text-ink transition-colors duration-300 hover:border-copper hover:text-copper"
     >
       <span aria-hidden="true">&rarr;</span>
     </button>
   </div>
-
-  <p data-coverflow-status role="status" aria-live="polite" class="sr-only"></p>
 
   <div class="container-x mt-10 text-center">
     <a

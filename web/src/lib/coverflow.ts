@@ -1,72 +1,78 @@
 import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { Observer } from 'gsap/Observer';
 
-gsap.registerPlugin(Observer);
+gsap.registerPlugin(ScrollTrigger, Observer);
 
 /**
- * Curved 3D coverflow.
+ * Infinite 3D coverflow.
  *
- * Cards are laid out absolutely and positioned entirely from a single
- * progress value, so there is one source of truth and no per-card
- * triggers. Every card derives its transform from its distance to the
- * focused index.
+ * Cards sit on a curve — rotateY paired with a small y lift, because
+ * rotation alone reads as a flat fan rather than an arc — and the curve
+ * never ends. Position comes from one number and every card derives its
+ * own transform from its distance to centre.
  *
- * The arc comes from pairing rotateY with a small y lift — rotation alone
- * reads as a flat fan rather than a curve.
+ * ── What was wrong before ──────────────────────────────────────────
  *
- * ── Two things changed here ────────────────────────────────────────
+ * The arc was finite: focus ran 0 to 8 and the cards at the ends sat at
+ * whatever the fade left them. With a linear falloff of 0.3 per step,
+ * anything beyond three positions was at zero opacity, so a third of the
+ * sectors were invisible — and the ones that were visible collided,
+ * because nine cards on a fixed arc overlap whatever is in the middle.
  *
- * It used to fade at 0.3 opacity per step out from centre, which means
- * anything more than three positions away was at zero. With nine
- * industries on the page that made the outer cards invisible rather than
- * distant — the reader saw a gap where four sectors should have been.
- * The falloff is gentler now and floors well above zero, so the whole set
- * reads as a set.
+ * Making it infinite fixes both, and it fixes them for the same reason.
+ * Distance to centre is now computed through a wrap:
  *
- * And focus was scrubbed by scroll alone: the carousel moved when the
- * page moved and could not be touched. It is driven directly now —
- * dragged, clicked, arrowed, or stepped with the buttons. That last part
- * is not decoration: WCAG 2.2 requires a single-pointer alternative to
- * any drag operation, so the buttons and the arrow keys are the
- * accessible path and the drag is the pleasant one.
+ *   d = wrap(-n/2, n/2, i - focus)
  *
- * Markup:
- *   <div data-coverflow>
- *     <div data-coverflow-stage>
- *       <article data-coverflow-card>…</article>
- *     </div>
- *     <button data-coverflow-prev> <button data-coverflow-next>
- *     <div data-coverflow-status role="status">
- *   </div>
+ * so a card leaving the right of the arc re-enters from the left rather
+ * than piling up at an end. Nothing has to be crammed into one viewport,
+ * because the set is always flowing through rather than laid out at once.
+ *
+ * And the fade now has a job. It is not a decoration that happens to
+ * delete content: it reaches zero exactly at the wrap boundary, which is
+ * the one frame where a card teleports from one side to the other. The
+ * card is invisible precisely when it needs to be, and fully legible
+ * everywhere the reader is actually looking.
+ *
+ * `focus` is written by two things that must not fight: ScrollTrigger
+ * scrubs it while the section passes, and Observer adds to it when the
+ * reader drags. Both only ever add to the same number, so drag wins while
+ * it happens and scroll resumes from wherever drag left it.
  */
 
-const SPREAD = 58; // % of card width between neighbours
-const ROTATE = 24; // deg of rotateY per step out from centre
-const LIFT = 22; // px of y drop per step — this is what curves it
-const SCALE_STEP = 0.07;
-const SCALE_MIN = 0.74;
-const FADE_STEP = 0.14;
-/** Far cards recede; they never disappear. */
-const FADE_MIN = 0.34;
+const SPREAD = 56; // % of card width between neighbours
+const ROTATE = 22; // deg of rotateY per step out from centre
+const LIFT = 20; // px of y drop per step — this is what curves it
+const SCALE_STEP = 0.06;
+const SCALE_MIN = 0.7;
+/** Steps of runway over which a card fades out before it wraps. */
+const FADE_SPAN = 1.7;
 
 let mm: gsap.MatchMedia | null = null;
 
 function apply(cards: HTMLElement[], focus: number) {
+  const n = cards.length;
+  const edge = n / 2;
+  const wrapD = gsap.utils.wrap(-edge, edge);
+
   cards.forEach((card, i) => {
-    const d = i - focus; // signed distance from focus
+    const d = wrapD(i - focus); // signed distance, through the loop
     const a = Math.abs(d);
+
+    // Full opacity until the last stretch, then out by the wrap point.
+    const fade = a <= edge - FADE_SPAN ? 1 : Math.max(0, (edge - a) / FADE_SPAN);
+
     gsap.set(card, {
       xPercent: -50 + d * SPREAD,
       yPercent: -50,
       y: a * LIFT,
       rotateY: -d * ROTATE,
       scale: Math.max(SCALE_MIN, 1 - a * SCALE_STEP),
-      opacity: Math.max(FADE_MIN, 1 - a * FADE_STEP),
+      opacity: fade,
       zIndex: Math.round(100 - a * 10),
+      pointerEvents: fade > 0.5 ? 'auto' : 'none',
     });
-    // Every card stays reachable. Hiding the unfocused ones from
-    // assistive tech made eight of nine sectors unreadable, and a sector
-    // list is content rather than chrome.
     card.classList.toggle('is-focused', a < 0.5);
   });
 }
@@ -79,17 +85,14 @@ export function initCoverflow() {
 
   mm = gsap.matchMedia();
 
-  // Reduced motion / small screens fall back to a plain scroll-snap row,
-  // which the CSS already provides once this attribute is set.
+  // Reduced motion / small screens: a plain scroll-snap row. Nothing
+  // moves that the reader did not move themselves.
   mm.add('(prefers-reduced-motion: reduce), (max-width: 767px)', () => {
     roots.forEach((root) => {
       root.setAttribute('data-coverflow-flat', '');
-      const cards = Array.from(root.querySelectorAll<HTMLElement>('[data-coverflow-card]'));
-      gsap.set(cards, { clearProps: 'all' });
-      // The snap row is its own control; a pair of buttons that stepped a
-      // focus index nothing is reading would be a lie.
-      const controls = root.parentElement?.querySelector<HTMLElement>('[data-coverflow-controls]');
-      if (controls) controls.hidden = true;
+      gsap.set(root.querySelectorAll('[data-coverflow-card]'), { clearProps: 'all' });
+      const c = root.parentElement?.querySelector<HTMLElement>('[data-coverflow-controls]');
+      if (c) c.hidden = true;
     });
     return () =>
       roots.forEach((r) => {
@@ -106,92 +109,94 @@ export function initCoverflow() {
       const cards = Array.from(root.querySelectorAll<HTMLElement>('[data-coverflow-card]'));
       if (!cards.length) return;
 
-      const last = cards.length - 1;
-      const state = { focus: Math.round(last / 2) };
-      // Controls sit beside the stage, not inside it — the stage is a
-      // perspective container of absolutely positioned cards.
       const scope = root.parentElement ?? root;
       const status = scope.querySelector<HTMLElement>('[data-coverflow-status]');
+      const state = { focus: 0 };
+      const wrapIndex = gsap.utils.wrap(0, cards.length);
 
       gsap.set(cards, { willChange: 'transform, opacity' });
       apply(cards, state.focus);
 
       const label = () => {
-        const card = cards[Math.round(state.focus)];
-        const name = card?.querySelector('[data-coverflow-label]')?.textContent?.trim();
-        if (status && name) {
-          status.textContent = `${Math.round(state.focus) + 1} of ${cards.length}: ${name}`;
-        }
+        const i = wrapIndex(Math.round(state.focus));
+        const name = cards[i]?.querySelector('[data-coverflow-label]')?.textContent?.trim();
+        if (status && name) status.textContent = `${i + 1} of ${cards.length}: ${name}`;
       };
       label();
 
-      function goTo(next: number, immediate = false) {
-        const target = gsap.utils.clamp(0, last, next);
-        gsap.to(state, {
-          focus: target,
-          duration: immediate ? 0 : 0.55,
-          ease: 'power3.out',
-          overwrite: true,
-          onUpdate: () => apply(cards, state.focus),
-          onComplete: label,
-        });
-      }
+      const draw = () => apply(cards, state.focus);
 
-      // ── Drag and swipe ──────────────────────────────────────────
-      // Pointer and touch only. Claiming the wheel here would take the
-      // page's own scroll away from the reader, which is a trade a
-      // carousel never earns.
+      // ── Scroll drives it ────────────────────────────────────────
+      // Scrubbed, so the rail is a function of where the reader is on
+      // the page and scrolling back rewinds it. One full pass of the
+      // section moves the arc by roughly the whole set.
+      const st = ScrollTrigger.create({
+        trigger: root,
+        start: 'top bottom',
+        end: 'bottom top',
+        scrub: 0.6,
+        invalidateOnRefresh: true,
+        onUpdate: (self) => {
+          state.focus = self.progress * cards.length;
+          draw();
+        },
+      });
+
+      // ── Drag adds to the same number ────────────────────────────
       const observer = Observer.create({
         target: root,
         type: 'touch,pointer',
-        dragMinimum: 6,
-        tolerance: 10,
-        onDragStart: () => root.classList.add('is-dragging'),
-        onDragEnd: () => root.classList.remove('is-dragging'),
-        onLeft: () => goTo(Math.round(state.focus) + 1),
-        onRight: () => goTo(Math.round(state.focus) - 1),
+        dragMinimum: 4,
+        onPress: () => root.classList.add('is-dragging'),
+        onRelease: () => {
+          root.classList.remove('is-dragging');
+          label();
+        },
+        onDrag: (self) => {
+          // One card per ~220px of travel keeps the arc from spinning.
+          state.focus -= self.deltaX / 220;
+          draw();
+        },
       });
 
-      // ── Click a card to bring it forward ────────────────────────
-      const onCardClick = (i: number) => () => goTo(i);
-      const cardHandlers = cards.map((card, i) => {
-        const h = onCardClick(i);
-        card.addEventListener('click', h);
-        return h;
-      });
+      // ── Buttons and keys ────────────────────────────────────────
+      // WCAG 2.2 requires a single-pointer alternative to any
+      // author-controlled drag, so these are the accessible path.
+      const step = (dir: number) =>
+        gsap.to(state, {
+          focus: state.focus + dir,
+          duration: 0.5,
+          ease: 'power3.out',
+          overwrite: true,
+          onUpdate: draw,
+          onComplete: label,
+        });
 
-      // ── Keyboard ────────────────────────────────────────────────
+      const prev = scope.querySelector<HTMLButtonElement>('[data-coverflow-prev]');
+      const next = scope.querySelector<HTMLButtonElement>('[data-coverflow-next]');
+      const onPrev = () => step(-1);
+      const onNext = () => step(1);
+      prev?.addEventListener('click', onPrev);
+      next?.addEventListener('click', onNext);
+
       const onKey = (e: KeyboardEvent) => {
         if (e.key === 'ArrowRight') {
           e.preventDefault();
-          goTo(Math.round(state.focus) + 1);
+          step(1);
         } else if (e.key === 'ArrowLeft') {
           e.preventDefault();
-          goTo(Math.round(state.focus) - 1);
-        } else if (e.key === 'Home') {
-          e.preventDefault();
-          goTo(0);
-        } else if (e.key === 'End') {
-          e.preventDefault();
-          goTo(last);
+          step(-1);
         }
       };
       root.addEventListener('keydown', onKey);
 
-      // ── Buttons — the required non-drag path ────────────────────
-      const prev = scope.querySelector<HTMLButtonElement>('[data-coverflow-prev]');
-      const next = scope.querySelector<HTMLButtonElement>('[data-coverflow-next]');
-      const onPrev = () => goTo(Math.round(state.focus) - 1);
-      const onNext = () => goTo(Math.round(state.focus) + 1);
-      prev?.addEventListener('click', onPrev);
-      next?.addEventListener('click', onNext);
-
       cleanups.push(() => {
+        st.kill();
         observer.kill();
-        cards.forEach((c, i) => c.removeEventListener('click', cardHandlers[i]));
-        root.removeEventListener('keydown', onKey);
         prev?.removeEventListener('click', onPrev);
         next?.removeEventListener('click', onNext);
+        root.removeEventListener('keydown', onKey);
+        gsap.set(cards, { clearProps: 'all' });
       });
     });
 
