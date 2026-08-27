@@ -5,6 +5,7 @@ import Footer from '../components/Footer.astro';
 import Faq from '../components/Faq.astro';
 import StatementPanel from '../components/StatementPanel.astro';
 import WatermarkX from '../components/WatermarkX.astro';
+import { unverified } from '../lib/placeholder';
 import { imagery } from '../data/imagery';
 import BleedImage from '../components/BleedImage.astro';
 
@@ -37,31 +38,15 @@ const timeline = [
   { year: 'Both', label: 'What we build', body: 'Software and the hardware underneath it. That combination is unusual for an agency and is the reason most clients pick us.' },
 ];
 
-/**
- * The four people.
- *
- * The photographs are imported rather than referenced from `public`, so
- * Astro processes them at build time. That matters here more than usual:
- * the originals total about 2.5 MB for four faces rendered at 128px, and
- * one of them is 1.6 MB on its own. Imported, they come out as sized,
- * modern-format images with intrinsic dimensions attached, which also
- * removes the layout shift a raw <img> would cause.
- *
- * `focus` describes the role rather than the person. Anything more
- * specific — a bio, a tenure, a claim about what someone has shipped —
- * needs to come from them.
- */
-import airafPhoto from '../assets/team/airaf.png';
-import sharabPhoto from '../assets/team/sharab.png';
-import umarPhoto from '../assets/team/umar.png';
-import saadPhoto from '../assets/team/saad.png';
-import { Image } from 'astro:assets';
-
+// UNVERIFIED: roles and bios are placeholders. Four photos exist in the old
+// site's public folder (Airaf.png, Saad.png, Umar.png, sharab.png) but are
+// referenced nowhere, and no page carries names or roles — so these are a
+// structure to fill, not facts. Gated until confirmed.
 const team = [
-  { name: 'Airaf Adil', role: 'Chief Executive Officer', focus: 'Full-stack engineering and delivery', photo: airafPhoto },
-  { name: 'Sharab', role: 'Chief Operating Officer', focus: 'Operations and client delivery', photo: sharabPhoto },
-  { name: 'Umar', role: 'Chief Marketing Officer', focus: 'Growth and brand', photo: umarPhoto },
-  { name: 'Saad', role: 'Electronics Lead', focus: 'PCB design, firmware and IoT', photo: saadPhoto },
+  { name: 'Airaf Adil', role: 'Chief Executive Officer', focus: 'Full-stack engineering and delivery' },
+  { name: 'Team member', role: 'Chief Operating Officer', focus: 'Operations and client delivery' },
+  { name: 'Team member', role: 'Chief Marketing Officer', focus: 'Growth and brand' },
+  { name: 'Team member', role: 'Electronics Lead', focus: 'PCB design, firmware and IoT' },
 ];
 
 const faqs = [
@@ -295,12 +280,10 @@ const faqs = [
     </section>
 
     <!-- ── Team ─────────────────────────────────────────────── -->
-    <!-- Ungated. This section was the one place the site made a claim it
-         then refused to show: "you talk to the people building your
-         project" on a page that listed nobody, because three of the four
-         entries said "Team member" and the whole block was gated out of
-         production. Named, so the claim above it can be checked. -->
-    <section class="bg-bg-tint py-20 md:py-28">
+    <!-- Gated: names, roles and focus areas are placeholders. -->
+    {
+      unverified(team) && (
+        <section class="bg-bg-tint py-20 md:py-28">
           <div class="container-x" data-exit>
             <div class="max-w-2xl" data-reveal-group>
               <p class="eyebrow" data-reveal="eyebrow">The people</p>
@@ -320,20 +303,10 @@ const faqs = [
                   data-reveal="card"
                   class="rounded-card border border-line bg-surface p-7"
                 >
-                  {/* The carbon ground stays behind the portrait, so a
-                      photo that is still loading — or one that never
-                      arrives — leaves a designed shape rather than a
-                      gap. */}
-                  <div class="mb-6 h-32 w-full overflow-hidden rounded-2xl bg-[radial-gradient(120%_90%_at_30%_20%,#B8430F33_0%,#3A1E0A22_40%,#0A0908_80%)]">
-                    <Image
-                      src={m.photo}
-                      alt={`${m.name}, ${m.role}`}
-                      width={480}
-                      height={480}
-                      loading="lazy"
-                      class="h-full w-full object-cover object-top"
-                    />
-                  </div>
+                  <div
+                    aria-hidden="true"
+                    class="mb-6 h-32 w-full rounded-2xl bg-[radial-gradient(120%_90%_at_30%_20%,#B8430F33_0%,#3A1E0A22_40%,#0A0908_80%)]"
+                  />
                   <h3 class="font-display text-lg font-bold tracking-[-0.02em] text-ink">
                     {m.name}
                   </h3>
@@ -346,6 +319,8 @@ const faqs = [
             </div>
           </div>
         </section>
+      )
+    }
 
     <Faq eyebrow="Questions" heading={['About the studio.']} items={faqs} />
 
