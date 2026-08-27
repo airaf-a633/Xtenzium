@@ -18,7 +18,11 @@ const { eyebrow, heading, blurb, items, href = '/work' } = Astro.props;
 
   <div
     data-coverflow
-    class="relative mx-auto mt-16 h-[24rem] w-full max-w-5xl [perspective:1600px] [[data-coverflow-flat]&]:flex [[data-coverflow-flat]&]:h-auto [[data-coverflow-flat]&]:snap-x [[data-coverflow-flat]&]:snap-mandatory [[data-coverflow-flat]&]:gap-4 [[data-coverflow-flat]&]:overflow-x-auto [[data-coverflow-flat]&]:px-6 [[data-coverflow-flat]&]:[perspective:none]"
+    tabindex="0"
+    role="group"
+    aria-roledescription="carousel"
+    aria-label={`${eyebrow} — drag, or use the arrow keys`}
+    class="relative mx-auto mt-16 h-[30rem] w-full max-w-6xl cursor-grab touch-pan-y select-none [perspective:1800px] focus-visible:outline-none [&.is-dragging]:cursor-grabbing [[data-coverflow-flat]&]:flex [[data-coverflow-flat]&]:h-auto [[data-coverflow-flat]&]:cursor-auto [[data-coverflow-flat]&]:snap-x [[data-coverflow-flat]&]:snap-mandatory [[data-coverflow-flat]&]:gap-4 [[data-coverflow-flat]&]:overflow-x-auto [[data-coverflow-flat]&]:px-6 [[data-coverflow-flat]&]:[perspective:none]"
   >
     <div
       data-coverflow-stage
@@ -34,7 +38,7 @@ const { eyebrow, heading, blurb, items, href = '/work' } = Astro.props;
         items.map((item) => (
           <article
             data-coverflow-card
-            class="on-carbon absolute left-1/2 top-1/2 h-[19rem] w-[14rem] overflow-hidden rounded-card border border-white/10 bg-carbon shadow-[0_24px_60px_-24px_rgba(10,9,8,0.55)] [transform-style:preserve-3d] [[data-coverflow-flat]_&]:static [[data-coverflow-flat]_&]:flex-none [[data-coverflow-flat]_&]:snap-start"
+            class="on-carbon absolute left-1/2 top-1/2 h-[24rem] w-[17rem] cursor-pointer overflow-hidden rounded-card border border-white/10 bg-carbon shadow-[0_24px_60px_-24px_rgba(10,9,8,0.55)] transition-[border-color] duration-300 [transform-style:preserve-3d] [&.is-focused]:border-copper/60 [[data-coverflow-flat]_&]:static [[data-coverflow-flat]_&]:flex-none [[data-coverflow-flat]_&]:snap-start"
           >
             <span
               aria-hidden="true"
@@ -44,9 +48,12 @@ const { eyebrow, heading, blurb, items, href = '/work' } = Astro.props;
               aria-hidden="true"
               class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-copper/70 via-copper/20 to-transparent"
             />
-            <div class="relative z-10 flex h-full flex-col justify-end p-5">
+            <div class="relative z-10 flex h-full flex-col justify-end p-6">
               <p class="eyebrow !text-copper-hi">{item.tag}</p>
-              <p class="mt-1.5 font-display text-lg font-bold tracking-[-0.02em] text-white">
+              <p
+                data-coverflow-label
+                class="mt-1.5 font-display text-xl font-bold tracking-[-0.02em] text-white"
+              >
                 {item.label}
               </p>
             </div>
@@ -56,7 +63,38 @@ const { eyebrow, heading, blurb, items, href = '/work' } = Astro.props;
     </div>
   </div>
 
-  <div class="container-x mt-12 text-center">
+  {/* The buttons are not a convenience. WCAG 2.2 requires a
+      single-pointer alternative to any drag operation, so these and the
+      arrow keys are the accessible path and the drag is the pleasant
+      one. Siblings of the stage rather than children: the stage is a
+      perspective container full of absolutely positioned cards, and a
+      control placed inside it would be laid out by the same rules as
+      the cards. */}
+  <div
+    data-coverflow-controls
+    class="mt-8 flex items-center justify-center gap-3"
+  >
+    <button
+      type="button"
+      data-coverflow-prev
+      aria-label="Previous industry"
+      class="grid h-11 w-11 place-items-center rounded-pill border border-line-strong text-ink transition-colors duration-300 hover:border-copper hover:text-copper"
+    >
+      <span aria-hidden="true">&larr;</span>
+    </button>
+    <button
+      type="button"
+      data-coverflow-next
+      aria-label="Next industry"
+      class="grid h-11 w-11 place-items-center rounded-pill border border-line-strong text-ink transition-colors duration-300 hover:border-copper hover:text-copper"
+    >
+      <span aria-hidden="true">&rarr;</span>
+    </button>
+  </div>
+
+  <p data-coverflow-status role="status" aria-live="polite" class="sr-only"></p>
+
+  <div class="container-x mt-10 text-center">
     <a
       href={href}
       class="inline-flex items-center gap-2 text-sm font-bold text-ink transition-colors duration-300 hover:text-copper"
