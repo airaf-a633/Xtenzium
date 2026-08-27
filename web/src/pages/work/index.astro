@@ -152,15 +152,25 @@ const faqs = [
          The unverifiable claims sit behind the gate below. -->
     <section class="on-carbon border-t border-white/10 bg-carbon pb-20 md:pb-24">
       <div class="container-x" data-exit>
+        {/* Column count follows the item count. Two derived figures ship;
+            in development the two gated claims join them, and a grid fixed
+            at two columns silently became two rows with `sm:divide-y-0`
+            and `sm:py-0` collapsing every gap between them. Padding stays
+            on regardless of breakpoint so rows can never touch. */}
         <div
           data-reveal-cards
-          class="grid divide-y divide-white/10 sm:grid-cols-2 sm:divide-x sm:divide-y-0"
+          class:list={[
+            'grid divide-y divide-white/10 sm:grid-cols-2 sm:divide-x',
+            [...proof, ...(unverified(claimed) ?? [])].length > 2
+              ? 'lg:grid-cols-4'
+              : 'sm:divide-y-0',
+          ]}
         >
           {
             [...proof, ...(unverified(claimed) ?? [])].map((p, i) => (
               <div
                 data-reveal="card"
-                class:list={['py-7 sm:py-0', i === 0 ? 'sm:pr-8' : 'sm:px-8']}
+                class:list={['py-7', i === 0 ? 'sm:pr-8' : 'sm:px-8']}
               >
                 <div
                   data-count-to={p.count}

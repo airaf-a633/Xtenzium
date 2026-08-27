@@ -72,19 +72,31 @@ const scrims: Record<string, string> = {
 </div>
 
 <style>
-  /* Luminance from the photograph, hue from the brand. `color` blending is
-     what makes this a true duotone rather than a copper wash — a plain
-     translucent overlay would just fog the image. */
+  /* Graded, not repainted.
+
+     This was `mix-blend-mode: color` at 0.85 over `grayscale(1)` and
+     `brightness(.62)` — a full hue replacement, which is a true duotone
+     and was the problem. At that strength the photograph contributes
+     nothing but dimmed luminance: every slot came out the same muddy
+     orange, the subject stopped being legible, and a circuit board read
+     as a texture rather than as a circuit board.
+
+     `soft-light` tints instead of replacing. The image keeps its own
+     colour underneath a copper cast, so twelve unrelated photographs
+     still read as one set — which is the whole point of treating them —
+     while each one still reads as itself. Copper then does its real job
+     as an accent in the interface rather than as a wash over everything
+     behind it. */
   .duotone img {
-    filter: grayscale(1) contrast(1.12) brightness(0.62);
+    filter: grayscale(0.8) contrast(1.08) brightness(0.68);
   }
   .duotone::after {
     content: '';
     position: absolute;
     inset: 0;
     background: var(--color-copper);
-    mix-blend-mode: color;
-    opacity: 0.85;
+    mix-blend-mode: soft-light;
+    opacity: 0.45;
   }
   /* A soft copper lift so the darkest areas do not read as flat black. */
   .duotone::before {
@@ -94,7 +106,7 @@ const scrims: Record<string, string> = {
     z-index: 1;
     background: radial-gradient(
       90% 70% at 25% 35%,
-      color-mix(in srgb, var(--color-copper) 26%, transparent) 0%,
+      color-mix(in srgb, var(--color-copper) 16%, transparent) 0%,
       transparent 62%
     );
   }
