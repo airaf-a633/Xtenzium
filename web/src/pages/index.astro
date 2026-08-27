@@ -102,7 +102,10 @@ const industries = [
 // reduced motion; the counter only rewinds it and plays it forward.
 const stats = [
   { v: '65+', count: 65, prefix: '', suffix: '+', l: 'Projects delivered across web, hardware and automation' },
-  { v: '36%', count: 36, prefix: '', suffix: '%', l: 'Average client ROI in the first year after launch' },
+  // Estimated by us from delivered project outcomes, not reported back by
+  // clients. The label has to carry that, because "average client ROI" reads
+  // as a figure clients supplied and it is not one.
+  { v: '36%', count: 36, prefix: '', suffix: '%', l: 'Estimated first-year ROI, from delivered project outcomes' },
   { v: '4', count: 4, prefix: '', suffix: '', l: 'Continents we ship to from one Karachi studio' },
 ];
 ---

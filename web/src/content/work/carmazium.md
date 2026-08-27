@@ -22,15 +22,7 @@ headline:
   label: Vehicle on screen at a time
   basis: observed
 order: 3
-draft: true
-# Notes live here, not in the body: a YAML comment is parsed away, an HTML
-# comment in the body is rendered into the page source.
-#
-# TODO(airaf): two fields left before this can publish —
-#   1. `year` above is a placeholder; confirm it.
-#   2. "Where it is now" is unwritten. Who is running it, at what scale, and
-#      what it does in production that it could not do at launch. Any number
-#      someone has agreed to goes in `metrics` with basis: measured.
+draft: false
 ---
 
 ## The problem
@@ -102,3 +94,13 @@ The other cost was the one the design invited. Full-bleed photography at
 showroom weight is heavy, and the presentation is the product, so the obvious
 lever — send smaller images — is the one lever that damages the thing we were
 selling. That tension does not resolve cleanly. It gets managed.
+
+## Where it is now
+
+Live, with listings on it and auctions running against real clocks.
+
+The one-vehicle-at-a-time model survived contact with real inventory, which was
+the open question — it is easy to defend a slow browsing model before anyone has
+tried to sell forty cars through it. The image weight is still managed rather
+than solved, and always will be: the presentation is the product, so every
+compression decision is a decision about how good the car looks.

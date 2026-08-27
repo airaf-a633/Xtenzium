@@ -9,10 +9,10 @@ title: A studio site that argues in clocks
 sector: Software
 year: 2025
 summary: >-
-  The studio site for an engineering practice working US hours from Pakistan.
-  The pitch is a scheduling argument, so the page makes it literal — paired live
-  clocks for both time zones and a 24-hour band shading the six hours the two
-  working days actually share.
+  A shared brand for selling US-hours engineering delivery out of Pakistan, and
+  the site that argues for it. The pitch is a scheduling claim, so the page makes
+  it literal — paired live clocks for both time zones and a 24-hour band shading
+  the six hours the two working days actually share.
 services:
   - Web Development
   - Design & Branding
@@ -22,18 +22,14 @@ headline:
   label: Hours the two working days share
   basis: observed
 order: 5
-draft: true
-# Notes live here, not in the body: a YAML comment is parsed away, an HTML
-# comment in the body is rendered into the page source.
-#
-# TODO(airaf): two fields left before this can publish —
-#   1. `year` above is a placeholder; confirm it.
-#   2. "Where it is now" is unwritten. Who is running it, at what scale, and
-#      what it does in production that it could not do at launch. Any number
-#      someone has agreed to goes in `metrics` with basis: measured.
+draft: false
 ---
 
 ## The problem
+
+Overlap is a shared brand we are part of rather than a client, which is worth
+saying before anything else — the positioning below is ours, and so is the
+mistake at the end of this page.
 
 Every offshore engineering practice makes the same claim on its homepage, and
 it is always the same sentence: significant timezone overlap with US teams. The
@@ -89,3 +85,14 @@ The engineering lesson is small and the other one is not. The component is
 still the right idea, and we would build it again. We would not again treat
 "what do prospects object to" as answered by asking them, or assume that the
 most articulable objection is the binding one.
+
+## Where it is now
+
+The site is live. The offer behind it is being reconsidered, which is the
+honest answer and follows directly from the section above.
+
+Overlap is a shared brand rather than an unrelated client — a vehicle for
+selling US-hours delivery out of Pakistan — so the positioning problem is ours
+to fix, not a lesson we watched somebody else learn. The clocks stay. What
+sits around them is being rebuilt around the questions prospects were actually
+weighing, rather than the one they found easiest to say out loud.

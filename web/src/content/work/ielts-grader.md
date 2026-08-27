@@ -7,7 +7,7 @@ links:
   # repo: https://github.com/...
 title: A band score that shows its working
 sector: Education
-year: 2025
+year: 2024
 summary: >-
   An AI-assisted assessment engine for IELTS writing tasks. A marketing site, a
   candidate app and an examiner dashboard sit over one Python grading service,
@@ -26,15 +26,7 @@ metrics:
     label: Grading implementation, not three
     basis: observed
 order: 2
-draft: true
-# Notes live here, not in the body: a YAML comment is parsed away, an HTML
-# comment in the body is rendered into the page source.
-#
-# TODO(airaf): two fields left before this can publish —
-#   1. `year` above is a placeholder; confirm it.
-#   2. "Where it is now" is unwritten. Who is running it, at what scale, and
-#      what it does in production that it could not do at launch. Any number
-#      someone has agreed to goes in `metrics` with basis: measured.
+draft: false
 ---
 
 ## The problem
@@ -104,3 +96,14 @@ reduce disagreement — it converts vague distrust into specific challenges,
 which is a large improvement and a much larger amount of work. Designing for
 the disagreement should have begun when we decided the output would cite its
 criterion, not when the objections started arriving.
+
+## Where it is now
+
+Live, with candidates submitting work and examiners reviewing what the engine
+returns.
+
+The disagreement problem from the section above is not solved so much as
+housed: there is now a defined answer to who wins and what the candidate sees,
+rather than three surfaces each improvising one. That is the difference between
+a research demo and a product, and it is most of what the last stretch of work
+went into.

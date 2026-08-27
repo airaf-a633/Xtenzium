@@ -21,15 +21,7 @@ headline:
   label: Gated bytes reaching an unauthorised browser
   basis: observed
 order: 6
-draft: true
-# Notes live here, not in the body: a YAML comment is parsed away, an HTML
-# comment in the body is rendered into the page source.
-#
-# TODO(airaf): two fields left before this can publish —
-#   1. `year` above is a placeholder; confirm it.
-#   2. "Where it is now" is unwritten. Who is running it, at what scale, and
-#      what it does in production that it could not do at launch. Any number
-#      someone has agreed to goes in `metrics` with basis: measured.
+draft: false
 ---
 
 ## The problem
@@ -96,3 +88,13 @@ harmless. That is not a technical safeguard, it is a standing constraint on
 everybody who touches the codebase afterwards, and the honest risk on this
 project is not that the middleware was wrong. It is that a future feature is
 allowed to route around it.
+
+## Where it is now
+
+Live, run by the client.
+
+The architecture has held, which for this project is the entire report: no
+gated document has reached a browser that was not entitled to it, and the
+standing constraint described above has not yet been routed around. That is
+worth restating precisely because it is uneventful. The measure of this system
+working is that there is nothing to say about it.

@@ -23,15 +23,7 @@ headline:
   label: Audiences on one scheduling core
   basis: observed
 order: 4
-draft: true
-# Notes live here, not in the body: a YAML comment is parsed away, an HTML
-# comment in the body is rendered into the page source.
-#
-# TODO(airaf): two fields left before this can publish —
-#   1. `year` above is a placeholder; confirm it.
-#   2. "Where it is now" is unwritten. Who is running it, at what scale, and
-#      what it does in production that it could not do at launch. Any number
-#      someone has agreed to goes in `metrics` with basis: measured.
+draft: false
 ---
 
 ## The problem
@@ -111,3 +103,14 @@ platform held. Experts add courses, revise them, change what they offer. Every
 one of those edits is a cache invalidation problem wearing a content-management
 costume, and an assistant confidently describing a course that was withdrawn
 last week is the same class of error as inventing one.
+
+## Where it is now
+
+Live across all three audiences — parents booking, experts running practices,
+clinics onboarding their staff.
+
+The assistant is the part that changed most between launch and now, and it
+changed by learning to say less. What ships today refuses more often than the
+first version did, cites what it is drawing on, and hands over to a real expert
+when the corpus is thin. In a care product that reads as trustworthy rather
+than limited, which was not obvious to us at the start.
