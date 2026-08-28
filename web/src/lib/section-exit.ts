@@ -37,8 +37,7 @@ gsap.registerPlugin(ScrollTrigger);
  */
 
 const FULL = '(prefers-reduced-motion: no-preference)';
-/** Below this the viewport is short, scrolling is fast, and fading content
- *  the reader is still trying to read is a cost with no benefit. */
+const MOBILE = '(max-width: 767px)';
 const DESKTOP = '(min-width: 768px)';
 
 let mm: gsap.MatchMedia | null = null;
@@ -51,24 +50,39 @@ export function initSectionExit() {
 
   mm = gsap.matchMedia();
 
-  mm.add(`${DESKTOP} and ${FULL}`, () => {
-    targets.forEach((el) => {
+  // This was desktop-only, on the reasoning that a short viewport scrolls
+  // fast and dimming content the reader is still working through costs
+  // more than it returns. Half of that holds: the effect belongs on a
+  // phone, because a phone is where sections most need separating, but it
+  // has to be gentler. A short viewport means a section leaves the screen
+  // sooner, so the same numbers that read as depth on a desktop read as
+  // content disappearing on a phone.
+  mm.add(
+    {
+      isMobile: `${MOBILE} and ${FULL}`,
+      isDesktop: `${DESKTOP} and ${FULL}`,
+    },
+    (context) => {
+      const mobile = !!context.conditions?.isMobile;
+      targets.forEach((el) => {
       gsap.to(el, {
-        opacity: 0.18,
-        y: -34,
+        opacity: mobile ? 0.42 : 0.18,
+        y: mobile ? -18 : -34,
         ease: 'none',
         scrollTrigger: {
           trigger: el,
           // Begins only once the content's bottom is well up the screen,
           // so nothing dims while there is still reading left in it.
-          start: 'bottom 62%',
+          // Later on a phone, where there is less screen to spare.
+          start: mobile ? 'bottom 45%' : 'bottom 62%',
           end: 'bottom top',
           scrub: 0.4,
           invalidateOnRefresh: true,
         },
       });
-    });
-  });
+      });
+    },
+  );
 }
 
 export function destroySectionExit() {
