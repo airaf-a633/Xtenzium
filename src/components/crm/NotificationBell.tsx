@@ -156,11 +156,16 @@ const NotificationBell = ({ me, membersById }: NotificationBellProps) => {
         }
       />
 
+      {/* Opens rightward, over the content. Anchored right-0 it would
+          extend 340px leftward from a bell sitting inside a 212px
+          sidebar — i.e. off the edge of the screen. The width also
+          clamps to the viewport so the mobile drawer can't push it off
+          the other side. */}
       {open && (
         <div
           role="dialog"
           aria-label="Notifications"
-          className="absolute bottom-[calc(100%+8px)] right-0 z-50 w-[340px] overflow-hidden rounded-crm-lg border border-crm-line-hi bg-crm-surface shadow-crm-pop"
+          className="absolute bottom-[calc(100%+8px)] left-0 z-50 w-[min(340px,calc(100vw-2rem))] overflow-hidden rounded-crm-lg border border-crm-line-hi bg-crm-surface shadow-crm-pop"
         >
           <header className="flex items-center justify-between gap-2 border-b border-crm-line px-3.5 py-2.5">
             <span className="font-crm-display text-[13.5px] font-bold text-crm-ink">Inbox</span>

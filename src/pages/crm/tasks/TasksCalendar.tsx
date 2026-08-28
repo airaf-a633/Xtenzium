@@ -1,6 +1,9 @@
 import MonthCalendar from '../../../components/crm/MonthCalendar';
-import { isSameDay } from '../../../lib/date';
+import { isSameDay, parseDateOnly } from '../../../lib/date';
+import { PRIORITY_TONE } from '../../../lib/tasks';
 import type { Project, Task, TeamMember } from '../../../types/database';
+import { Dot } from '../../../components/crm/ui';
+import { cn } from '../../../lib/utils';
 
 interface TasksCalendarProps {
   tasks: Task[];
@@ -10,35 +13,46 @@ interface TasksCalendarProps {
 }
 
 const TasksCalendar = ({ tasks, membersById, projectsById, onToggle }: TasksCalendarProps) => {
-  const tasksByDay = (day: Date) => tasks.filter(t => t.due_date && isSameDay(new Date(t.due_date), day));
+  /* parseDateOnly, not `new Date(due)` — the latter reads a date-only
+     column as UTC midnight, which lands a task on the previous square
+     for anyone west of UTC. */
+  const tasksOn = (day: Date) =>
+    tasks.filter(t => t.due_date && isSameDay(parseDateOnly(t.due_date), day));
 
   return (
     <MonthCalendar
       renderDay={day => {
-        const dayTasks = tasksByDay(day);
+        const dayTasks = tasksOn(day);
         return (
           <>
             {dayTasks.slice(0, 3).map(t => {
               const project = t.project_id ? projectsById[t.project_id] : null;
               const assignee = t.assigned_to ? membersById[t.assigned_to] : null;
-              const titleParts = [t.title, project?.name, assignee?.name].filter(Boolean);
+              const done = t.status === 'done';
               return (
-                <div
+                <button
                   key={t.id}
+                  type="button"
                   onClick={() => onToggle(t)}
-                  title={titleParts.join(' — ')}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, marginBottom: 3, cursor: 'pointer',
-                    color: t.status === 'done' ? '#4a4a4a' : '#aaa', textDecoration: t.status === 'done' ? 'line-through' : 'none',
-                  }}
+                  title={[t.title, project?.name, assignee?.name].filter(Boolean).join(' — ')}
+                  className="mb-0.5 flex w-full cursor-pointer items-center gap-1.5 rounded-crm-sm px-1 py-0.5 text-left transition-colors duration-100 ease-crm hover:bg-crm-raised"
                 >
-                  <span style={{ width: 5, height: 5, borderRadius: '50%', background: t.status === 'done' ? '#4a4a4a' : '#3b82f6', flexShrink: 0 }} />
-                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.title}</span>
-                </div>
+                  <Dot tone={done ? 'neutral' : PRIORITY_TONE[t.priority]} className="h-1.5 w-1.5" />
+                  <span
+                    className={cn(
+                      'truncate text-[11px]',
+                      done ? 'text-crm-faint line-through' : 'text-crm-ink-2',
+                    )}
+                  >
+                    {t.title}
+                  </span>
+                </button>
               );
             })}
             {dayTasks.length > 3 && (
-              <div style={{ color: '#555', fontSize: 10.5 }}>+{dayTasks.length - 3} more</div>
+              <span className="crm-num block px-1 font-crm-mono text-[10px] text-crm-faint">
+                +{dayTasks.length - 3} more
+              </span>
             )}
           </>
         );
