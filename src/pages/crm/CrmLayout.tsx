@@ -54,7 +54,7 @@ const PaletteButton = () => {
     <button
       type="button"
       onClick={openPalette}
-      className="flex w-full items-center gap-2 rounded-crm-md border border-crm-line bg-crm-ground px-2.5 py-1.5 text-[12.5px] text-crm-ink-3 transition-colors duration-150 ease-crm hover:border-crm-line-hi hover:text-crm-ink-2"
+      className="flex w-full cursor-pointer items-center gap-2 rounded-crm-md border border-crm-line bg-crm-ground px-2.5 py-1.5 text-[12.5px] text-crm-ink-3 transition-colors duration-150 ease-crm hover:border-crm-line-hi hover:text-crm-ink-2"
     >
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
         <circle cx="11" cy="11" r="7" />
@@ -209,7 +209,7 @@ const Sidebar = ({
             <button
               type="button"
               onClick={toggle}
-              className="flex min-w-0 flex-1 items-center gap-2.5 rounded-crm-md px-1.5 py-1.5 text-left transition-colors duration-150 ease-crm hover:bg-crm-raised"
+              className="flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 rounded-crm-md px-1.5 py-1.5 text-left transition-colors duration-150 ease-crm hover:bg-crm-raised"
             >
               <Avatar name={name} size="md" />
               <span className="min-w-0 flex-1">

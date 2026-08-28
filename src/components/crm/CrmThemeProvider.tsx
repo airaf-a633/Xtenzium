@@ -36,6 +36,19 @@ export const CrmThemeProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [theme]);
 
+  /* The marketing stylesheet sets `body { cursor: none }` for its custom
+     cursor, which is not mounted on CRM routes. An inline style is the
+     only thing that reliably beats it — a stylesheet rule would need
+     `:has()` to reach the body from in here, and that gets stripped at
+     build time. Restored on unmount so the public site is untouched. */
+  useEffect(() => {
+    const previous = document.body.style.cursor;
+    document.body.style.cursor = 'auto';
+    return () => {
+      document.body.style.cursor = previous;
+    };
+  }, []);
+
   const toggleTheme = useCallback(() => {
     setTheme(t => (t === 'dark' ? 'light' : 'dark'));
   }, []);

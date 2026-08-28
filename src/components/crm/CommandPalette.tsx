@@ -465,7 +465,7 @@ const CommandPalette = ({
                       onMouseEnter={() => setActive(index)}
                       onClick={() => row.run()}
                       className={cn(
-                        'flex w-full items-center gap-3 px-4 py-2 text-left transition-colors duration-100 ease-crm',
+                        'flex w-full cursor-pointer items-center gap-3 px-4 py-2 text-left transition-colors duration-100 ease-crm',
                         isActive ? 'bg-crm-copper-quiet' : 'hover:bg-crm-raised',
                       )}
                     >

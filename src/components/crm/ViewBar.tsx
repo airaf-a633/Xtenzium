@@ -43,7 +43,7 @@ const Trigger = ({
     type="button"
     onClick={onClick}
     className={cn(
-      'inline-flex h-8 items-center gap-1.5 rounded-crm-sm border px-2.5 text-[12.5px]',
+      'inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-crm-sm border px-2.5 text-[12.5px]',
       'transition-colors duration-150 ease-crm',
       active
         ? 'border-crm-copper-line bg-crm-copper-quiet text-crm-copper'

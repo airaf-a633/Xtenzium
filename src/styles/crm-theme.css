@@ -209,12 +209,22 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* The marketing site paints a custom cursor and hides the native one.
-   Inside the CRM that's actively harmful — you need a real text caret
-   in a form and a real pointer on a button. */
-.crm-root,
-.crm-root * {
-  cursor: revert;
+/* The marketing site hides the native cursor (`body { cursor: none }`)
+   and paints its own, which isn't mounted on CRM routes — so it just
+   leaves you with no cursor, including over the scrollbar gutter and
+   any margin beside a short page.
+
+   CSS alone can't fix it: reaching `body` from inside the CRM needs
+   `:has()`, and the build strips that rule. CrmThemeProvider sets it on
+   the body directly instead, and restores it on the way out.
+
+   Setting the cursor once here and letting it inherit is deliberate.
+   The previous `.crm-root * { cursor: revert }` had the same specificity
+   as Tailwind's own cursor utilities and was declared later, so it
+   silently killed every `cursor-grab` on the boards. An inherited value
+   loses to any utility, which is what you want. */
+.crm-root {
+  cursor: auto;
 }
 
 /* Focus is visible everywhere, always. Two solid pixels with an offset

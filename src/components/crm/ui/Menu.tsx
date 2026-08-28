@@ -101,7 +101,7 @@ export const Menu = ({
                 setOpen(false);
               }}
               className={cn(
-                'flex w-full items-center gap-2.5 rounded-crm-sm px-2.5 py-1.5 text-left',
+                'flex w-full cursor-pointer items-center gap-2.5 rounded-crm-sm px-2.5 py-1.5 text-left',
                 'text-[13px] transition-colors duration-100 ease-crm',
                 'disabled:cursor-not-allowed disabled:opacity-45',
                 item.tone === 'danger' ? 'text-crm-danger' : 'text-crm-ink-2',

@@ -77,7 +77,7 @@ export const ChartCard = ({
             onClick={() => setShowTable(v => !v)}
             aria-expanded={showTable}
             aria-controls={id}
-            className="font-crm-mono text-[10px] uppercase tracking-[0.1em] text-crm-faint transition-colors duration-150 ease-crm hover:text-crm-ink-2"
+            className="cursor-pointer font-crm-mono text-[10px] uppercase tracking-[0.1em] text-crm-faint transition-colors duration-150 ease-crm hover:text-crm-ink-2"
           >
             {showTable ? 'Chart' : 'Table'}
           </button>

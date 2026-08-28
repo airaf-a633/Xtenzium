@@ -42,7 +42,7 @@ export const SegmentedControl = <T extends string>({
           aria-checked={active}
           onClick={() => onChange(o.value)}
           className={cn(
-            'inline-flex h-7 items-center gap-1.5 rounded-crm-sm px-2.5 text-[12.5px] font-medium',
+            'inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-crm-sm px-2.5 text-[12.5px] font-medium',
             'transition-colors duration-150 ease-crm',
             active
               ? 'bg-crm-raised text-crm-ink'

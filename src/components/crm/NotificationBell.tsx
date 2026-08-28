@@ -187,7 +187,7 @@ const NotificationBell = ({ me, membersById }: NotificationBellProps) => {
                       setOpen(false);
                       navigate(n.entity === 'deal' ? '/crm/pipeline' : '/crm/tasks');
                     }}
-                    className="flex w-full items-start gap-2.5 px-3.5 py-2 text-left transition-colors duration-100 ease-crm hover:bg-crm-raised"
+                    className="flex w-full cursor-pointer items-start gap-2.5 px-3.5 py-2 text-left transition-colors duration-100 ease-crm hover:bg-crm-raised"
                   >
                     <Dot tone={n.tone} className="mt-1.5" />
                     <span className="min-w-0 flex-1">
@@ -214,7 +214,7 @@ const NotificationBell = ({ me, membersById }: NotificationBellProps) => {
                     type="button"
                     onClick={() => openNotification(n)}
                     className={cn(
-                      'flex w-full items-start gap-2.5 px-3.5 py-2 text-left transition-colors duration-100 ease-crm hover:bg-crm-raised',
+                      'flex w-full cursor-pointer items-start gap-2.5 px-3.5 py-2 text-left transition-colors duration-100 ease-crm hover:bg-crm-raised',
                       !n.read_at && 'bg-crm-copper-quiet/40',
                     )}
                   >

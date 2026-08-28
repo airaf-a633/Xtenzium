@@ -33,7 +33,7 @@ const SIZES: Record<ButtonSize, string> = {
 
 const BASE =
   'inline-flex items-center justify-center font-medium whitespace-nowrap ' +
-  'transition-colors duration-150 ease-crm select-none ' +
+  'transition-colors duration-150 ease-crm select-none cursor-pointer ' +
   'disabled:opacity-45 disabled:cursor-not-allowed';
 
 interface CommonProps {
