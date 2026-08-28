@@ -3,8 +3,7 @@ kind: product
 name: Dinely
 links:
   site: https://dinely.co.uk
-  # TODO(airaf): public repo exists; paste its URL to show a source link.
-  # repo: https://github.com/...
+  repo: https://github.com/pizn-01/dinely
 title: Reservations, floor plan and service on one dataset
 sector: Restaurant software
 year: 2025

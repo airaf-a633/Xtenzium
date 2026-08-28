@@ -3,8 +3,8 @@ kind: product
 name: Overlap
 links:
   site: https://overlap-gules.vercel.app
-  # TODO(airaf): public repo exists; paste its URL to show a source link.
-  # repo: https://github.com/...
+  # TODO(airaf): no repo named 'overlap' under pizn-01. Paste the URL if it
+  # lives elsewhere; a Source link is omitted rather than guessed.
 title: A studio site that argues in clocks
 sector: Software
 year: 2025

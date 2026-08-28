@@ -41,11 +41,18 @@ gsap.registerPlugin(ScrollTrigger, Observer);
  * it happens and scroll resumes from wherever drag left it.
  */
 
-const SPREAD = 56; // % of card width between neighbours
-const ROTATE = 22; // deg of rotateY per step out from centre
-const LIFT = 20; // px of y drop per step — this is what curves it
-const SCALE_STEP = 0.06;
-const SCALE_MIN = 0.7;
+// Spread is the one number that decides whether cards merge. At 56% of a
+// card width between neighbours, every card covered 44% of the one behind
+// it — and since the label sits at the bottom-left, the card in front
+// landed exactly on top of the words. Past ~70% the faces stop touching.
+const SPREAD = 96; // % of card width between neighbours
+// Rotation is the other half of the same problem. At 22deg per step a card
+// four out sits ~88deg from the viewer: edge-on, 86px wide, a sliver. 15
+// keeps the arc readable across the whole set.
+const ROTATE = 15; // deg of rotateY per step out from centre
+const LIFT = 18; // px of y drop per step — this is what curves it
+const SCALE_STEP = 0.05;
+const SCALE_MIN = 0.78;
 /** Steps of runway over which a card fades out before it wraps. */
 const FADE_SPAN = 1.7;
 

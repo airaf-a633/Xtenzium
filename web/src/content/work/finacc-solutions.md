@@ -3,8 +3,7 @@ kind: product
 name: FinAcc Solutions
 links:
   site: https://finaccsolutions.com
-  # TODO(airaf): public repo exists; paste its URL to show a source link.
-  # repo: https://github.com/...
+  repo: https://github.com/pizn-01/finaccsolutions
 title: Gated content that never reaches the browser
 sector: Financial services
 year: 2024

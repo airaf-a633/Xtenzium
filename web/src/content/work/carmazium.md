@@ -3,8 +3,7 @@ kind: product
 name: Carmazium
 links:
   site: https://www.carmazium.com
-  # TODO(airaf): public repo exists; paste its URL to show a source link.
-  # repo: https://github.com/...
+  repo: https://github.com/pizn-01/carmazium
 title: One car at a time, at showroom scale
 sector: Automotive
 year: 2025

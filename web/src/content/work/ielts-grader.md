@@ -3,8 +3,7 @@ kind: product
 name: IELTS Grader
 links:
   site: https://ieltsgrader.com
-  # TODO(airaf): public repo exists; paste its URL to show a source link.
-  # repo: https://github.com/...
+  repo: https://github.com/pizn-01/IELTS_GRADER
 title: A band score that shows its working
 sector: Education
 year: 2024
