@@ -143,7 +143,10 @@ const stats = [
       >
       </div>
 
-      <div class="container-x relative z-10" data-exit>
+      {/* No data-exit here: the hero owns its own scroll-out through the
+          parallax in hero.ts, and two systems writing y and opacity to one
+          element is a fight neither wins. */}
+      <div data-hero-content class="container-x relative z-10">
         <p data-hero-eyebrow class="eyebrow !text-white/55">
           Karachi, Pakistan — Software &amp; Hardware
         </p>
