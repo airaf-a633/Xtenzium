@@ -149,7 +149,7 @@ const MyWork = () => {
       {!failed && !loading && !me && (
         <ErrorState
           title="Your account isn’t linked to a team member yet"
-          body="Open Team and set your team member’s account to this login. Until then the CRM can’t tell which work is yours — everything still works, it just can’t be filtered to you."
+          body="Open Team and press “This is me” next to your name. Until then the CRM can’t tell which work is yours — everything still works, it just can’t be filtered to you."
         />
       )}
 

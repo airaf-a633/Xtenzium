@@ -91,7 +91,7 @@ const Settings = () => {
       {!unavailable && !loading && !me && (
         <ErrorState
           title="Your account isn’t linked to a team member"
-          body="Open Team and point your team member at this login. Preferences are stored per person, so there’s nowhere to keep them until then."
+          body="Open Team and press “This is me” next to your name. Preferences are stored per person, so there’s nowhere to keep them until then."
         />
       )}
 
