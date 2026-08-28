@@ -34,14 +34,19 @@ export function initStackingCards() {
 
   mm = gsap.matchMedia();
 
-  mm.add('(prefers-reduced-motion: reduce), (max-width: 767px)', () => {
+  // Width is not the question here, motion preference is. The effect is a
+  // scale and a brightness — two GPU-composited properties, no blur, no
+  // layout — so there is nothing about a phone that cannot afford it. The
+  // cards already stack on mobile through CSS sticky; without this they
+  // stacked flat, which read as a bug rather than a choice.
+  mm.add('(prefers-reduced-motion: reduce)', () => {
     groups.forEach((group) => {
       const inners = group.querySelectorAll('[data-stack-inner]');
       gsap.set(inners, { scale: 1, clearProps: 'filter,transform' });
     });
   });
 
-  mm.add('(min-width: 768px) and (prefers-reduced-motion: no-preference)', () => {
+  mm.add('(prefers-reduced-motion: no-preference)', () => {
     groups.forEach((group) => {
       const cards = Array.from(group.querySelectorAll<HTMLElement>('[data-stack-card]'));
       if (cards.length < 2) return;

@@ -28,19 +28,31 @@ export function initParallax() {
 
   mm = gsap.matchMedia();
 
-  // Reduced motion, and small screens where the travel isn't worth the work.
-  mm.add('(prefers-reduced-motion: reduce), (max-width: 767px)', () => {
+  // Reduced motion only. Small screens used to be excluded here too, on
+  // the grounds that the travel wasn't worth the work — but the work is a
+  // single composited yPercent, and a phone is where a static image in a
+  // clipped frame most obviously reads as a picture that failed to load.
+  mm.add('(prefers-reduced-motion: reduce)', () => {
     frames.forEach((frame) => {
       const img = frame.querySelector('[data-parallax-img]');
       if (img) gsap.set(img, { yPercent: 0, scale: 1.06 });
     });
   });
 
-  mm.add('(min-width: 768px) and (prefers-reduced-motion: no-preference)', () => {
+  mm.add(
+    {
+      isMobile: '(max-width: 767px) and (prefers-reduced-motion: no-preference)',
+      isDesktop: '(min-width: 768px) and (prefers-reduced-motion: no-preference)',
+    },
+    (context) => {
+    const mobile = !!context.conditions?.isMobile;
     frames.forEach((frame) => {
       const img = frame.querySelector<HTMLElement>('[data-parallax-img]');
       if (!img) return;
-      const strength = parseFloat(frame.dataset.parallaxStrength || '14');
+      // Less travel on a phone: the frame is shorter, so the same
+      // percentage shows more of the overscale and less of the picture.
+      const base = parseFloat(frame.dataset.parallaxStrength || '14');
+      const strength = mobile ? base * 0.55 : base;
 
       gsap.set(img, { scale: 1.2, yPercent: -strength / 2, willChange: 'transform' });
 
@@ -56,7 +68,8 @@ export function initParallax() {
         },
       });
     });
-  });
+    },
+  );
 }
 
 export function destroyParallax() {

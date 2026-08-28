@@ -33,11 +33,11 @@ export function initWatermarks() {
 
   // Below 768px the mark is mostly off-canvas anyway, and a second scrubbed
   // trigger per section is not worth the cost on a phone.
-  mm.add('(prefers-reduced-motion: reduce), (max-width: 767px)', () => {
+  mm.add('(prefers-reduced-motion: reduce)', () => {
     gsap.set(marks, { clearProps: 'transform' });
   });
 
-  mm.add('(min-width: 768px) and (prefers-reduced-motion: no-preference)', () => {
+  mm.add('(prefers-reduced-motion: no-preference)', () => {
     marks.forEach((mark) => {
       const section = mark.closest('section') ?? mark.parentElement;
       if (!section) return;
