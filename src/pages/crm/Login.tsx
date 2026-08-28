@@ -1,158 +1,121 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import type { FormEvent } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { useAuth } from '../../context/AuthContext';
+import { CrmThemeProvider, useCrmTheme } from '../../components/crm/CrmThemeProvider';
+import { Button, ErrorState, Field } from '../../components/crm/ui';
 
-const Login = () => {
+const CONTROL =
+  'h-10 w-full rounded-crm-md border border-crm-line bg-crm-ground px-3 text-[14px] text-crm-ink ' +
+  'placeholder:text-crm-faint transition-colors duration-150 ease-crm ' +
+  'hover:border-crm-line-hi focus:border-crm-copper';
+
+const LoginForm = () => {
   const { signIn, session } = useAuth();
+  const { theme } = useCrmTheme();
   const navigate = useNavigate();
+  const location = useLocation();
+  /* Where ProtectedRoute wanted to send them, if anything. */
+  const from = (location.state as { from?: string } | null)?.from;
+  const destination = from && from.startsWith('/crm') ? from : '/crm';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (session) navigate('/crm', { replace: true });
-  }, [session, navigate]);
+    if (session) navigate(destination, { replace: true });
+  }, [session, navigate, destination]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    const { error } = await signIn(email, password);
+    const result = await signIn(email, password);
     setLoading(false);
-    if (error) {
-      setError(error);
-    } else {
-      navigate('/crm', { replace: true });
-    }
+    if (result.error) setError(result.error);
+    else navigate(destination, { replace: true });
   };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: '#0a0a0a',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      fontFamily: 'system-ui, -apple-system, sans-serif',
-      cursor: 'default',
-    }}>
-      <div style={{ width: '100%', maxWidth: 400, padding: '0 24px' }}>
-        {/* Logo mark */}
-        <div style={{ textAlign: 'center', marginBottom: 40 }}>
-          <div style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: 48,
-            height: 48,
-            background: 'linear-gradient(135deg, #ffffff 0%, #888 100%)',
-            borderRadius: 12,
-            marginBottom: 16,
-          }}>
-            <span style={{ fontSize: 22, fontWeight: 800, color: '#0a0a0a', letterSpacing: -1 }}>X</span>
-          </div>
-          <h1 style={{ color: '#ffffff', fontSize: 22, fontWeight: 700, margin: 0, letterSpacing: -0.5 }}>
+    <div
+      className="crm-root flex min-h-screen items-center justify-center px-6 py-12"
+      data-crm-theme={theme}
+    >
+      <Helmet>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=DM+Mono:wght@400;500&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap"
+        />
+      </Helmet>
+
+      <div className="w-full max-w-[380px]">
+        <div className="mb-8 flex flex-col items-center text-center">
+          <span className="mb-4 flex h-11 w-11 items-center justify-center rounded-crm-lg bg-crm-copper font-crm-display text-[22px] font-bold leading-none text-crm-copper-ink">
+            X
+          </span>
+          <h1 className="m-0 font-crm-display text-[21px] font-bold tracking-[-0.02em] text-crm-ink">
             Xtenzium CRM
           </h1>
-          <p style={{ color: '#666', fontSize: 14, marginTop: 6 }}>Sign in to manage clients & projects</p>
+          <p className="m-0 mt-1.5 text-[13.5px] text-crm-ink-3">
+            Clients, projects and everything owed.
+          </p>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: 16 }}>
-            <label style={{ display: 'block', color: '#999', fontSize: 13, marginBottom: 8, fontWeight: 500 }}>
-              Email
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              required
-              autoComplete="email"
-              placeholder="you@xtenzium.com"
-              style={{
-                width: '100%',
-                padding: '12px 14px',
-                background: '#141414',
-                border: '1px solid #222',
-                borderRadius: 8,
-                color: '#ffffff',
-                fontSize: 15,
-                outline: 'none',
-                boxSizing: 'border-box',
-                transition: 'border-color 0.2s',
-              }}
-              onFocus={e => (e.target.style.borderColor = '#444')}
-              onBlur={e => (e.target.style.borderColor = '#222')}
-            />
-          </div>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <Field label="Email" required>
+            {({ id }) => (
+              <input
+                id={id}
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                required
+                autoComplete="email"
+                placeholder="you@xtenzium.com"
+                className={CONTROL}
+              />
+            )}
+          </Field>
 
-          <div style={{ marginBottom: 24 }}>
-            <label style={{ display: 'block', color: '#999', fontSize: 13, marginBottom: 8, fontWeight: 500 }}>
-              Password
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              required
-              autoComplete="current-password"
-              placeholder="••••••••"
-              style={{
-                width: '100%',
-                padding: '12px 14px',
-                background: '#141414',
-                border: '1px solid #222',
-                borderRadius: 8,
-                color: '#ffffff',
-                fontSize: 15,
-                outline: 'none',
-                boxSizing: 'border-box',
-                transition: 'border-color 0.2s',
-              }}
-              onFocus={e => (e.target.style.borderColor = '#444')}
-              onBlur={e => (e.target.style.borderColor = '#222')}
-            />
-          </div>
+          <Field label="Password" required>
+            {({ id }) => (
+              <input
+                id={id}
+                type="password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                required
+                autoComplete="current-password"
+                placeholder="••••••••"
+                className={CONTROL}
+              />
+            )}
+          </Field>
 
           {error && (
-            <div style={{
-              background: 'rgba(239, 68, 68, 0.1)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              borderRadius: 8,
-              padding: '10px 14px',
-              color: '#f87171',
-              fontSize: 14,
-              marginBottom: 16,
-            }}>
-              {error}
-            </div>
+            <ErrorState
+              title="That sign-in didn’t go through"
+              body={error}
+            />
           )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              width: '100%',
-              padding: '13px',
-              background: loading ? '#222' : '#ffffff',
-              color: loading ? '#666' : '#0a0a0a',
-              border: 'none',
-              borderRadius: 8,
-              fontSize: 15,
-              fontWeight: 600,
-              cursor: loading ? 'not-allowed' : 'pointer',
-              transition: 'all 0.2s',
-              letterSpacing: -0.2,
-            }}
-          >
+          <Button type="submit" variant="primary" loading={loading} className="mt-1 h-10 w-full">
             {loading ? 'Signing in…' : 'Sign in'}
-          </button>
+          </Button>
         </form>
       </div>
     </div>
   );
 };
+
+const Login = () => (
+  <CrmThemeProvider>
+    <LoginForm />
+  </CrmThemeProvider>
+);
 
 export default Login;

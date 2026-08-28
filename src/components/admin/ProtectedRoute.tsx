@@ -1,4 +1,4 @@
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 interface ProtectedRouteProps {
@@ -8,6 +8,7 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, redirectTo = '/admin/login' }) => {
   const { session, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return (
@@ -37,7 +38,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, redirectTo = 
   }
 
   if (!session) {
-    return <Navigate to={redirectTo} replace />;
+    /* Carry where they were trying to go, query string included. A
+       shared view link is mostly URL — dropping it here would send
+       someone who signs in to the dashboard instead of the view they
+       were sent, which is the whole point of shareable views. */
+    const from = `${location.pathname}${location.search}`;
+    return <Navigate to={redirectTo} replace state={{ from }} />;
   }
 
   return <>{children}</>;

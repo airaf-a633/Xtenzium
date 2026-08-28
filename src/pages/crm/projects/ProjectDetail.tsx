@@ -5,7 +5,7 @@ import { useAuth } from '../../../context/AuthContext';
 import Banner from '../../../components/crm/Banner';
 import TaskForm, { type TaskFormValues } from '../../../components/crm/TaskForm';
 import { getUsdToPkrRate, toPkr } from '../../../lib/settings';
-import { spawnNextRecurrence } from '../../../lib/tasks';
+import { spawnNextRecurrence } from '../../../lib/recurrence';
 import type { Activity, ActivityType, Client, Project, ProjectStatus, Task, TeamMember } from '../../../types/database';
 
 const CURRENCIES = ['PKR', 'USD'];
