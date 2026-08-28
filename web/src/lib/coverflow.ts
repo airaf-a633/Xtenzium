@@ -92,9 +92,9 @@ export function initCoverflow() {
 
   mm = gsap.matchMedia();
 
-  // Reduced motion / small screens: a plain scroll-snap row. Nothing
-  // moves that the reader did not move themselves.
-  mm.add('(prefers-reduced-motion: reduce), (max-width: 767px)', () => {
+  // Reduced motion: a plain scroll-snap row. Nothing moves that the reader
+  // did not move themselves.
+  mm.add('(prefers-reduced-motion: reduce)', () => {
     roots.forEach((root) => {
       root.setAttribute('data-coverflow-flat', '');
       gsap.set(root.querySelectorAll('[data-coverflow-card]'), { clearProps: 'all' });
@@ -107,6 +107,62 @@ export function initCoverflow() {
         const c = r.parentElement?.querySelector<HTMLElement>('[data-coverflow-controls]');
         if (c) c.hidden = false;
       });
+  });
+
+  // Mobile: keep the flat row — a 3D arc on a 375px screen puts most of
+  // the set off-canvas — but travel it with the page instead of waiting
+  // for a swipe. The cards used to sit still while everything around them
+  // moved, which reads as a dead component rather than a quiet one.
+  //
+  // No pin, so the page never stops responding to the scroll. The row
+  // simply passes as the section does.
+  mm.add('(max-width: 767px) and (prefers-reduced-motion: no-preference)', () => {
+    const kills: Array<() => void> = [];
+
+    roots.forEach((root) => {
+      root.setAttribute('data-coverflow-flat', '');
+      const stage = root.querySelector<HTMLElement>('[data-coverflow-stage]');
+      const cards = Array.from(root.querySelectorAll<HTMLElement>('[data-coverflow-card]'));
+      if (!stage || !cards.length) return;
+
+      gsap.set(cards, { clearProps: 'all' });
+      gsap.set(stage, { willChange: 'transform' });
+
+      // Transform drives the row, so the native scroller must not also try.
+      root.setAttribute('data-coverflow-driven', '');
+
+      const distance = () => Math.max(0, stage.scrollWidth - window.innerWidth + 24);
+
+      const tween = gsap.fromTo(
+        stage,
+        { x: 0 },
+        {
+          x: () => -distance(),
+          ease: 'none',
+          scrollTrigger: {
+            trigger: root,
+            start: 'top bottom',
+            end: 'bottom top',
+            scrub: 0.6,
+            invalidateOnRefresh: true,
+          },
+        },
+      );
+
+      const controls = root.parentElement?.querySelector<HTMLElement>('[data-coverflow-controls]');
+      if (controls) controls.hidden = true;
+
+      kills.push(() => {
+        tween.scrollTrigger?.kill();
+        tween.kill();
+        root.removeAttribute('data-coverflow-driven');
+        root.removeAttribute('data-coverflow-flat');
+        gsap.set(stage, { clearProps: 'all' });
+        if (controls) controls.hidden = false;
+      });
+    });
+
+    return () => kills.forEach((fn) => fn());
   });
 
   mm.add('(min-width: 768px) and (prefers-reduced-motion: no-preference)', () => {
