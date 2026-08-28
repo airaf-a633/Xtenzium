@@ -1,0 +1,236 @@
+---
+import '../styles/global.css';
+import { ClientRouter } from 'astro:transitions';
+
+interface Props {
+  title: string;
+  description: string;
+  /** Path only, e.g. "/work" — combined with site for the canonical. */
+  path?: string;
+  image?: string;
+}
+
+const {
+  title,
+  description,
+  path = Astro.url.pathname,
+  image = '/og-image.png',
+} = Astro.props;
+
+const canonical = new URL(path, Astro.site).href;
+const ogImage = new URL(image, Astro.site).href;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <meta name="robots" content="index, follow" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Xtenzium" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+
+    <meta name="geo.region" content="PK-SD" />
+    <meta name="geo.placename" content="Karachi, Pakistan" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=DM+Sans:opsz,wght@9..40,400..700&family=DM+Mono:wght@400;500&display=swap"
+    />
+
+    <ClientRouter />
+    <slot name="head" />
+  </head>
+
+  <body>
+    <!-- Reading progress. Driven by scale, never width. -->
+    <div aria-hidden="true" class="pointer-events-none fixed inset-x-0 top-0 z-[60] h-[2px]">
+      <div data-progress class="h-full origin-left bg-copper" style="scale: 0 1;"></div>
+    </div>
+
+    <slot />
+
+    <script>
+      import { initSmoothScroll, destroySmoothScroll, syncSmoothScroll } from '../lib/smooth-scroll';
+      import { initReveal, destroyReveal } from '../lib/reveal';
+      import { initSplit, destroySplit } from '../lib/split';
+      import { initSectionExit, destroySectionExit } from '../lib/section-exit';
+      import { initAnchorScroll, destroyAnchorScroll } from '../lib/anchor-scroll';
+      import { initStatementPanels, destroyStatementPanels } from '../lib/statement-panel';
+      import { initHero, destroyHero } from '../lib/hero';
+      import { initCounters, destroyCounters } from '../lib/counter';
+      import { initParallax, destroyParallax } from '../lib/parallax';
+      import { initStackingCards, destroyStackingCards } from '../lib/stacking-cards';
+      import { initHorizontalGallery, destroyHorizontalGallery } from '../lib/horizontal-gallery';
+      import { initCoverflow, destroyCoverflow } from '../lib/coverflow';
+      import { initEstimate } from '../lib/estimate';
+      import { initContact } from '../lib/contact';
+      import { initWatermarks, destroyWatermarks } from '../lib/watermark';
+      import { initChrome, destroyChrome } from '../lib/chrome';
+      import { initFaq, destroyFaq } from '../lib/faq';
+      import { initQuotes, destroyQuotes } from '../lib/quote';
+      import { initMenu, destroyMenu } from '../lib/menu';
+      import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+      let running = false;
+
+      function start() {
+        // `astro:page-load` also fires on the very first load, so without
+        // this guard every init runs twice: two Lenis instances, two sets
+        // of ScrollTriggers, and a second gsap.set() that re-hides elements
+        // the first pass had already armed.
+        if (running) return;
+        running = true;
+        initSmoothScroll();
+        initHero();
+        initReveal();
+        initSplit();
+        initSectionExit();
+        initAnchorScroll();
+        initStatementPanels();
+        initCounters();
+        initParallax();
+        initStackingCards();
+        initHorizontalGallery();
+        initCoverflow();
+        initEstimate();
+        initContact();
+        initWatermarks();
+        initChrome();
+        initFaq();
+        initQuotes();
+        initMenu();
+
+        // Pins add scroll length, which invalidates the geometry of every
+        // trigger further down the page. Modules are initialised in DOM
+        // order but a pin created late still shifts what came before it in
+        // init order, so sort by document position and recalculate once
+        // everything exists. Without this the stacking cards measure their
+        // start ~1160px early -- exactly the horizontal gallery's pin
+        // distance -- and render their end state before you reach them.
+        ScrollTrigger.sort();
+        ScrollTrigger.refresh();
+
+        // Web fonts and lazy images settle after this point and change
+        // element heights, so measure once more when the page is fully
+        // loaded. Cheap, and it is the difference between a pinned section
+        // being a few hundred pixels out and being exact.
+        if (document.readyState !== 'complete') {
+          window.addEventListener('load', () => ScrollTrigger.refresh(), { once: true });
+        }
+        if (import.meta.env.DEV) {
+          Promise.all([import('gsap'), import('gsap/ScrollTrigger')]).then(([g, st]) => {
+            (window as any).gsap = g.default;
+            (window as any).ScrollTrigger = st.ScrollTrigger;
+          });
+        }
+      }
+
+      function stop() {
+        if (!running) return;
+        running = false;
+        destroyHero();
+        destroyReveal();
+        // Reverts the split, putting the original text back in the DOM
+        // before the page swaps — a view transition must never capture
+        // generated line wrappers.
+        destroySplit();
+        destroySectionExit();
+        destroyAnchorScroll();
+        destroyStatementPanels();
+        destroyCounters();
+        destroyParallax();
+        destroyStackingCards();
+        destroyHorizontalGallery();
+        destroyCoverflow();
+        destroyWatermarks();
+        destroyChrome();
+        destroyFaq();
+        destroyQuotes();
+        destroyMenu();
+        destroySmoothScroll();
+      }
+
+      // ── Scroll restoration ──────────────────────────────────────────
+      // Manual, so a fresh visit always lands at the top and only
+      // back/forward restores a saved position.
+      const nav = performance.getEntriesByType('navigation')[0] as
+        | PerformanceNavigationTiming
+        | undefined;
+      const isBackForward = nav?.type === 'back_forward';
+
+      if ('scrollRestoration' in history) {
+        history.scrollRestoration = isBackForward ? 'auto' : 'manual';
+      }
+
+      const key = 'xtz:scroll:' + location.pathname;
+
+      if (isBackForward) {
+        requestAnimationFrame(() => {
+          if (window.scrollY === 0) {
+            const saved = sessionStorage.getItem(key);
+            if (saved) window.scrollTo(0, parseInt(saved, 10) || 0);
+          }
+        });
+      } else {
+        window.scrollTo(0, 0);
+      }
+
+      window.addEventListener('pagehide', () => {
+        try {
+          sessionStorage.setItem('xtz:scroll:' + location.pathname, String(window.scrollY));
+        } catch {
+          /* private mode — not worth failing over */
+        }
+      });
+
+      // ── Lifecycle ───────────────────────────────────────────────────
+      // No direct start() call — `astro:page-load` fires on first load too.
+
+      // The transition itself is CSS now — ::view-transition-old/new in
+      // global.css. The browser snapshots the old page, swaps, and
+      // animates between the two, which is both faster than driving
+      // opacity from JS and the only way the `transition:name` headings
+      // can morph: a full-page fade painted straight over them.
+      //
+      // Nothing here delays navigation any more. The previous version
+      // held the loader open for 300ms to let a fade finish, which made
+      // every click cost that 300ms even when the page was already
+      // prefetched.
+      document.addEventListener('astro:before-swap', () => {
+        stop();
+      });
+
+      document.addEventListener('astro:after-swap', () => {
+        window.scrollTo(0, 0);
+      });
+
+      document.addEventListener('astro:page-load', () => {
+        start();
+      });
+
+      let resizeTimer: number;
+      window.addEventListener('resize', () => {
+        window.clearTimeout(resizeTimer);
+        resizeTimer = window.setTimeout(syncSmoothScroll, 250);
+      });
+    </script>
+  </body>
+</html>

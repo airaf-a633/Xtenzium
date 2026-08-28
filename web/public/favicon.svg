@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40">
+  <!-- Xtenzium mark, V4. Colours are literal, not tokens: a favicon is
+       fetched standalone and never sees the site stylesheet. -->
+  <g fill="#F2895C">
+    <path d="M6,24 L19.5,15 L19.5,27 L6,36 Z"/>
+    <path d="M6,24 L19.5,15 L19.5,27 L6,36 Z" transform="rotate(180 20 20)"/>
+  </g>
+  <g fill="#B8430F">
+    <path d="M6,4 L19.5,13 L19.5,25 L6,16 Z"/>
+    <path d="M6,4 L19.5,13 L19.5,25 L6,16 Z" transform="rotate(180 20 20)"/>
+  </g>
+</svg>

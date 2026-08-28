@@ -1,0 +1,220 @@
+---
+/**
+ * Full-height statement panel.
+ *
+ * These were originally image containers — in the reference they carry
+ * full-bleed editorial photography with the headline over it. Without an
+ * image a headline alone leaves a whole viewport of empty black holding one
+ * unsupported assertion, which reads as decoration rather than content.
+ *
+ * So a panel now has three ways to earn its space, in order of preference:
+ *
+ *   proof   two groups that converge on a centre line — the claim and the
+ *           evidence for it in the same frame. This is the good one.
+ *   cta     a conversion moment; the claim leads somewhere.
+ *   image   the original editorial treatment, once artwork exists.
+ *
+ * A panel with none of those no longer takes the full viewport. It becomes a
+ * band sized to its own content, because a statement with nothing behind it
+ * does not deserve a whole screen.
+ *
+ * Animation lives in `src/lib/statement-panel.ts`. Zero framework JS.
+ */
+import BleedImage from './BleedImage.astro';
+import type { Imagery } from '../data/imagery';
+
+interface ProofGroup {
+  label: string;
+  items: string[];
+}
+
+interface Props {
+  lines: string[];
+  variant?: 'default' | 'rise' | 'focus';
+  image?: string;
+  alt?: string;
+  /** Photograph over generated art, duotoned to the palette. */
+  imagery?: Imagery;
+  eyebrow?: string;
+  /** Highlights one word in copper. Matched case-insensitively. */
+  accentWord?: string;
+  /** Two groups, rendered converging on a centre seam. */
+  proof?: ProofGroup[];
+  /** The phrase that sits at the seam where the two groups meet. */
+  meet?: string;
+  cta?: { label: string; href: string };
+}
+
+const {
+  lines,
+  variant = 'default',
+  image,
+  alt = '',
+  imagery,
+  eyebrow,
+  accentWord,
+  proof,
+  meet,
+  cta,
+} = Astro.props;
+
+const hasProof = Array.isArray(proof) && proof.length === 2;
+const hasBody = hasProof || !!cta || !!image || !!imagery;
+
+// `focus` splits into individual words; the others animate whole lines.
+const units =
+  variant === 'focus'
+    ? lines.flatMap((line, li) =>
+        line.split(' ').map((word, wi) => ({
+          text: word,
+          key: `${li}-${wi}`,
+          breakAfter: wi === line.split(' ').length - 1 && li < lines.length - 1,
+        })),
+      )
+    : lines.map((line, li) => ({
+        text: line,
+        key: `line-${li}`,
+        breakAfter: li < lines.length - 1,
+      }));
+
+const isAccent = (t: string) =>
+  !!accentWord && t.toLowerCase().replace(/[^a-z]/g, '') === accentWord.toLowerCase();
+---
+
+<section
+  data-statement={variant}
+  class:list={[
+    'on-carbon relative w-full overflow-hidden bg-carbon',
+    // Full viewport only when there is something to fill it with.
+    hasBody ? 'flex items-center py-24 md:min-h-screen md:py-28' : 'py-24 md:py-32',
+  ]}
+>
+  <div data-statement-media class="absolute inset-0 overflow-hidden bg-carbon">
+    <div data-statement-inner class="absolute inset-0">
+      {
+        imagery ? (
+          <BleedImage image={imagery} scrim="strong" class="!static" />
+        ) : image ? (
+          <img
+            src={image}
+            alt={alt}
+            class="h-full w-full object-cover opacity-70"
+            loading="lazy"
+            decoding="async"
+          />
+        ) : (
+          /* No artwork yet, so the panel builds its own ground rather than
+             sitting on flat black. Three stacked layers, all CSS: a via
+             grid, a copper bloom, and a horizon. They live inside
+             [data-statement-inner] so they inherit the existing scrub. */
+          <div class="relative h-full w-full bg-carbon">
+            <div
+              aria-hidden="true"
+              class="absolute inset-0 opacity-[0.55]"
+              style="background-image: radial-gradient(circle at center, rgba(184,67,15,0.5) 1px, transparent 1px); background-size: 34px 34px;"
+            />
+            <div
+              aria-hidden="true"
+              class="absolute inset-0"
+              style="background: radial-gradient(105% 75% at 22% 42%, rgba(184,67,15,0.30) 0%, rgba(184,67,15,0.10) 34%, rgba(10,9,8,0) 68%);"
+            />
+            <div
+              aria-hidden="true"
+              class="absolute inset-x-0 top-1/2 h-px"
+              style="background: linear-gradient(to right, rgba(184,67,15,0) 0%, rgba(184,67,15,0.45) 28%, rgba(184,67,15,0.12) 62%, rgba(184,67,15,0) 100%);"
+            />
+            <div
+              aria-hidden="true"
+              class="absolute inset-0"
+              style="background: linear-gradient(to top, rgba(10,9,8,0.92) 0%, rgba(10,9,8,0.35) 46%, rgba(10,9,8,0.75) 100%);"
+            />
+          </div>
+        )
+      }
+    </div>
+  </div>
+
+  <div class="container-x relative z-10 w-full">
+    {
+      eyebrow && (
+        <p class="eyebrow mb-5 !text-white/55" data-statement-line>
+          {eyebrow}
+        </p>
+      )
+    }
+
+    <h2
+      class="max-w-5xl font-display text-[clamp(1.9rem,5.2vw,4rem)] font-bold uppercase leading-[1.02] tracking-[-0.035em] text-white"
+    >
+      {
+        units.map((u) => (
+          <>
+            <span
+              data-statement-line
+              class:list={['inline-block', isAccent(u.text) && 'text-copper-hi']}
+            >
+              {u.text}
+            </span>
+            {variant === 'focus' && !u.breakAfter ? ' ' : null}
+            {u.breakAfter ? <br /> : null}
+          </>
+        ))
+      }
+    </h2>
+
+    {
+      hasProof && (
+        <div class="mt-14 md:mt-16">
+          {/* Two halves converging on a seam — the mark's own logic used as
+              layout. The claim is that these two disciplines meet; showing
+              them meeting is the evidence. */}
+          <div class="grid items-start gap-10 md:grid-cols-[1fr_auto_1fr] md:gap-8">
+            <div data-statement-proof="left" class="md:text-right">
+              <p class="eyebrow !text-copper-hi">{proof[0].label}</p>
+              <ul class="mt-4 flex flex-col gap-2">
+                {proof[0].items.map((i) => (
+                  <li class="text-[0.95rem] leading-relaxed text-white/65">{i}</li>
+                ))}
+              </ul>
+            </div>
+
+            <div
+              data-statement-seam
+              class="flex flex-col items-center gap-3 md:h-full md:justify-center"
+            >
+              <span aria-hidden="true" class="hidden h-16 w-px bg-white/15 md:block" />
+              {meet && (
+                <span class="whitespace-nowrap rounded-pill border border-copper/40 bg-copper/10 px-4 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-copper-hi">
+                  {meet}
+                </span>
+              )}
+              <span aria-hidden="true" class="hidden h-16 w-px bg-white/15 md:block" />
+            </div>
+
+            <div data-statement-proof="right">
+              <p class="eyebrow !text-copper-hi">{proof[1].label}</p>
+              <ul class="mt-4 flex flex-col gap-2">
+                {proof[1].items.map((i) => (
+                  <li class="text-[0.95rem] leading-relaxed text-white/65">{i}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    {
+      cta && (
+        <div class="mt-12" data-statement-line>
+          <a
+            href={cta.href}
+            class="inline-flex items-center justify-center rounded-pill bg-copper px-7 py-3.5 text-sm font-bold text-white transition-colors duration-300 hover:bg-copper-hover"
+          >
+            {cta.label}
+          </a>
+        </div>
+      )
+    }
+  </div>
+</section>

@@ -1,0 +1,443 @@
+---
+import { imagery } from '../../data/imagery';
+import BleedImage from '../../components/BleedImage.astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Navbar from '../../components/Navbar.astro';
+import Footer from '../../components/Footer.astro';
+import Faq from '../../components/Faq.astro';
+import Testimonial from '../../components/Testimonial.astro';
+import { getWork, publishable } from '../../lib/content';
+import { unverified } from '../../lib/placeholder';
+import { credits, studios } from '../../data/credits';
+
+const entries = await getWork();
+
+// Grouped by sector, in the order the sectors first appear in the data,
+// so adding a credit never silently reorders the section.
+const creditSectors = [...new Set(credits.map((c) => c.sector))].map((sector) => ({
+  sector,
+  items: credits.filter((c) => c.sector === sector),
+}));
+
+/**
+ * The proof bar, counted rather than claimed.
+ *
+ * It used to assert 65+ projects, 36% average first-year ROI, 9 industries
+ * and 4 continents. One of those was marked invented in a comment, none of
+ * them could be checked by a reader, and all four were gated out of
+ * production — which meant the section had never actually shipped.
+ *
+ * These two are derived from the data the page itself renders, so a
+ * visitor can scroll down and count them, and they cannot drift when work
+ * is added: the number and the list it describes have one source.
+ *
+ * `entries` is draft-filtered, so in production this counts what is
+ * genuinely published rather than what exists on disk. That is the honest
+ * behaviour even though it reads lower — the claim is about what you can
+ * see, not what we have in a folder.
+ */
+const named = entries.length + credits.length;
+const sectorsShipped = new Set([
+  ...entries.map((e) => e.data.sector),
+  ...credits.map((c) => c.sector),
+]).size;
+
+const proof = [
+  { v: `${named}`, count: named, suffix: '', l: 'Projects named on this page' },
+  { v: `${sectorsShipped}`, count: sectorsShipped, suffix: '', l: 'Sectors shipped in' },
+];
+
+/**
+ * Claims we cannot show. They stay behind the gate until there is
+ * something behind them — see lib/placeholder.ts.
+ */
+const claimed = [
+  { v: '65+', count: 65, suffix: '+', l: 'Projects delivered' },
+  { v: '36%', count: 36, suffix: '%', l: 'Average first-year ROI' },
+];
+
+const anatomy = [
+  {
+    n: '01',
+    title: 'The brief we were given',
+    body: 'What the client actually asked for, including the parts that turned out to be the wrong question.',
+  },
+  {
+    n: '02',
+    title: 'What we decided, and why',
+    body: 'The architecture and design calls, with the trade-offs we accepted written down rather than glossed over.',
+  },
+  {
+    n: '03',
+    title: 'What went wrong',
+    body: 'Every project has a week that hurt. We include it, because a case study without one is marketing.',
+  },
+  {
+    n: '04',
+    title: 'What it returned',
+    body: 'Measured after launch, not projected before it. If a number moved, we say by how much and over what period.',
+  },
+];
+
+const sectors = [
+  'Healthcare', 'Logistics', 'Manufacturing', 'E-commerce', 'Education',
+  'Energy', 'Fintech', 'Agriculture', 'Software',
+];
+
+const faqs = [
+  {
+    q: 'Why so few case studies?',
+    a: 'Because we only publish the ones a client has agreed to name, with numbers we can defend. A wall of logos with no detail behind it tells you nothing about whether we can do your project.',
+  },
+  {
+    q: 'Can I see work in my industry?',
+    a: `Ask. We have delivered across ${sectorsShipped} sectors and can usually send two relevant projects, including ones not published here because the client preferred we did not.`,
+  },
+  {
+    q: 'Do you do hardware and software on the same project?',
+    a: 'That is the reason most of our clients pick us. When one team owns the board and the software talking to it, the protocol between them can be designed rather than negotiated between two vendors.',
+  },
+  {
+    q: 'Who owns the work?',
+    a: 'You do, from the first commit. Source, schematics, credentials and infrastructure are in your name throughout, not transferred at the end.',
+  },
+];
+---
+
+<BaseLayout
+  title="Work — Xtenzium"
+  description="Case studies from Xtenzium: what we scoped, what we built, what it cost, and what it returned. Web products, IoT hardware, and the systems between them."
+  path="/work"
+>
+  <Fragment slot="head">
+    <script
+      is:inline
+      type="application/ld+json"
+      set:html={JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: faqs.map((f) => ({
+          '@type': 'Question',
+          name: f.q,
+          acceptedAnswer: { '@type': 'Answer', text: f.a },
+        })),
+      })}
+    />
+  </Fragment>
+
+  <Navbar />
+
+  <main>
+    <!-- ── Header ───────────────────────────────────────────── -->
+    <section class="on-carbon relative overflow-hidden bg-carbon pb-20 pt-40 md:pb-24 md:pt-48">
+      <BleedImage image={imagery.headerWork} scrim="soft" eager />
+      <div class="container-x relative z-10" data-reveal-group data-exit>
+        <p class="eyebrow !text-copper-hi" data-reveal="eyebrow">Selected work</p>
+        <h1
+          class="mt-4 max-w-3xl font-display text-[clamp(2.25rem,6vw,4.25rem)] font-bold leading-[1.02] tracking-[-0.035em] text-white"
+        >
+          <span class="block" data-reveal="line">What we scoped, what</span>
+          <span class="block" data-reveal="line">it cost, what it returned.</span>
+        </h1>
+        <p class="mt-7 max-w-xl text-lg leading-relaxed text-white/60" data-reveal="body">
+          Every study covers the brief, the decisions, and the numbers —
+          including the parts that went sideways. No logo walls.
+        </p>
+      </div>
+    </section>
+
+    <!-- ── Proof bar ────────────────────────────────────────── -->
+    <!-- Counted, not claimed. Everything here is derived from the lists
+         further down the page, so the reader can check it by scrolling.
+         The unverifiable claims sit behind the gate below. -->
+    <section class="on-carbon border-t border-white/10 bg-carbon pb-20 md:pb-24">
+      <div class="container-x" data-exit>
+        {/* Column count follows the item count. Two derived figures ship;
+            in development the two gated claims join them, and a grid fixed
+            at two columns silently became two rows with `sm:divide-y-0`
+            and `sm:py-0` collapsing every gap between them. Padding stays
+            on regardless of breakpoint so rows can never touch. */}
+        <div
+          data-reveal-cards
+          class:list={[
+            'grid divide-y divide-white/10 sm:grid-cols-2 sm:divide-x',
+            [...proof, ...(unverified(claimed) ?? [])].length > 2
+              ? 'lg:grid-cols-4'
+              : 'sm:divide-y-0',
+          ]}
+        >
+          {
+            [...proof, ...(unverified(claimed) ?? [])].map((p, i) => (
+              <div
+                data-reveal="card"
+                class:list={['py-7', i === 0 ? 'sm:pr-8' : 'sm:px-8']}
+              >
+                <div
+                  data-count-to={p.count}
+                  data-count-suffix={p.suffix}
+                  class="font-display text-[clamp(2.25rem,5vw,3.25rem)] font-bold leading-none tracking-[-0.04em] text-copper-hi tabular-nums"
+                >
+                  {p.v}
+                </div>
+                <p class="mt-3 text-sm text-white/50">{p.l}</p>
+              </div>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Index ────────────────────────────────────────────── -->
+    <section class="bg-bg py-20 md:py-28">
+      <div class="container-x" data-exit>
+        {
+          entries.length === 0 ? (
+            <div class="rounded-card border border-dashed border-line-strong bg-surface p-10 md:p-14">
+              <div class="mx-auto max-w-xl text-center">
+                <p class="eyebrow">Being written</p>
+                <h2 class="mt-4 font-display text-[clamp(1.5rem,3vw,2rem)] font-bold tracking-[-0.03em] text-ink">
+                  We would rather publish four real ones than forty logos.
+                </h2>
+                <p class="mt-4 leading-relaxed text-ink-2">
+                  Each study needs the client to sign off the numbers before it
+                  goes up, and that takes longer than writing it. Tell us what
+                  you are building and we will send the two closest to your
+                  project today — including ones that will never be published
+                  here.
+                </p>
+                <div class="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+                  <a
+                    href="/contact"
+                    class="inline-flex items-center justify-center rounded-pill bg-copper px-7 py-3.5 text-sm font-bold text-white transition-colors duration-300 hover:bg-copper-hover"
+                  >
+                    Ask for relevant work
+                  </a>
+                  <a
+                    href="/estimate"
+                    class="inline-flex items-center justify-center rounded-pill border border-line-strong px-7 py-3.5 text-sm font-bold text-ink transition-colors duration-300 hover:bg-ink hover:text-bg"
+                  >
+                    Estimate a project
+                  </a>
+                </div>
+              </div>
+
+              <div class="mt-12 border-t border-line pt-10">
+                <p class="eyebrow text-center">Sectors we have shipped in</p>
+                <div class="mt-6 flex flex-wrap justify-center gap-2.5">
+                  {sectors.map((sec) => (
+                    <span class="rounded-pill border border-line px-4 py-2 font-mono text-[11px] text-ink-2">
+                      {sec}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <ol data-reveal-cards class="flex flex-col">
+              {entries.map((entry, i) => (
+                <li data-reveal="card">
+                  <a
+                    href={`/work/${entry.id}`}
+                    class="row-link group grid items-start gap-6 border-t border-line py-10 md:grid-cols-[auto_1fr_auto] md:gap-10 md:py-12"
+                  >
+                    <span class="font-mono text-xs text-ink-3 md:pt-3">
+                      {String(i + 1).padStart(2, '0')}
+                    </span>
+
+                    <div class="max-w-2xl">
+                      <p class="eyebrow">
+                        {entry.data.sector} — {entry.data.year}
+                      </p>
+                      <h2
+                        transition:name={`case-${entry.id}`}
+                        class="mt-3 font-display text-[clamp(1.75rem,3.6vw,2.75rem)] font-bold leading-[1.05] tracking-[-0.03em] text-ink transition-colors duration-300 group-hover:text-copper"
+                      >
+                        {entry.data.name}
+                      </h2>
+                      <p class="mt-3 leading-relaxed text-ink-2">{entry.data.summary}</p>
+
+                      <div class="mt-5 flex flex-wrap gap-2">
+                        {entry.data.services.map((s) => (
+                          <span class="rounded-pill border border-line px-3 py-1 font-mono text-[11px] text-ink-2">
+                            {s}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div class="md:pt-3 md:text-right">
+                      {publishable(entry.data.headline) && (
+                        <>
+                          <div class="font-display text-3xl font-bold tracking-[-0.03em] text-copper tabular-nums md:text-4xl">
+                            {entry.data.headline.value}
+                          </div>
+                          <p class="mt-1.5 text-xs text-ink-2">{entry.data.headline.label}</p>
+                        </>
+                      )}
+                      {entry.data.contribution && (
+                        <p class="mt-3 font-mono text-[11px] text-ink-3">
+                          {entry.data.contribution}
+                          {entry.data.deliveredUnder && ` · ${entry.data.deliveredUnder}`}
+                        </p>
+                      )}
+                    </div>
+                  </a>
+                </li>
+              ))}
+              <li class="border-t border-line" />
+            </ol>
+          )
+        }
+      </div>
+    </section>
+
+    <!-- ── Earlier work, credited ───────────────────────────── -->
+    <!-- This section has to justify itself against "no logo walls" two
+         screens further up. It does it by saying the sentence a logo wall
+         exists to avoid: what our part actually was. A mark on its own
+         invites the reader to assume ownership; a row that reads
+         "Front-end build" cannot be misread that way. Nothing here
+         carries an outcome number, because none of it was measured by
+         us — those live in case studies or nowhere. -->
+    <section class="border-t border-line bg-bg py-20 md:py-28">
+      <div class="container-x" data-exit>
+        <div class="max-w-2xl" data-reveal-group>
+          <p class="eyebrow" data-reveal="eyebrow">Earlier work</p>
+          <h2
+            class="mt-3 font-display text-[clamp(1.6rem,3.4vw,2.25rem)] font-bold tracking-[-0.03em] text-ink"
+          >
+            <span class="block" data-reveal="line">Projects we contributed</span>
+            <span class="block" data-reveal="line">to, and what we did.</span>
+          </h2>
+          <p class="mt-5 leading-relaxed text-ink-2" data-reveal="body">
+            These shipped under {studios.slice(0, -1).join(', ')} and{' '}
+            {studios.at(-1)}, not under our own name. They are listed with the
+            part we actually built, because a list of clients that leaves that
+            out is claiming more than it earned.
+          </p>
+        </div>
+
+        <div class="mt-14 flex flex-col gap-12" data-reveal-cards>
+          {
+            creditSectors.map(({ sector, items }) => (
+              <div data-reveal="card">
+                <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-copper">
+                  {sector}
+                </p>
+                <ul class="mt-4 flex flex-col">
+                  {items.map((c) => (
+                    <li>
+                      <a
+                        href={c.site}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="row-link grid gap-x-8 gap-y-2 border-t border-line py-5 md:grid-cols-[minmax(0,14rem)_1fr_auto] md:items-baseline"
+                      >
+                        <p class="font-display text-base font-bold tracking-[-0.02em] text-ink">
+                          {c.name}
+                          <span aria-hidden="true" class="row-arrow ml-1.5 text-ink-3">
+                            &#8599;
+                          </span>
+                        </p>
+                        <p class="text-[0.95rem] leading-relaxed text-ink-2">{c.what}</p>
+                        <div class="flex flex-wrap items-center gap-2 md:justify-end">
+                          <span class="font-mono text-[11px] text-ink-3">{c.contribution}</span>
+                          {c.deliveredUnder && (
+                            <span class="font-mono text-[11px] text-ink-3">
+                              · {c.deliveredUnder}
+                            </span>
+                          )}
+                        </div>
+                      </a>
+                    </li>
+                  ))}
+                  <li class="border-t border-line" />
+                </ul>
+              </div>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+
+    <!-- ── What's in a case study ───────────────────────────── -->
+    <section class="bg-bg-tint py-20 md:py-28">
+      <div class="container-x" data-exit>
+        <div class="max-w-2xl" data-reveal-group>
+          <p class="eyebrow" data-reveal="eyebrow">What's in each one</p>
+          <h2
+            class="mt-3 font-display text-[clamp(1.6rem,3.4vw,2.25rem)] font-bold tracking-[-0.03em] text-ink"
+          >
+            <span class="block" data-reveal="line">Four sections, including</span>
+            <span class="block" data-reveal="line">the one nobody publishes.</span>
+          </h2>
+        </div>
+
+        <ol data-reveal-cards class="mt-14 grid gap-4 md:grid-cols-2">
+          {
+            anatomy.map((a) => (
+              <li
+                data-reveal="card"
+                class="relative overflow-hidden rounded-card border border-line bg-surface p-8"
+              >
+                <span
+                  aria-hidden="true"
+                  class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-copper/60 via-copper/15 to-transparent"
+                />
+                <div class="flex items-baseline gap-4">
+                  <span class="font-mono text-xs text-copper">{a.n}</span>
+                  <h3 class="font-display text-xl font-bold tracking-[-0.025em] text-ink">
+                    {a.title}
+                  </h3>
+                </div>
+                <p class="mt-4 pl-9 text-[0.95rem] leading-relaxed text-ink-2">{a.body}</p>
+              </li>
+            ))
+          }
+        </ol>
+      </div>
+    </section>
+
+    {/* Gated: invented quote and attribution. */}
+    {unverified(true) && (
+      <Testimonial
+        quote="The write-up they published was the same document they gave us privately. Nothing was smoothed over. That is rarer than it should be."
+        attribution="Head of Product"
+        role="Clinical SaaS client"
+      />
+    )}
+
+    <Faq eyebrow="Questions" heading={['About the work.']} items={faqs} />
+
+    <!-- ── CTA ──────────────────────────────────────────────── -->
+    <section class="border-t border-white/10 bg-carbon py-20 md:py-28">
+      <div class="container-x" data-reveal-group data-exit>
+        <div class="max-w-2xl">
+          <p class="eyebrow !text-copper-hi" data-reveal="eyebrow">Your turn</p>
+          <h2
+            class="mt-3 font-display text-[clamp(1.75rem,4vw,2.75rem)] font-bold tracking-[-0.035em] text-white"
+          >
+            <span class="block" data-reveal="line">Tell us what you're</span>
+            <span class="block" data-reveal="line">trying to build.</span>
+          </h2>
+          <div class="mt-8 flex flex-col gap-3 sm:flex-row" data-reveal="body">
+            <a
+              href="/contact"
+              class="inline-flex items-center justify-center rounded-pill bg-copper px-7 py-3.5 text-sm font-bold text-white transition-colors duration-300 hover:bg-copper-hover"
+            >
+              Book a scoping call
+            </a>
+            <a
+              href="/estimate"
+              class="inline-flex items-center justify-center rounded-pill border border-white/25 px-7 py-3.5 text-sm font-bold text-white transition-colors duration-300 hover:bg-white hover:text-carbon"
+            >
+              Estimate a project
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <Footer />
+</BaseLayout>

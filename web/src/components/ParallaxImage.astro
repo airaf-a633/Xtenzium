@@ -1,0 +1,79 @@
+---
+/**
+ * Clipping frame with a parallax image inside.
+ *
+ * `src` is optional on purpose. Until the shot list is produced, the frame
+ * renders a copper-graded placeholder so layout, scrims and crops can be
+ * tuned now and real artwork dropped in later with no markup change.
+ */
+interface Props {
+  src?: string;
+  alt?: string;
+  /** Percent of height travelled across a full pass. */
+  strength?: number;
+  /** Darkens the image so type stays legible on top. */
+  scrim?: 'none' | 'bottom' | 'left' | 'full';
+  class?: string;
+  loading?: 'lazy' | 'eager';
+  /** Placeholder label — dev aid, hidden once src is set. */
+  slot?: string;
+}
+
+const {
+  src,
+  alt = '',
+  strength = 14,
+  scrim = 'none',
+  class: className = '',
+  loading = 'lazy',
+} = Astro.props;
+
+const scrims: Record<string, string> = {
+  none: '',
+  bottom: 'bg-gradient-to-t from-carbon via-carbon/45 to-transparent',
+  left: 'bg-gradient-to-r from-carbon via-carbon/70 to-transparent',
+  full: 'bg-carbon/45',
+};
+---
+
+<div
+  data-parallax
+  data-parallax-strength={strength}
+  class:list={['relative overflow-hidden bg-carbon', className]}
+>
+  {
+    src ? (
+      <img
+        data-parallax-img
+        src={src}
+        alt={alt}
+        loading={loading}
+        decoding="async"
+        class="h-full w-full object-cover"
+      />
+    ) : (
+      <div
+        data-parallax-img
+        aria-hidden="true"
+        class="h-full w-full bg-[radial-gradient(120%_90%_at_25%_15%,#B8430F33_0%,#3A1E0A22_38%,#0A0908_78%)]"
+      >
+        {/* A build note, not copy. It was rendering into production —
+            "image pending" appeared thirteen times on the live home page,
+            because two components take an optional image and the page
+            never passed one. The label is worth keeping for whoever is
+            filling the slots; it is not worth showing a client. */}
+        {import.meta.env.DEV && (
+          <div class="flex h-full w-full items-end p-5">
+            <span class="font-mono text-[10px] uppercase tracking-[0.18em] text-copper/45">
+              image pending
+            </span>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  {scrim !== 'none' && <div aria-hidden="true" class:list={['absolute inset-0', scrims[scrim]]} />}
+
+  <slot />
+</div>

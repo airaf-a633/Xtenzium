@@ -1,0 +1,218 @@
+---
+import { imagery } from '../../data/imagery';
+import BleedImage from '../../components/BleedImage.astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Navbar from '../../components/Navbar.astro';
+import Footer from '../../components/Footer.astro';
+import { getPosts, postDate, postIso } from '../../lib/blog';
+import { readingMinutes, tiptapToText } from '../../lib/tiptap';
+
+const posts = await getPosts();
+
+const categories = [...new Set(posts.map((p) => p.category).filter(Boolean))] as string[];
+
+const withMeta = posts.map((p) => ({
+  post: p,
+  minutes: readingMinutes(p.content),
+  blurb: p.excerpt?.trim() || tiptapToText(p.content).slice(0, 180) + '…',
+}));
+
+const [lead, ...rest] = withMeta;
+---
+
+<BaseLayout
+  title="Journal — Xtenzium"
+  description="Notes on building software and the hardware underneath it — architecture decisions, delivery practice, and what we learned the expensive way."
+  path="/journal"
+>
+  <Fragment slot="head">
+    <script
+      is:inline
+      type="application/ld+json"
+      set:html={JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'Blog',
+        name: 'Xtenzium Journal',
+        url: 'https://www.xtenzium.com/journal',
+        publisher: { '@type': 'Organization', name: 'Xtenzium' },
+        blogPost: posts.slice(0, 20).map((p) => ({
+          '@type': 'BlogPosting',
+          headline: p.title,
+          url: `https://www.xtenzium.com/journal/${p.slug}`,
+          datePublished: postIso(p),
+        })),
+      })}
+    />
+  </Fragment>
+
+  <Navbar />
+
+  <main>
+    <!-- ── Header ───────────────────────────────────────────── -->
+    <section class="on-carbon relative overflow-hidden bg-carbon pb-20 pt-40 md:pb-24 md:pt-48">
+      <BleedImage image={imagery.headerJournal} scrim="soft" eager />
+
+      <div class="container-x relative" data-reveal-group data-exit>
+        <p class="eyebrow !text-copper-hi" data-reveal="eyebrow">Journal</p>
+        <h1
+          class="mt-4 max-w-3xl font-display text-[clamp(2.25rem,6vw,4.25rem)] font-bold leading-[1.02] tracking-[-0.035em] text-white"
+        >
+          <span class="block" data-reveal="line">What we learned,</span>
+          <span class="block" data-reveal="line">usually the hard way.</span>
+        </h1>
+        <p class="mt-7 max-w-xl text-lg leading-relaxed text-white/60" data-reveal="body">
+          Architecture decisions, delivery practice, and the occasional
+          write-up of something that went wrong. Written by the people who
+          build, not by a content team.
+        </p>
+
+        {
+          categories.length > 0 && (
+            <div class="mt-9 flex flex-wrap gap-2" data-reveal="body">
+              {categories.map((c) => (
+                <span class="rounded-pill border border-white/15 px-4 py-2 font-mono text-[11px] text-white/60">
+                  {c}
+                </span>
+              ))}
+            </div>
+          )
+        }
+      </div>
+    </section>
+
+    <!-- ── Posts ────────────────────────────────────────────── -->
+    <section class="bg-bg py-20 md:py-28">
+      <div class="container-x" data-exit>
+        {
+          withMeta.length === 0 ? (
+            <div
+              data-reveal-group
+              class="rounded-card border border-dashed border-line-strong bg-surface p-10 text-center md:p-14"
+            >
+              <p class="eyebrow" data-reveal="eyebrow">Nothing published yet</p>
+              <h2
+                data-reveal="line"
+                class="mx-auto mt-4 max-w-xl font-display text-[clamp(1.5rem,3vw,2rem)] font-bold tracking-[-0.03em] text-ink"
+              >
+                The first pieces are being written.
+              </h2>
+              <p class="mx-auto mt-4 max-w-md leading-relaxed text-ink-2" data-reveal="body">
+                Posts are published from the studio and appear here on the next
+                deploy. In the meantime, the case studies cover most of the same
+                ground.
+              </p>
+              <div class="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+                <a
+                  href="/work"
+                  class="inline-flex items-center justify-center rounded-pill bg-copper px-7 py-3.5 text-sm font-bold text-white transition-colors duration-300 hover:bg-copper-hover"
+                >
+                  Read the case studies
+                </a>
+                <a
+                  href="/contact"
+                  class="inline-flex items-center justify-center rounded-pill border border-line-strong px-7 py-3.5 text-sm font-bold text-ink transition-colors duration-300 hover:bg-ink hover:text-bg"
+                >
+                  Ask us directly
+                </a>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Lead post gets the room it deserves. */}
+              <a
+                href={`/journal/${lead.post.slug}`}
+                class="group block rounded-card border border-line bg-surface p-8 transition-colors duration-300 hover:border-copper md:p-12"
+                data-reveal-group
+              >
+                <div class="flex flex-wrap items-center gap-3">
+                  <span class="eyebrow !text-copper" data-reveal="eyebrow">
+                    {lead.post.category ?? 'Latest'}
+                  </span>
+                  <span class="font-mono text-[11px] text-ink-3">
+                    {postDate(lead.post)} · {lead.minutes} min read
+                  </span>
+                </div>
+                <h2
+                  transition:name={`post-${lead.post.slug}`}
+                  class="mt-4 max-w-3xl font-display text-[clamp(1.75rem,4vw,2.75rem)] font-bold leading-[1.06] tracking-[-0.03em] text-ink transition-colors duration-300 group-hover:text-copper"
+                >
+                  <span data-split>{lead.post.title}</span>
+                </h2>
+                <p class="mt-4 max-w-2xl text-lg leading-relaxed text-ink-2" data-reveal="body">
+                  {lead.blurb}
+                </p>
+                <span
+                  class="mt-6 inline-flex items-center gap-2 text-sm font-bold text-copper"
+                  data-reveal="body"
+                >
+                  Read it
+                  <span aria-hidden="true" class="transition-transform duration-300 group-hover:translate-x-1">
+                    &rarr;
+                  </span>
+                </span>
+              </a>
+
+              {rest.length > 0 && (
+                <ol data-reveal-cards class="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {rest.map((item) => (
+                    <li data-reveal="card">
+                      <a
+                        href={`/journal/${item.post.slug}`}
+                        class="card-lift group flex h-full flex-col rounded-card border border-line bg-surface p-7"
+                      >
+                        <p class="eyebrow !text-copper">{item.post.category ?? 'Note'}</p>
+                        <h3
+                          transition:name={`post-${item.post.slug}`}
+                          class="mt-3 font-display text-xl font-bold leading-[1.15] tracking-[-0.025em] text-ink transition-colors duration-300 group-hover:text-copper"
+                        >
+                          {item.post.title}
+                        </h3>
+                        <p class="mt-3 flex-1 text-[0.95rem] leading-relaxed text-ink-2">
+                          {item.blurb}
+                        </p>
+                        <p class="mt-6 font-mono text-[11px] text-ink-3">
+                          {postDate(item.post)} · {item.minutes} min
+                        </p>
+                      </a>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </>
+          )
+        }
+      </div>
+    </section>
+
+    <!-- ── CTA ──────────────────────────────────────────────── -->
+    <section class="border-t border-white/10 bg-carbon py-20 md:py-28">
+      <div class="container-x" data-reveal-group data-exit>
+        <div class="max-w-2xl">
+          <p class="eyebrow !text-copper-hi" data-reveal="eyebrow">Working on something?</p>
+          <h2
+            class="mt-3 font-display text-[clamp(1.75rem,4vw,2.75rem)] font-bold tracking-[-0.035em] text-white"
+          >
+            <span class="block" data-reveal="line">Happy to talk it through,</span>
+            <span class="block" data-reveal="line">whether or not you hire us.</span>
+          </h2>
+          <div class="mt-8 flex flex-col gap-3 sm:flex-row" data-reveal="body">
+            <a
+              href="/contact"
+              class="inline-flex items-center justify-center rounded-pill bg-copper px-7 py-3.5 text-sm font-bold text-white transition-colors duration-300 hover:bg-copper-hover"
+            >
+              Get in touch
+            </a>
+            <a
+              href="/work"
+              class="inline-flex items-center justify-center rounded-pill border border-white/25 px-7 py-3.5 text-sm font-bold text-white transition-colors duration-300 hover:bg-white hover:text-carbon"
+            >
+              See the work
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <Footer />
+</BaseLayout>

@@ -1,0 +1,240 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Navbar from '../../components/Navbar.astro';
+import Footer from '../../components/Footer.astro';
+import { getWork, publishable } from '../../lib/content';
+import { countAttrs } from '../../lib/metric';
+import { render } from 'astro:content';
+
+export async function getStaticPaths() {
+  const entries = await getWork();
+  return entries.map((entry, i) => ({
+    params: { slug: entry.id },
+    props: { entry, next: entries[(i + 1) % entries.length] },
+  }));
+}
+
+const { entry, next } = Astro.props;
+const { Content } = await render(entry);
+const d = entry.data;
+
+// The headline number leads the rail, the supporting ones follow. Building
+// one array keeps the markup to a single loop, so the headline can never
+// drift out of sync with the cells beside it.
+// Only numbers that carry their own provenance reach the rail. An
+// unverified one is stripped from production rather than quietly shipped.
+const rail = [d.headline, ...d.metrics].filter(publishable);
+---
+
+<BaseLayout
+  title={`${d.name} — ${d.title} | Xtenzium`}
+  description={d.summary}
+  path={`/work/${entry.id}`}
+>
+  <Fragment slot="head">
+    <script
+      is:inline
+      type="application/ld+json"
+      set:html={JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'Article',
+        headline: `${d.name} — ${d.title}`,
+        description: d.summary,
+        datePublished: `${d.year}-01-01`,
+        author: { '@type': 'Organization', name: 'Xtenzium' },
+        publisher: { '@type': 'Organization', name: 'Xtenzium' },
+      })}
+    />
+  </Fragment>
+
+  <Navbar />
+
+  <main>
+    <!-- ── Header ───────────────────────────────────────────── -->
+    <section class="on-carbon bg-carbon pb-16 pt-40 md:pb-20 md:pt-48">
+      <div class="container-x" data-reveal-group data-exit>
+        <a
+          href="/work"
+          class="eyebrow !text-white/45 transition-colors duration-300 hover:!text-white"
+        >
+          &larr; All work
+        </a>
+
+        <p class="eyebrow mt-8 !text-copper-hi" data-reveal="eyebrow">
+          {d.sector} — {d.year}
+        </p>
+
+        <h1
+          transition:name={`case-${entry.id}`}
+          data-split="words"
+          class="mt-4 max-w-4xl font-display text-[clamp(2.25rem,6vw,4.25rem)] font-bold leading-[1.02] tracking-[-0.035em] text-white"
+        >
+          {d.name}
+        </h1>
+
+        <p
+          data-reveal="line"
+          class="mt-4 max-w-2xl font-display text-xl font-bold tracking-[-0.02em] text-white/80"
+        >
+          {d.title}
+        </p>
+
+        <p class="mt-7 max-w-xl text-lg leading-relaxed text-white/60" data-reveal="body">
+          {d.summary}
+        </p>
+      </div>
+    </section>
+
+    <!-- ── Metrics rail ─────────────────────────────────────── -->
+    <section class="on-carbon border-t border-white/10 bg-carbon pb-20 md:pb-24">
+      <div class="container-x" data-exit>
+        <div data-reveal-cards class="grid gap-px overflow-hidden rounded-card bg-white/10 sm:grid-cols-2 lg:grid-cols-4">
+          {
+            rail.map((m, i) => (
+              <div data-reveal="card" class="bg-carbon p-7">
+                {/* The value ships rendered. countAttrs only adds the
+                    rewind when the string holds a single number, so a
+                    before/after value stays put instead of counting.
+                    It returns null in that case, and Astro's spread
+                    throws on null rather than ignoring it — hence the
+                    `?? {}`, without which one uncountable metric takes
+                    the whole page down. */}
+                <div
+                  {...(countAttrs(m.value) ?? {})}
+                  class:list={[
+                    'font-display text-3xl font-bold tracking-[-0.03em] tabular-nums',
+                    i === 0 ? 'text-copper-hi' : 'text-white',
+                  ]}
+                >
+                  {m.value}
+                </div>
+                <p class="mt-2 text-xs text-white/50">{m.label}</p>
+              </div>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Body ─────────────────────────────────────────────── -->
+    <section class="bg-bg py-20 md:py-28">
+      <div class="container-x" data-exit>
+        <!-- One group, one fade. The case study is the thing the reader
+             came for, so the prose is not staggered paragraph by
+             paragraph — that turns reading into waiting. -->
+        <div data-reveal-group class="grid gap-14 lg:grid-cols-[1fr_240px]">
+          <article data-reveal="body" class="prose-case max-w-[68ch]">
+            <Content />
+          </article>
+
+          <aside class="lg:pt-2">
+            <p class="eyebrow" data-reveal="eyebrow">Services</p>
+            <ul class="mt-4 flex flex-col gap-2">
+              {d.services.map((s) => <li class="text-sm text-ink-2">{s}</li>)}
+            </ul>
+
+            {
+              d.stack.length > 0 && (
+                <>
+                  <p class="eyebrow mt-9" data-reveal="eyebrow">Go and look</p>
+                  <div class="mt-4 flex flex-col gap-2">
+                    {d.links.site && (
+                      <a
+                        href={d.links.site}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="group inline-flex items-center gap-1.5 text-sm font-bold text-copper"
+                      >
+                        Live site
+                        <span
+                          aria-hidden="true"
+                          class="transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+                        >
+                          &#8599;
+                        </span>
+                      </a>
+                    )}
+                    {d.links.repo && (
+                      <a
+                        href={d.links.repo}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="group inline-flex items-center gap-1.5 text-sm font-bold text-ink-2 transition-colors duration-300 hover:text-ink"
+                      >
+                        Source
+                        <span
+                          aria-hidden="true"
+                          class="transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+                        >
+                          &#8599;
+                        </span>
+                      </a>
+                    )}
+                  </div>
+
+                  <p class="eyebrow mt-9" data-reveal="eyebrow">Stack</p>
+                  <div class="mt-4 flex flex-wrap gap-2">
+                    {d.stack.map((t) => (
+                      <span class="rounded-pill border border-line px-3 py-1 font-mono text-[11px] text-ink-2">
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                </>
+              )
+            }
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Next ─────────────────────────────────────────────── -->
+    {
+      next && next.id !== entry.id && (
+        <section class="border-t border-line bg-bg-tint py-16 md:py-20">
+          <div class="container-x" data-reveal-group data-exit>
+            <a href={`/work/${next.id}`} class="group flex flex-col gap-3">
+              <p class="eyebrow" data-reveal="eyebrow">Next case study</p>
+              <h2
+                data-split="words"
+                class="font-display text-[clamp(1.75rem,4vw,2.75rem)] font-bold tracking-[-0.03em] text-ink transition-colors duration-300 group-hover:text-copper"
+              >
+                {next.data.name}
+              </h2>
+              <p class="max-w-xl leading-relaxed text-ink-2" data-reveal="body">
+                {next.data.summary}
+              </p>
+            </a>
+          </div>
+        </section>
+      )
+    }
+  </main>
+
+  <Footer />
+</BaseLayout>
+
+<style is:global>
+  /* Case-study prose. Scoped to this template so it cannot leak into
+     marketing sections, which set their own type. */
+  .prose-case > * + * { margin-top: 1.35rem; }
+  .prose-case h2 {
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    color: var(--color-ink);
+    margin-top: 3rem;
+  }
+  .prose-case h2:first-child { margin-top: 0; }
+  .prose-case p {
+    font-size: 1.0625rem;
+    line-height: 1.72;
+    color: var(--color-ink-2);
+  }
+  .prose-case ul { padding-left: 1.15rem; list-style: disc; }
+  .prose-case li { color: var(--color-ink-2); line-height: 1.7; }
+  .prose-case li + li { margin-top: 0.5rem; }
+  .prose-case strong { color: var(--color-ink); font-weight: 600; }
+  .prose-case a { color: var(--color-copper); text-decoration: underline; text-underline-offset: 3px; }
+</style>

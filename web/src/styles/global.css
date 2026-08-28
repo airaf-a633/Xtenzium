@@ -1,0 +1,298 @@
+@import "tailwindcss";
+
+/* ───────────────────────────────────────────────────────────────
+   Xtenzium token layer
+   Palette rule: no neutral is a pure grey. Every one is biased
+   warm (hue ~30) so the ground reads as chosen, not inherited.
+   Accent rule: copper is the only saturated colour on the page.
+   ─────────────────────────────────────────────────────────────── */
+
+@theme {
+  /* ── Ground & surface ── */
+  --color-bg:          #FAFAF8;
+  --color-bg-tint:     #F4F3F0;
+  --color-bg-alt:      #FAFAFA;
+  --color-surface:     #FFFFFF;
+  --color-carbon:      #0A0908;   /* statement panels only */
+
+  /* ── Ink ── */
+  --color-ink:         #2B2622;
+  --color-ink-2:       #6E665E;
+  --color-ink-3:       #9C948B;
+
+  /* ── Line ── */
+  --color-line:        #E3E0DC;
+  --color-line-strong: #D3CEC7;
+
+  /* ── Copper — derived from the mark, not alongside it ──
+     The mark's two values ARE the accent. Same hue (18deg), same
+     saturation (85%), two lightnesses — and they map onto the two grounds
+     the site actually has:
+
+       copper     #B8430F  5.46:1 on white   — accent on light
+       copper-hi  #F2895C  8.06:1 on carbon  — accent on dark
+
+     This replaces #C2621B, which measured 4.15:1 on white and therefore
+     failed WCAG AA for normal text everywhere it was used.
+
+     `copper-hover` goes DARKER, not lighter. Buttons are white-on-copper,
+     so lightening on hover would drop white text to 2.47:1. */
+  --color-copper:       #B8430F;
+  --color-copper-hover: #94360B;
+  --color-copper-hi:    #F2895C;
+  --color-copper-lo:    #FDF2ED;
+  --color-copper-line:  #F7D7C9;
+
+  /* ── Type ── */
+  --font-display: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif;
+  --font-sans:    'DM Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-mono:    'DM Mono', ui-monospace, monospace;
+
+  /* ── Radius — generous, per the reference ── */
+  --radius-card: 1.25rem;
+  --radius-pill: 9999px;
+
+  /* ── Motion ── */
+  --ease-brand: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ───────────────────────────────────────────────────────────────
+   Semantic aliases — components read these, never raw hexes.
+   ─────────────────────────────────────────────────────────────── */
+:root {
+  --background:        var(--color-bg);
+  --foreground:        var(--color-ink);
+  --muted:             var(--color-bg-tint);
+  --muted-foreground:  var(--color-ink-2);
+  --card:              var(--color-surface);
+  --border:            var(--color-line);
+  --primary:           var(--color-copper);
+  --primary-foreground:#FFFFFF;
+  --radius:            var(--radius-card);
+
+  color-scheme: light;
+}
+
+/* ───────────────────────────────────────────────────────────────
+   Base
+
+   These MUST live in @layer base. Unlayered rules win against every
+   layered one regardless of specificity, so an unlayered `h1 { }`
+   would silently beat any `tracking-*` utility placed on an h1.
+   ─────────────────────────────────────────────────────────────── */
+@layer base {
+  * { box-sizing: border-box; }
+
+  html {
+    /* Lenis drives scrolling on desktop; never let CSS smooth-scroll
+       fight it. Native smooth stays off everywhere. */
+    scroll-behavior: auto;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    margin: 0;
+    text-wrap: balance;
+    /* Tracking tightens as size grows — the reference holds a
+       steady -2.5% across its whole scale. Per-element utilities
+       override this freely now that it's layered. */
+    letter-spacing: -0.025em;
+    line-height: 1.05;
+  }
+
+  p { margin: 0; }
+
+  a { color: inherit; text-decoration: none; }
+
+  img, video, svg { max-width: 100%; height: auto; display: block; }
+
+  /* Visible keyboard focus, on both grounds. */
+  :focus-visible {
+    outline: 2px solid var(--color-copper);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+  .on-carbon :focus-visible { outline-color: #FFFFFF; }
+}
+
+/* ───────────────────────────────────────────────────────────────
+   Lenis
+   ─────────────────────────────────────────────────────────────── */
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+.lenis.lenis-stopped { overflow: hidden; }
+
+/* ───────────────────────────────────────────────────────────────
+   Page transition.
+
+   This was a full-page opacity fade — the whole document to 0, then the
+   whole document back to 1, ~680ms end to end. Three things were wrong
+   with it, and the third is the one that mattered:
+
+   1. It was slow enough to feel like a page load, which is the exact
+      impression a client-side router exists to avoid.
+   2. It faded the navigation with everything else, so the one element
+      that should be continuous blinked on every click.
+   3. Seven headings across the site carry `transition:name` — a work row
+      morphing into a case-study title, a service row into its page. A
+      full-page fade paints straight over the top of them, so the good
+      transition already in the markup was invisible on every navigation.
+
+   So the ground and the chrome stay, and only the content moves: out
+   upward and short, in from below and slightly longer, because arriving
+   should read as more deliberate than leaving. Named elements are left
+   alone to morph, which is the whole reason they were named.
+   ─────────────────────────────────────────────────────────────── */
+@keyframes page-out {
+  to { opacity: 0; transform: translateY(-10px); }
+}
+@keyframes page-in {
+  from { opacity: 0; transform: translateY(14px); }
+}
+
+::view-transition-old(root) {
+  animation: page-out 200ms var(--ease-brand) both;
+}
+::view-transition-new(root) {
+  animation: page-in 320ms var(--ease-brand) both;
+}
+
+/* The navbar is continuous chrome, not page content. Giving it its own
+   layer keeps it out of the root snapshot so it never animates. */
+::view-transition-old(nav),
+::view-transition-new(nav) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+/* ───────────────────────────────────────────────────────────────
+   Reduced motion — kill every transition and animation outright.
+   Components also short-circuit their GSAP timelines to the final
+   state, so nothing depends on this alone.
+   ─────────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  /* Cut the page transition outright rather than letting the blanket rule
+     above compress it to 0.01ms, which still runs a snapshot and can
+     flash. */
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none !important;
+  }
+}
+
+/* ───────────────────────────────────────────────────────────────
+   Utilities used often enough to earn a class.
+   ─────────────────────────────────────────────────────────────── */
+@utility eyebrow {
+  font-family: var(--font-sans);
+  font-size: 0.6875rem;      /* 11px */
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--color-ink-3);
+}
+
+@utility container-x {
+  width: 100%;
+  max-width: 72rem;
+  margin-inline: auto;
+  padding-inline: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .container-x { padding-inline: 2.5rem; }
+}
+
+/* ───────────────────────────────────────────────────────────────
+   Capability marquee — CSS only. A ticker does not need JS, and
+   keeping it off the main thread means it cannot jank the scroll.
+   ─────────────────────────────────────────────────────────────── */
+.marquee {
+  display: flex;
+  overflow: hidden;
+  mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+}
+.marquee__track {
+  display: flex;
+  flex: none;
+  gap: 3rem;
+  padding-right: 3rem;
+  min-width: 100%;
+  animation: marquee-scroll 42s linear infinite;
+}
+.marquee:hover .marquee__track { animation-play-state: paused; }
+
+@keyframes marquee-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-100%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee__track { animation: none; }
+  .marquee { mask-image: none; -webkit-mask-image: none; overflow-x: auto; }
+}
+
+/* ───────────────────────────────────────────────────────────────
+   Editorial list rows — services, work, journal.
+
+   These are the most-repeated interactive element on the site, so the
+   hover is deliberately quiet: the row tints, the rule warms, and the
+   arrow moves. No transform on the row itself — lifting a full-width
+   row shifts everything below it and reads as a glitch.
+
+   `:has()` keeps this to CSS. A row is only tinted when the pointer is
+   genuinely over its link, not when focus lands anywhere inside.
+   ─────────────────────────────────────────────────────────────── */
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .row-link {
+    transition:
+      background-color 300ms var(--ease-brand),
+      border-color 300ms var(--ease-brand);
+  }
+  .row-link:hover {
+    background-color: color-mix(in srgb, var(--color-copper) 4%, transparent);
+    border-color: color-mix(in srgb, var(--color-copper) 55%, transparent);
+  }
+  .row-link .row-arrow {
+    transition: transform 300ms var(--ease-brand), color 300ms var(--ease-brand);
+  }
+  .row-link:hover .row-arrow {
+    transform: translateX(0.35rem);
+    color: var(--color-copper);
+  }
+}
+
+/* Cards lift; rows do not. A card is an island, so moving it costs
+   nothing around it. */
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .card-lift {
+    transition:
+      transform 320ms var(--ease-brand),
+      border-color 320ms var(--ease-brand);
+  }
+  .card-lift:hover {
+    transform: translateY(-3px);
+    border-color: color-mix(in srgb, var(--color-copper) 55%, transparent);
+  }
+}

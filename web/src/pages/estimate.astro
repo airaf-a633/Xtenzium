@@ -1,0 +1,414 @@
+---
+import { imagery } from '../data/imagery';
+import BleedImage from '../components/BleedImage.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Navbar from '../components/Navbar.astro';
+import Footer from '../components/Footer.astro';
+import { QUESTIONS } from '../lib/estimate';
+import Faq from '../components/Faq.astro';
+import Testimonial from '../components/Testimonial.astro';
+import { unverified } from '../lib/placeholder';
+
+const drivers = [
+  { n: '01', title: 'What it is', body: 'A marketing site and a connected-hardware fleet are different orders of magnitude. This sets the floor; everything else scales it.' },
+  { n: '02', title: 'What already exists', body: 'Designs signed off, or a blank page? Extending a working product costs roughly half what starting cold does.' },
+  { n: '03', title: 'What it talks to', body: 'Integrations are where estimates go wrong. A standalone app is predictable; one wired into a decade-old ERP is not.' },
+  { n: '04', title: 'When it ships', body: 'A hard deadline means more people working in parallel. That is the single most expensive constraint you can add.' },
+];
+
+const included = [
+  'A written scope before anything is built',
+  'Design and build in two-week cycles, with a working link at the end of each',
+  'Source code, credentials and infrastructure in your name from day one',
+  'Documentation written for your team, not for us',
+  'Thirty days of post-launch support',
+  'No mandatory retainer afterwards',
+];
+
+// UNVERIFIED: invented figures. Replace with real bands, then drop the wrapper.
+const bands = [
+  { type: 'Marketing website', range: '$6k – $18k', note: 'Brochure through to a full content site with CMS' },
+  { type: 'Web application', range: '$18k – $60k', note: 'Dashboards, portals, internal tooling, SaaS' },
+  { type: 'Mobile app', range: '$22k – $70k', note: 'iOS and Android, shared codebase' },
+  { type: 'Connected hardware', range: '$34k – $120k+', note: 'PCB design, firmware, fleet backend' },
+];
+
+const faqs = [
+  { q: 'How accurate is this range?', a: 'Four questions cannot produce a quote, and we would rather say so than pretend. Treat it as the bracket we would work within — enough to know whether to keep talking. Our written scope after a call is typically within 15% of the final number.' },
+  { q: 'Do you charge for scoping?', a: 'No. The scoping call and the written scope that follows are free, and yours to keep whether or not you hire us. If you take that document to another agency, that is a fair outcome.' },
+  { q: 'Why is hardware so much more expensive?', a: 'Because physical iteration has a cost software does not. Every board revision is a fabrication run and a lead time. We front-load that risk with careful design review, but it is genuinely more work than a web build.' },
+  { q: 'Can you work to a fixed price?', a: 'For well-defined scopes, yes. For anything exploratory we prefer time-and-materials with a cap, because a fixed price on an unclear scope just means padding it — you pay for our uncertainty.' },
+  { q: 'What if my budget is below the range?', a: 'Tell us anyway. Often the honest answer is a smaller first phase that proves the idea, and sometimes it is that we are the wrong team for it. We will say which.' },
+  { q: 'Do you work with clients outside Pakistan?', a: 'Most of our work is international — North America, Europe and the Gulf. We overlap several hours with both European and US-Eastern working days and run everything in English.' },
+];
+---
+
+<BaseLayout
+  title="Estimate a project — Xtenzium"
+  description="Answer four questions and get an indicative budget range for your web, mobile, or hardware project. No call required."
+  path="/estimate"
+>
+  <Fragment slot="head">
+    <script
+      is:inline
+      type="application/ld+json"
+      set:html={JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: faqs.map((f) => ({
+          '@type': 'Question',
+          name: f.q,
+          acceptedAnswer: { '@type': 'Answer', text: f.a },
+        })),
+      })}
+    />
+  </Fragment>
+
+  <Navbar />
+
+  <main class="on-carbon bg-carbon">
+    <section class="relative overflow-hidden pb-24 pt-36 md:pb-32 md:pt-44">
+      <!-- Same via-grid ground as the statement panels, so the page reads as
+           part of the system rather than a detached form. -->
+      <BleedImage image={imagery.headerEstimate} scrim="soft" eager />
+      <div
+        aria-hidden="true"
+        class="pointer-events-none absolute inset-0"
+        style="background: radial-gradient(90% 60% at 50% 0%, rgba(184,67,15,0.18) 0%, rgba(10,9,8,0) 62%);"
+      >
+      </div>
+
+      <div class="container-x relative" data-exit>
+        <div class="mx-auto max-w-2xl text-center">
+          <p class="eyebrow !text-copper-hi">Estimate a project</p>
+          <h1
+            class="mt-4 font-display text-[clamp(2rem,5vw,3.25rem)] font-bold leading-[1.05] tracking-[-0.035em] text-white"
+          >
+            Four questions, and a number you can take to your board.
+          </h1>
+          <p class="mx-auto mt-5 max-w-lg leading-relaxed text-white/60">
+            No call, no discovery fee. The range is indicative — we will scope
+            it properly before anyone signs anything.
+          </p>
+        </div>
+
+        <!-- ── Estimator ──────────────────────────────────────── -->
+        <div
+          data-estimate
+          class="mx-auto mt-14 max-w-3xl overflow-hidden rounded-card border border-white/12 bg-white/[0.03] backdrop-blur-sm"
+        >
+          <!-- Running range. Visible from the first question so there is a
+               reason to answer the second. -->
+          <div class="border-b border-white/10 px-7 py-6 md:px-9">
+            <div class="flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <p class="eyebrow !text-white/45">Indicative range</p>
+                <p
+                  class="mt-2 font-display text-[clamp(1.75rem,4vw,2.5rem)] font-bold tracking-[-0.035em] text-copper-hi tabular-nums"
+                >
+                  <span data-estimate-low>—</span>
+                  <span class="text-white/25">–</span>
+                  <span data-estimate-high>—</span>
+                </p>
+              </div>
+              <p
+                data-estimate-summary
+                class="max-w-xs text-right font-mono text-[11px] leading-relaxed text-white/40"
+              >
+              </p>
+            </div>
+
+            <div class="mt-6 flex items-center gap-4">
+              <div class="h-[3px] flex-1 overflow-hidden rounded-full bg-white/10">
+                <div
+                  data-estimate-bar
+                  class="h-full origin-left bg-copper transition-[scale] duration-500 ease-out"
+                  style="scale: 0 1;"
+                >
+                </div>
+              </div>
+              <span
+                data-estimate-steplabel
+                class="font-mono text-[11px] whitespace-nowrap text-white/45"
+                aria-live="polite"
+              >
+                Question 1 of {QUESTIONS.length}
+              </span>
+            </div>
+          </div>
+
+          <!-- Steps -->
+          <div class="px-7 py-9 md:px-9 md:py-10">
+            {
+              QUESTIONS.map((q, qi) => (
+                <div data-estimate-step hidden={qi !== 0}>
+                  <h2
+                    tabindex="-1"
+                    class="font-display text-2xl font-bold tracking-[-0.03em] text-white outline-none md:text-3xl"
+                  >
+                    {q.prompt}
+                  </h2>
+                  <p class="mt-2.5 text-sm leading-relaxed text-white/50">{q.help}</p>
+
+                  <div class="mt-7 grid gap-2.5 sm:grid-cols-2">
+                    {q.choices.map((c, ci) => (
+                      <button
+                        type="button"
+                        data-estimate-choice
+                        data-estimate-q={q.id}
+                        data-estimate-choice-index={ci}
+                        aria-pressed="false"
+                        class="group min-h-[4.25rem] rounded-2xl border border-white/12 bg-white/[0.02] px-5 py-4 text-left transition-colors duration-300 hover:border-copper hover:bg-copper/10 aria-pressed:border-copper aria-pressed:bg-copper/15"
+                      >
+                        <span class="block text-[0.95rem] font-semibold text-white">
+                          {c.label}
+                        </span>
+                        {c.hint && (
+                          <span class="mt-1 block text-xs leading-relaxed text-white/45">
+                            {c.hint}
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))
+            }
+
+            <!-- Final step — the ask comes only after the number -->
+            <div data-estimate-step hidden>
+              <h2
+                tabindex="-1"
+                class="font-display text-2xl font-bold tracking-[-0.03em] text-white outline-none md:text-3xl"
+              >
+                Want the breakdown in writing?
+              </h2>
+              <p class="mt-2.5 max-w-md text-sm leading-relaxed text-white/50">
+                We will send what drives that range, what would move it up or
+                down, and two comparable projects. One email, no sequence.
+              </p>
+
+              <form data-estimate-form action="#" class="mt-7 max-w-md">
+                <label for="estimate-email" class="block text-sm font-medium text-white/80">
+                  Work email
+                </label>
+                <div class="mt-2.5 flex flex-col gap-2.5 sm:flex-row">
+                  <input
+                    id="estimate-email"
+                    name="email"
+                    type="email"
+                    required
+                    autocomplete="email"
+                    placeholder="you@company.com"
+                    class="min-h-[3rem] flex-1 rounded-pill border border-white/15 bg-white/[0.04] px-5 text-[0.95rem] text-white placeholder:text-white/30 focus:border-copper focus:outline-none"
+                  />
+                  <button
+                    type="submit"
+                    class="min-h-[3rem] rounded-pill bg-copper px-7 text-sm font-bold text-white transition-colors duration-300 hover:bg-copper-hover disabled:opacity-50"
+                  >
+                    Send it
+                  </button>
+                </div>
+
+                <p
+                  data-estimate-status
+                  role="status"
+                  aria-live="polite"
+                  class="mt-4 text-sm leading-relaxed text-white/50 data-[state=error]:text-copper-hi data-[state=ok]:text-emerald-400"
+                >
+                </p>
+              </form>
+
+              <div class="mt-9 border-t border-white/10 pt-7">
+                <p class="text-sm text-white/50">Rather just talk it through?</p>
+                <a
+                  href="/contact"
+                  class="mt-3 inline-flex rounded-pill border border-white/25 px-6 py-3 text-sm font-bold text-white transition-colors duration-300 hover:bg-white hover:text-carbon"
+                >
+                  Book a scoping call
+                </a>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              data-estimate-back
+              hidden
+              class="mt-8 font-mono text-[11px] uppercase tracking-[0.14em] text-white/40 transition-colors duration-300 hover:text-white"
+            >
+              &larr; Back
+            </button>
+          </div>
+        </div>
+
+        <p class="mx-auto mt-8 max-w-lg text-center text-xs leading-relaxed text-white/35">
+          Ranges are based on our last three years of delivered projects and
+          assume a standard engagement. They are not a quote.
+        </p>
+      </div>
+    </section>
+
+    <!-- ── What moves the number ────────────────────────────── -->
+    <section class="border-t border-white/10 bg-carbon py-20 md:py-28">
+      <div class="container-x" data-exit>
+        <div class="max-w-2xl" data-reveal-group>
+          <p class="eyebrow !text-white/45" data-reveal="eyebrow">What moves the number</p>
+          <h2
+            class="mt-3 font-display text-[clamp(1.6rem,3.4vw,2.25rem)] font-bold tracking-[-0.03em] text-white"
+          >
+            <span class="block" data-reveal="line">Four things, and none of</span>
+            <span class="block" data-reveal="line">them are a mystery.</span>
+          </h2>
+          <p class="mt-4 leading-relaxed text-white/55" data-reveal="body">
+            Most agencies keep this opaque. It is not complicated, and knowing
+            it lets you change the number yourself.
+          </p>
+        </div>
+
+        <ol data-reveal-cards class="mt-14 grid gap-4 md:grid-cols-2">
+          {
+            drivers.map((d) => (
+              <li
+                data-reveal="card"
+                class="group relative overflow-hidden rounded-card border border-white/10 bg-white/[0.02] p-8"
+              >
+                <span
+                  aria-hidden="true"
+                  class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-copper/70 via-copper/20 to-transparent"
+                />
+                <div class="flex items-baseline gap-4">
+                  <span class="font-mono text-xs text-copper">{d.n}</span>
+                  <h3 class="font-display text-xl font-bold tracking-[-0.025em] text-white">
+                    {d.title}
+                  </h3>
+                </div>
+                <p class="mt-4 pl-9 text-[0.95rem] leading-relaxed text-white/60">{d.body}</p>
+              </li>
+            ))
+          }
+        </ol>
+      </div>
+    </section>
+
+    <!-- ── Typical bands ────────────────────────────────────── -->
+    <!-- Gated: these numbers are placeholders and must not ship. -->
+    {unverified(bands) && (
+    <section class="bg-bg py-20 md:py-28">
+      <div class="container-x" data-exit>
+        <div class="max-w-2xl" data-reveal-group>
+          <p class="eyebrow" data-reveal="eyebrow">For reference</p>
+          <h2
+            class="mt-3 font-display text-[clamp(1.6rem,3.4vw,2.25rem)] font-bold tracking-[-0.03em] text-ink"
+          >
+            <span class="block" data-reveal="line">What we actually charge.</span>
+          </h2>
+          <p class="mt-4 leading-relaxed text-ink-2" data-reveal="body">
+            Published, because you are going to ask anyway and hiding it wastes
+            everyone's first call.
+          </p>
+        </div>
+
+        <div data-reveal-cards class="mt-12">
+          {
+            bands.map((b) => (
+              <div
+                data-reveal="card"
+                class="grid items-baseline gap-2 border-t border-line py-6 md:grid-cols-[minmax(0,16rem)_1fr_auto] md:gap-8"
+              >
+                <h3 class="font-display text-xl font-bold tracking-[-0.025em] text-ink">
+                  {b.type}
+                </h3>
+                <p class="text-[0.95rem] leading-relaxed text-ink-2">{b.note}</p>
+                <p class="font-display text-xl font-bold tracking-[-0.03em] text-copper tabular-nums md:text-right">
+                  {b.range}
+                </p>
+              </div>
+            ))
+          }
+          <div class="border-t border-line"></div>
+        </div>
+      </div>
+    </section>
+    )}
+
+    <!-- ── What's included ──────────────────────────────────── -->
+    <section class="bg-bg-tint py-20 md:py-28">
+      <div class="container-x" data-exit>
+        <div class="grid gap-12 lg:grid-cols-[minmax(0,22rem)_1fr]">
+          <div data-reveal-group>
+            <p class="eyebrow" data-reveal="eyebrow">Always included</p>
+            <h2
+              class="mt-3 font-display text-[clamp(1.6rem,3.4vw,2.25rem)] font-bold tracking-[-0.03em] text-ink"
+            >
+              <span class="block" data-reveal="line">In every number</span>
+              <span class="block" data-reveal="line">on this page.</span>
+            </h2>
+            <p class="mt-4 leading-relaxed text-ink-2" data-reveal="body">
+              Not upsells. If a quote from us does not include these, it is not
+              a quote from us.
+            </p>
+          </div>
+
+          <ul data-reveal-cards class="grid gap-x-10 gap-y-5 sm:grid-cols-2">
+            {
+              included.map((item) => (
+                <li data-reveal="card" class="flex gap-3.5 border-t border-line pt-5">
+                  <span aria-hidden="true" class="mt-0.5 font-mono text-xs text-copper">
+                    &#10003;
+                  </span>
+                  <span class="text-[0.95rem] leading-relaxed text-ink-2">{item}</span>
+                </li>
+              ))
+            }
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    {/* Gated: invented quote and attribution. */}
+    {unverified(true) && (
+      <Testimonial
+        quote="They told us the smaller option would do the job. It did. That conversation is the reason we came back twice."
+        attribution="Operations Director"
+        role="Logistics client"
+      />
+    )}
+
+    <Faq eyebrow="Questions" heading={['Before you ask.']} items={faqs} tone="dark" />
+
+    <!-- ── Final CTA ────────────────────────────────────────── -->
+    <section class="border-t border-white/10 bg-carbon py-20 md:py-28">
+      <div class="container-x" data-reveal-group data-exit>
+        <div class="max-w-2xl">
+          <p class="eyebrow !text-copper-hi" data-reveal="eyebrow">Next step</p>
+          <h2
+            class="mt-3 font-display text-[clamp(1.75rem,4vw,2.75rem)] font-bold tracking-[-0.035em] text-white"
+          >
+            <span class="block" data-reveal="line">Bring us the number</span>
+            <span class="block" data-reveal="line">and we will scope it properly.</span>
+          </h2>
+          <p class="mt-5 max-w-lg leading-relaxed text-white/60" data-reveal="body">
+            Thirty minutes with the people who would build it. You leave with a
+            written scope, free either way.
+          </p>
+          <div class="mt-8 flex flex-col gap-3 sm:flex-row" data-reveal="body">
+            <a
+              href="/contact"
+              class="inline-flex items-center justify-center rounded-pill bg-copper px-7 py-3.5 text-sm font-bold text-white transition-colors duration-300 hover:bg-copper-hover"
+            >
+              Book a scoping call
+            </a>
+            <a
+              href="/work"
+              class="inline-flex items-center justify-center rounded-pill border border-white/25 px-7 py-3.5 text-sm font-bold text-white transition-colors duration-300 hover:bg-white hover:text-carbon"
+            >
+              See the work first
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <Footer />
+</BaseLayout>

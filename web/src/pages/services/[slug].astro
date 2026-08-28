@@ -1,0 +1,309 @@
+---
+import { serviceImage } from '../../data/imagery';
+import BleedImage from '../../components/BleedImage.astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Navbar from '../../components/Navbar.astro';
+import Footer from '../../components/Footer.astro';
+import Faq from '../../components/Faq.astro';
+import WatermarkX from '../../components/WatermarkX.astro';
+import { services } from '../../data/services';
+
+export function getStaticPaths() {
+  const sorted = [...services].sort((a, b) => a.order - b.order);
+  return sorted.map((service, i) => ({
+    params: { slug: service.slug },
+    props: { service, next: sorted[(i + 1) % sorted.length] },
+  }));
+}
+
+const { service: s, next } = Astro.props;
+---
+
+<BaseLayout
+  title={`${s.title} — Xtenzium`}
+  description={s.summary}
+  path={`/services/${s.slug}`}
+>
+  <Fragment slot="head">
+    <script
+      is:inline
+      type="application/ld+json"
+      set:html={JSON.stringify({
+        '@context': 'https://schema.org',
+        '@graph': [
+          {
+            '@type': 'Service',
+            name: s.title,
+            description: s.summary,
+            provider: { '@type': 'Organization', name: 'Xtenzium', url: 'https://www.xtenzium.com' },
+            areaServed: 'Worldwide',
+            hasOfferCatalog: {
+              '@type': 'OfferCatalog',
+              name: `${s.title} capabilities`,
+              itemListElement: s.capabilities.flatMap((g) =>
+                g.items.map((item) => ({
+                  '@type': 'Offer',
+                  itemOffered: { '@type': 'Service', name: item, category: g.group },
+                })),
+              ),
+            },
+          },
+          {
+            '@type': 'FAQPage',
+            mainEntity: s.faqs.map((f) => ({
+              '@type': 'Question',
+              name: f.q,
+              acceptedAnswer: { '@type': 'Answer', text: f.a },
+            })),
+          },
+        ],
+      })}
+    />
+  </Fragment>
+
+  <Navbar />
+
+  <main>
+    <!-- ── Header ───────────────────────────────────────────── -->
+    <section class="on-carbon relative overflow-hidden bg-carbon pb-20 pt-40 md:pb-24 md:pt-48">
+      <BleedImage image={serviceImage(s.slug)} scrim="soft" eager />
+      <div
+        aria-hidden="true"
+        class="pointer-events-none absolute inset-0 opacity-40"
+        style="background-image: radial-gradient(circle at center, rgba(184,67,15,0.4) 1px, transparent 1px); background-size: 34px 34px;"
+      >
+      </div>
+      <div
+        aria-hidden="true"
+        class="pointer-events-none absolute inset-0"
+        style="background: radial-gradient(85% 60% at 12% 0%, rgba(184,67,15,0.20) 0%, rgba(10,9,8,0) 60%);"
+      >
+      </div>
+
+      <div class="container-x relative" data-reveal-group data-exit>
+        <a
+          href="/services"
+          class="eyebrow !text-white/45 transition-colors duration-300 hover:!text-white"
+        >
+          &larr; All services
+        </a>
+
+        <p class="eyebrow mt-8 !text-copper-hi" data-reveal="eyebrow">{s.kicker}</p>
+
+        <h1
+          transition:name={`service-${s.slug}`}
+          class="mt-4 max-w-3xl font-display text-[clamp(2.25rem,6vw,4.25rem)] font-bold leading-[1.02] tracking-[-0.035em] text-white"
+        >
+          {s.heading.map((l) => <span class="block" data-reveal="line">{l}</span>)}
+        </h1>
+
+        <p class="mt-7 max-w-xl text-lg leading-relaxed text-white/60" data-reveal="body">
+          {s.summary}
+        </p>
+
+        <div class="mt-9 flex flex-col gap-3 sm:flex-row" data-reveal="body">
+          <a
+            href="/contact"
+            class="inline-flex items-center justify-center rounded-pill bg-copper px-7 py-3.5 text-sm font-bold text-white transition-colors duration-300 hover:bg-copper-hover"
+          >
+            Book a scoping call
+          </a>
+          <a
+            href="/estimate"
+            class="inline-flex items-center justify-center rounded-pill border border-white/25 px-7 py-3.5 text-sm font-bold text-white transition-colors duration-300 hover:bg-white hover:text-carbon"
+          >
+            Estimate a project
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── The problem ──────────────────────────────────────── -->
+    <section class="bg-bg py-20 md:py-28">
+      <div class="container-x" data-exit>
+        <div class="grid gap-12 lg:grid-cols-[minmax(0,18rem)_1fr]" data-reveal-group>
+          <p class="eyebrow" data-reveal="eyebrow">Why this exists</p>
+          <div class="max-w-2xl">
+            {
+              s.problem.map((para, i) => (
+                <p
+                  class:list={[
+                    'leading-relaxed',
+                    i === 0
+                      ? 'font-display text-[clamp(1.3rem,2.6vw,1.75rem)] font-bold tracking-[-0.025em] text-ink'
+                      : 'mt-6 text-lg text-ink-2',
+                  ]}
+                  data-reveal={i === 0 ? 'line' : 'body'}
+                >
+                  {para}
+                </p>
+              ))
+            }
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Approach ─────────────────────────────────────────── -->
+    <section class="bg-bg-tint py-20 md:py-28">
+      <div class="container-x" data-exit>
+        <div class="max-w-2xl" data-reveal-group>
+          <p class="eyebrow" data-reveal="eyebrow">How it runs</p>
+          <h2
+            class="mt-3 font-display text-[clamp(1.6rem,3.4vw,2.25rem)] font-bold tracking-[-0.03em] text-ink"
+          >
+            <span class="block" data-reveal="line">Four steps, and you see</span>
+            <span class="block" data-reveal="line">work at every one.</span>
+          </h2>
+        </div>
+
+        <ol data-reveal-cards class="mt-14 grid gap-4 sm:grid-cols-2">
+          {
+            s.approach.map((a) => (
+              <li
+                data-reveal="card"
+                class="relative overflow-hidden rounded-card border border-line bg-surface p-8"
+              >
+                <span
+                  aria-hidden="true"
+                  class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-copper/60 via-copper/15 to-transparent"
+                />
+                <div class="flex items-baseline gap-4">
+                  <span class="font-mono text-xs text-copper">{a.n}</span>
+                  <h3 class="font-display text-xl font-bold tracking-[-0.025em] text-ink">
+                    {a.title}
+                  </h3>
+                </div>
+                <p class="mt-4 pl-9 text-[0.95rem] leading-relaxed text-ink-2">{a.body}</p>
+              </li>
+            ))
+          }
+        </ol>
+      </div>
+    </section>
+
+    <!-- ── What you get ─────────────────────────────────────── -->
+    <section class="on-carbon relative overflow-hidden bg-carbon py-20 md:py-28">
+      <WatermarkX side="right" size={38} opacity={12} drift={11} spin={6} />
+      <div class="container-x relative z-10" data-exit>
+        <div class="grid gap-12 lg:grid-cols-[minmax(0,22rem)_1fr]">
+          <div data-reveal-group>
+            <p class="eyebrow !text-white/45" data-reveal="eyebrow">What you get</p>
+            <h2
+              class="mt-3 font-display text-[clamp(1.6rem,3.4vw,2.25rem)] font-bold tracking-[-0.03em] text-white"
+            >
+              <span class="block" data-reveal="line">Yours to keep,</span>
+              <span class="block" data-reveal="line">from day one.</span>
+            </h2>
+            <p class="mt-4 leading-relaxed text-white/55" data-reveal="body">
+              Not deliverables handed over at the end. These exist in your
+              accounts, in your name, while the work is happening.
+            </p>
+          </div>
+
+          <ul data-reveal-cards class="grid gap-x-10 gap-y-5 sm:grid-cols-2">
+            {
+              s.deliverables.map((d) => (
+                <li data-reveal="card" class="flex gap-3.5 border-t border-white/10 pt-5">
+                  <span aria-hidden="true" class="mt-0.5 font-mono text-xs text-copper-hi">
+                    &#10003;
+                  </span>
+                  <span class="text-[0.95rem] leading-relaxed text-white/65">{d}</span>
+                </li>
+              ))
+            }
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Capabilities ─────────────────────────────────────── -->
+    <section class="bg-bg py-20 md:py-28">
+      <div class="container-x" data-exit>
+        <div class="max-w-2xl" data-reveal-group>
+          <p class="eyebrow" data-reveal="eyebrow">Capabilities</p>
+          <h2
+            class="mt-3 font-display text-[clamp(1.6rem,3.4vw,2.25rem)] font-bold tracking-[-0.03em] text-ink"
+          >
+            <span class="block" data-reveal="line">The full list, so you can</span>
+            <span class="block" data-reveal="line">check we do your thing.</span>
+          </h2>
+        </div>
+
+        <div data-reveal-cards class="mt-14 grid gap-x-10 gap-y-12 md:grid-cols-2 lg:grid-cols-3">
+          {
+            s.capabilities.map((g) => (
+              <div data-reveal="card">
+                <h3 class="eyebrow !text-copper">{g.group}</h3>
+                <ul class="mt-5 flex flex-col gap-3 border-t border-line pt-5">
+                  {g.items.map((item) => (
+                    <li class="text-[0.95rem] leading-relaxed text-ink-2">{item}</li>
+                  ))}
+                </ul>
+              </div>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Engagement shapes ────────────────────────────────── -->
+    <section class="bg-bg-tint py-20 md:py-28">
+      <div class="container-x" data-exit>
+        <div class="max-w-2xl" data-reveal-group>
+          <p class="eyebrow" data-reveal="eyebrow">How we work together</p>
+          <h2
+            class="mt-3 font-display text-[clamp(1.6rem,3.4vw,2.25rem)] font-bold tracking-[-0.03em] text-ink"
+          >
+            <span class="block" data-reveal="line">Pick the shape that</span>
+            <span class="block" data-reveal="line">fits the work.</span>
+          </h2>
+        </div>
+
+        <div data-reveal-cards class="mt-14 grid gap-4 md:grid-cols-3">
+          {
+            s.engagements.map((e) => (
+              <div
+                data-reveal="card"
+                class="flex flex-col rounded-card border border-line bg-surface p-8"
+              >
+                <h3 class="font-display text-xl font-bold tracking-[-0.025em] text-ink">
+                  {e.name}
+                </h3>
+                <p class="mt-1.5 font-mono text-[11px] uppercase tracking-[0.14em] text-copper">
+                  {e.shape}
+                </p>
+                <p class="mt-4 text-[0.95rem] leading-relaxed text-ink-2">{e.note}</p>
+              </div>
+            ))
+          }
+        </div>
+
+        <p class="mt-8 max-w-xl text-sm leading-relaxed text-ink-3">
+          Scoping is free in every case, and the written scope is yours whether
+          or not you hire us.
+        </p>
+      </div>
+    </section>
+
+    <Faq eyebrow="Questions" heading={[`About ${s.title.toLowerCase()}.`]} items={s.faqs} tone="dark" />
+
+    <!-- ── Next service ─────────────────────────────────────── -->
+    <section class="border-t border-line bg-bg py-16 md:py-20">
+      <div class="container-x" data-reveal-group data-exit>
+        <a href={`/services/${next.slug}`} class="group flex flex-col gap-3">
+          <p class="eyebrow" data-reveal="eyebrow">Next service</p>
+          <h2
+            data-split="words"
+            class="font-display text-[clamp(1.75rem,4vw,2.75rem)] font-bold tracking-[-0.03em] text-ink transition-colors duration-300 group-hover:text-copper"
+          >
+            {next.title}
+          </h2>
+          <p class="max-w-xl leading-relaxed text-ink-2" data-reveal="body">{next.summary}</p>
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <Footer />
+</BaseLayout>

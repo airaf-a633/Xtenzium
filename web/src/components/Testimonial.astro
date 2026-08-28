@@ -1,0 +1,24 @@
+---
+interface Props { quote: string; attribution: string; role?: string }
+const { quote, attribution, role } = Astro.props;
+---
+
+<section class="bg-bg-tint py-24 md:py-32">
+  <div class="container-x" data-reveal-group>
+    <figure class="mx-auto max-w-3xl text-center">
+      <blockquote
+        class="font-display text-[clamp(1.5rem,3.4vw,2.5rem)] font-bold leading-[1.22] tracking-[-0.03em] text-ink"
+      >
+        <span data-quote>&ldquo;{quote}&rdquo;</span>
+      </blockquote>
+
+      <figcaption class="mt-10 flex items-center justify-center gap-4" data-reveal="body">
+        <span aria-hidden="true" class="h-px w-10 bg-line-strong"></span>
+        <span class="eyebrow">
+          {attribution}{role && <span class="!text-ink-3"> — {role}</span>}
+        </span>
+        <span aria-hidden="true" class="h-px w-10 bg-line-strong"></span>
+      </figcaption>
+    </figure>
+  </div>
+</section>

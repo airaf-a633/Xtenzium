@@ -1,0 +1,57 @@
+---
+/**
+ * The Xtenzium mark — V4, squared corners.
+ *
+ * Two facing chevrons meeting at a centre seam. Each chevron is two
+ * parallelograms: one in the light value, one in the dark. The right half is
+ * literally the left half rotated 180°, which is what places the dark panels
+ * on the top-left / bottom-right diagonal without having to draw them twice.
+ *
+ * Darks are painted after the lights so they sit over them at the seam.
+ *
+ * Tones:
+ *   brand     the two-value copper pair — the primary expression
+ *   mono      both panels in currentColor, for one-ink contexts
+ *   inverted  both panels white, for photography and dark grounds
+ *
+ * The tonal split IS the idea, so `mono` intentionally collapses to a solid
+ * silhouette. That is the correct one-ink behaviour, not a degraded one.
+ */
+interface Props {
+  size?: number;
+  tone?: 'brand' | 'mono' | 'inverted';
+  class?: string;
+  /** Set false when a visible wordmark sits beside it. */
+  labelled?: boolean;
+}
+
+const { size = 32, tone = 'brand', class: className = '', labelled = true } = Astro.props;
+
+const LIGHT = 'M6,24 L19.5,15 L19.5,27 L6,36 Z';
+const DARK = 'M6,4 L19.5,13 L19.5,25 L6,16 Z';
+
+const fills = {
+  brand: { light: 'var(--color-copper-hi)', dark: 'var(--color-copper)' },
+  mono: { light: 'currentColor', dark: 'currentColor' },
+  inverted: { light: '#FFFFFF', dark: '#FFFFFF' },
+}[tone];
+---
+
+<svg
+  width={size}
+  height={size}
+  viewBox="0 0 40 40"
+  class={className}
+  role={labelled ? 'img' : 'presentation'}
+  aria-label={labelled ? 'Xtenzium' : undefined}
+  aria-hidden={labelled ? undefined : 'true'}
+>
+  <g fill={fills.light}>
+    <path d={LIGHT} />
+    <path d={LIGHT} transform="rotate(180 20 20)" />
+  </g>
+  <g fill={fills.dark}>
+    <path d={DARK} />
+    <path d={DARK} transform="rotate(180 20 20)" />
+  </g>
+</svg>

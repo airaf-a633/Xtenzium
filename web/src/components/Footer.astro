@@ -1,0 +1,90 @@
+---
+import Logo from './Logo.astro';
+
+const columns = [
+  {
+    title: 'Services',
+    links: [
+      { href: '/services/development', label: 'Web Development' },
+      { href: '/services/design', label: 'Design & Branding' },
+      { href: '/services/iot', label: 'IoT & Embedded' },
+      { href: '/services/automation', label: 'AI & Automation' },
+    ],
+  },
+  {
+    title: 'Company',
+    links: [
+      { href: '/work', label: 'Work' },
+      { href: '/about', label: 'About' },
+      { href: '/journal', label: 'Journal' },
+      { href: '/contact', label: 'Contact' },
+    ],
+  },
+];
+
+const year = new Date().getFullYear();
+---
+
+<footer class="on-carbon rounded-t-[2rem] bg-carbon pb-10 pt-20 text-white md:rounded-t-[2.5rem] md:pt-28">
+  <div class="container-x">
+    <div class="grid gap-12 md:grid-cols-[1.5fr_1fr_1fr]">
+      <div>
+        <div class="flex items-center gap-3">
+          <Logo size={34} labelled={false} />
+          <p class="font-display text-2xl font-bold tracking-[-0.03em]">Xtenzium</p>
+        </div>
+        <p class="mt-4 max-w-xs text-sm leading-relaxed text-white/55">
+          We architect long-term success — software, hardware, and the systems
+          that connect them.
+        </p>
+        <div class="mt-7 flex items-center gap-2.5">
+          {
+            ['in', 'ig', 'gh', 'x'].map((n) => (
+              <a
+                href="/contact"
+                aria-label={`Xtenzium on ${n}`}
+                class="grid h-9 w-9 place-items-center rounded-full border border-white/15 font-mono text-[10px] uppercase text-white/60 transition-colors duration-300 hover:border-copper hover:text-copper-hi"
+              >
+                {n}
+              </a>
+            ))
+          }
+        </div>
+
+        <a
+          href="mailto:contact@xtenzium.com"
+          class="mt-6 inline-block font-display text-lg font-bold tracking-[-0.02em] text-copper-hi transition-colors duration-300 hover:text-white"
+        >
+          contact@xtenzium.com
+        </a>
+      </div>
+
+      {
+        columns.map((col) => (
+          <div>
+            <p class="eyebrow !text-white/45">{col.title}</p>
+            <ul class="mt-5 flex flex-col gap-3">
+              {col.links.map((l) => (
+                <li>
+                  <a
+                    href={l.href}
+                    class="text-sm text-white/70 transition-colors duration-300 hover:text-white"
+                  >
+                    {l.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))
+      }
+    </div>
+
+    <div
+      class="mt-16 flex flex-col gap-4 border-t border-white/10 pt-6 text-xs text-white/40 sm:flex-row sm:items-center sm:justify-between"
+    >
+      <p>&copy; {year} Xtenzium. Karachi, Pakistan.</p>
+      <p class="font-mono">We architect long-term success.</p>
+    </div>
+  </div>
+</footer>
