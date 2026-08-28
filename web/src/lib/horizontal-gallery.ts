@@ -4,30 +4,22 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 gsap.registerPlugin(ScrollTrigger);
 
 /**
- * Horizontal gallery, driven by vertical scroll.
+ * Pinned horizontal gallery.
  *
- * Two variants of one idea, and the difference is pinning rather than
- * motion:
+ * The section pins and vertical scroll is translated into x on the inner
+ * track, at every width. An unpinned variant was tried on mobile — travel
+ * spread across the section's own pass through the viewport — on the
+ * reasoning that pinning hijacks a touch scroll. It reads worse for a
+ * reason that is easy to miss in principle and obvious in use: travel
+ * begins the moment the section's top touches the bottom of the screen,
+ * so by the time the row is high enough to read, a third of it has
+ * already gone past. The reader arrives in the middle of something.
  *
- *   desktop  the section pins and the track travels its full width while
- *            the page is held still. The reader is inside the gallery
- *            until it finishes.
- *   mobile   no pin. The track travels as the section passes through the
- *            viewport, so scrolling moves the cards sideways but never
- *            stops moving the page.
+ * Pinning is what ties the travel to the part of the pass the reader is
+ * actually looking at. It costs the page holding still for the length of
+ * the row; that is the trade, and it is the same one on every device.
  *
- * The mobile variant used to be a native horizontal scroller, on the
- * reasoning that swiping is the better touch interaction. That is true in
- * isolation and wrong in context: the cards then sat perfectly still while
- * everything around them moved, and a reader who never thinks to swipe
- * sees one and a half cards and assumes that is all there is.
- *
- * What makes this safe on touch is only that it does not pin. Pinning is
- * what turns scroll-driven horizontal movement into scroll hijacking —
- * the page stops responding to the gesture the reader is making — and
- * that is the part left on desktop, where a pointer makes it legible.
- *
- * `ease: 'none'` is mandatory with scrub; any curve fights the scroll
+ * `ease: 'none'` is mandatory with scrub — any curve fights the scroll
  * position and the track feels like it is lagging. Distances are
  * functions so `invalidateOnRefresh` recomputes them on resize rather
  * than pinning to a stale width.
@@ -39,8 +31,6 @@ gsap.registerPlugin(ScrollTrigger);
  */
 
 const FULL = '(prefers-reduced-motion: no-preference)';
-const PINNED = '(min-width: 1024px)';
-const UNPINNED = '(max-width: 1023px)';
 
 let mm: gsap.MatchMedia | null = null;
 
@@ -63,58 +53,51 @@ export function initHorizontalGallery() {
     return () => sections.forEach((s) => s.removeAttribute('data-hgallery-native'));
   });
 
-  mm.add(
-    {
-      isPinned: `${PINNED} and ${FULL}`,
-      isFlowing: `${UNPINNED} and ${FULL}`,
-    },
-    (context) => {
-      const pinned = !!context.conditions?.isPinned;
+  // Pinned at every width.
+  //
+  // The unpinned version travelled across the section's own pass through
+  // the viewport, which sounds gentler and reads worse: travel starts the
+  // moment the section's top touches the bottom of the screen, so by the
+  // time it is high enough to read, a third of the row has already gone
+  // past. The reader arrives in the middle of something.
+  //
+  // Pinning is what ties the travel to the part of the pass where the
+  // reader is actually looking at it. It costs the page holding still for
+  // the length of the row, which is the trade — and the same trade the
+  // desktop has always made.
+  mm.add(FULL, () => {
+    sections.forEach((section) => {
+      const track = section.querySelector<HTMLElement>('[data-hgallery-track]');
+      if (!track) return;
 
-      sections.forEach((section) => {
-        const track = section.querySelector<HTMLElement>('[data-hgallery-track]');
-        if (!track) return;
+      // The transform drives the track, so native overflow must not also
+      // be trying to. Two things on one axis is a scroller fighting its
+      // own animation.
+      section.removeAttribute('data-hgallery-native');
 
-        // The transform drives the track, so native overflow must not also
-        // be trying to. Leaving both on gives a scroller that fights its
-        // own animation.
-        section.removeAttribute('data-hgallery-native');
+      const distance = () => Math.max(0, track.scrollWidth - window.innerWidth + 48);
 
-        const distance = () =>
-          Math.max(0, track.scrollWidth - window.innerWidth + (pinned ? 96 : 24));
+      gsap.set(track, { willChange: 'transform' });
 
-        gsap.set(track, { willChange: 'transform' });
-
-        gsap.fromTo(
-          track,
-          { x: 0 },
-          {
-            x: () => -distance(),
-            ease: 'none',
-            scrollTrigger: pinned
-              ? {
-                  trigger: section,
-                  start: 'top top',
-                  end: () => '+=' + distance(),
-                  pin: true,
-                  scrub: 0.6,
-                  anticipatePin: 1,
-                  invalidateOnRefresh: true,
-                }
-              : {
-                  // Across the section's own pass through the viewport, so
-                  // the page never stops for it.
-                  trigger: section,
-                  start: 'top bottom',
-                  end: 'bottom top',
-                  scrub: 0.6,
-                  invalidateOnRefresh: true,
-                },
+      gsap.fromTo(
+        track,
+        { x: 0 },
+        {
+          x: () => -distance(),
+          ease: 'none',
+          scrollTrigger: {
+            trigger: section,
+            start: 'top top',
+            end: () => '+=' + distance(),
+            pin: true,
+            scrub: 0.6,
+            anticipatePin: 1,
+            invalidateOnRefresh: true,
           },
-        );
-      });
-    },
-  );
+        },
+      );
+    });
+  });
 }
 
 export function destroyHorizontalGallery() {

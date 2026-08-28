@@ -109,55 +109,78 @@ export function initCoverflow() {
       });
   });
 
-  // Mobile: keep the flat row — a 3D arc on a 375px screen puts most of
-  // the set off-canvas — but travel it with the page instead of waiting
-  // for a swipe. The cards used to sit still while everything around them
-  // moved, which reads as a dead component rather than a quiet one.
+  // Mobile: a real scroller that the page also moves.
   //
-  // No pin, so the page never stops responding to the scroll. The row
-  // simply passes as the section does.
+  // The first attempt drove the row with a transform, which meant native
+  // overflow had to be switched off so the two were not fighting for the
+  // same axis — and that took the swipe away. A row of cards that cannot
+  // be pushed with a thumb is broken on a phone regardless of what else
+  // it does.
+  //
+  // Driving `scrollLeft` instead keeps it an ordinary scroller. Swipe
+  // works because nothing was taken away; scroll works because the page
+  // writes the same property the thumb does. When both want it at once
+  // the thumb wins, which is the only defensible way round: the reader's
+  // gesture is deliberate and the scroll position is ambient.
   mm.add('(max-width: 767px) and (prefers-reduced-motion: no-preference)', () => {
     const kills: Array<() => void> = [];
 
     roots.forEach((root) => {
       root.setAttribute('data-coverflow-flat', '');
-      const stage = root.querySelector<HTMLElement>('[data-coverflow-stage]');
-      const cards = Array.from(root.querySelectorAll<HTMLElement>('[data-coverflow-card]'));
-      if (!stage || !cards.length) return;
-
-      gsap.set(cards, { clearProps: 'all' });
-      gsap.set(stage, { willChange: 'transform' });
-
-      // Transform drives the row, so the native scroller must not also try.
+      // Mandatory snap rewrites every programmatic scrollLeft to the
+      // nearest card, so a row driven by the page snaps from card to card
+      // instead of gliding. Snap is switched off while the page is
+      // driving; the swipe does not need it to feel right, and the
+      // reduced-motion branch keeps it.
       root.setAttribute('data-coverflow-driven', '');
+      const cards = Array.from(root.querySelectorAll<HTMLElement>('[data-coverflow-card]'));
+      if (!cards.length) return;
+      gsap.set(cards, { clearProps: 'all' });
 
-      const distance = () => Math.max(0, stage.scrollWidth - window.innerWidth + 24);
+      // Touching the row hands control over for as long as the gesture
+      // lasts, plus a moment after so momentum can settle.
+      let held = false;
+      let releaseAt = 0;
+      const hold = () => {
+        held = true;
+        releaseAt = 0;
+      };
+      const release = () => {
+        held = false;
+        releaseAt = performance.now() + 900;
+      };
+      root.addEventListener('pointerdown', hold, { passive: true });
+      root.addEventListener('touchstart', hold, { passive: true });
+      root.addEventListener('pointerup', release, { passive: true });
+      root.addEventListener('touchend', release, { passive: true });
+      root.addEventListener('pointercancel', release, { passive: true });
 
-      const tween = gsap.fromTo(
-        stage,
-        { x: 0 },
-        {
-          x: () => -distance(),
-          ease: 'none',
-          scrollTrigger: {
-            trigger: root,
-            start: 'top bottom',
-            end: 'bottom top',
-            scrub: 0.6,
-            invalidateOnRefresh: true,
-          },
+      const max = () => Math.max(0, root.scrollWidth - root.clientWidth);
+
+      const st = ScrollTrigger.create({
+        trigger: root,
+        start: 'top bottom',
+        end: 'bottom top',
+        scrub: 0.6,
+        invalidateOnRefresh: true,
+        onUpdate: (self) => {
+          if (held || performance.now() < releaseAt) return;
+          root.scrollLeft = self.progress * max();
         },
-      );
+      });
 
       const controls = root.parentElement?.querySelector<HTMLElement>('[data-coverflow-controls]');
       if (controls) controls.hidden = true;
 
       kills.push(() => {
-        tween.scrollTrigger?.kill();
-        tween.kill();
-        root.removeAttribute('data-coverflow-driven');
+        st.kill();
+        root.removeEventListener('pointerdown', hold);
+        root.removeEventListener('touchstart', hold);
+        root.removeEventListener('pointerup', release);
+        root.removeEventListener('touchend', release);
+        root.removeEventListener('pointercancel', release);
         root.removeAttribute('data-coverflow-flat');
-        gsap.set(stage, { clearProps: 'all' });
+        root.removeAttribute('data-coverflow-driven');
         if (controls) controls.hidden = false;
       });
     });

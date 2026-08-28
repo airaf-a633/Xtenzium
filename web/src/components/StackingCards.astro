@@ -22,15 +22,28 @@ const { eyebrow, heading, items } = Astro.props;
         <section data-stack-card class="sticky top-[8vh] pb-5 md:top-[10vh]">
           <div
             data-stack-inner
-            class="relative grid min-h-[22rem] overflow-hidden rounded-card border border-white/10 bg-carbon md:min-h-[26rem] md:grid-cols-2"
+            class="relative grid min-h-[19rem] overflow-hidden rounded-card border border-white/10 bg-carbon md:min-h-[26rem] md:grid-cols-2"
           >
-            <div class="relative z-10 flex flex-col justify-center p-8 md:p-12">
+            {/* Text first in the DOM but painted over the art on mobile,
+                where the card is one column and the image sits behind
+                everything. The scrim below is what makes that legible —
+                `scrim="left"` is a horizontal gradient built for the
+                desktop split, and on a portrait card it puts its darkness
+                down the side rather than under the words. */}
+            <div class="relative z-20 flex flex-col justify-end p-7 md:justify-center md:p-12">
               <span class="font-mono text-xs text-copper-hi">{item.n}</span>
-              <h3 class="mt-4 font-display text-[clamp(1.6rem,3vw,2.25rem)] font-bold tracking-[-0.03em] text-white">
+              <h3 class="mt-3 font-display text-[clamp(1.6rem,3vw,2.25rem)] font-bold tracking-[-0.03em] text-white md:mt-4">
                 {item.title}
               </h3>
-              <p class="mt-4 max-w-md leading-relaxed text-white/60">{item.body}</p>
+              <p class="mt-3 max-w-md leading-relaxed text-white/70 md:mt-4 md:text-white/60">
+                {item.body}
+              </p>
             </div>
+
+            <span
+              aria-hidden="true"
+              class="absolute inset-0 z-10 bg-gradient-to-t from-carbon via-carbon/85 to-carbon/25 md:hidden"
+            />
 
             <ParallaxImage
               src={item.image}
