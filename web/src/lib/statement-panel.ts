@@ -35,6 +35,8 @@ export function initStatementPanels() {
       const lines = panel.querySelectorAll('[data-statement-line]');
       if (media) gsap.set(media, { scale: 1, rotation: 0, borderRadius: 0, filter: 'none' });
       if (inner) gsap.set(inner, { scale: 1, filter: 'none' });
+      const art = panel.querySelector('[data-statement-inner] img');
+      if (art) gsap.set(art, { scale: 1, yPercent: 0 });
       if (lines.length) gsap.set(lines, { opacity: 1, y: 0, filter: 'none' });
     });
     return;
@@ -46,6 +48,44 @@ export function initStatementPanels() {
       const media = panel.querySelector<HTMLElement>('[data-statement-media]');
       const inner = panel.querySelector<HTMLElement>('[data-statement-inner]');
       const lines = panel.querySelectorAll<HTMLElement>('[data-statement-line]');
+
+      // ── Parallax drift, both variants ────────────────────────────
+      //
+      // The variants below animate scale, rotation and blur — an arrival.
+      // None of them drifts, and drift is what reads as depth: a ground
+      // that travels more slowly than the copy over it is behind it.
+      //
+      // This targets the artwork itself rather than [data-statement-inner],
+      // which the focus variant is already scaling. Two tweens on one
+      // element are fine while they write different properties, but the
+      // overscale that buys the travel would fight a scale that is being
+      // animated to exactly 1.
+      //
+      // The BleedImage root cannot be the trigger here: it is `!static` so
+      // its children position against the inner, which leaves it zero
+      // pixels tall and its start and end collapsed onto each other. The
+      // panel is the thing with height, so the panel is the trigger.
+      const art = panel.querySelector<HTMLElement>('[data-statement-inner] img');
+      if (art) {
+        gsap.set(art, { scale: 1.16, willChange: 'transform' });
+        gsap.fromTo(
+          art,
+          { yPercent: -5 },
+          {
+            yPercent: 5,
+            ease: 'none',
+            scrollTrigger: {
+              trigger: panel,
+              // Clamped, so a panel near either end of the document still
+              // uses a range the reader can actually scroll through.
+              start: 'clamp(top bottom)',
+              end: 'clamp(bottom top)',
+              scrub: 0.6,
+              invalidateOnRefresh: true,
+            },
+          },
+        );
+      }
 
       if (variant === 'rise') {
         if (media) {

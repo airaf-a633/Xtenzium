@@ -28,6 +28,15 @@ const ogImage = new URL(image, Astro.site).href;
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
+    <!-- Google Search Console. Verification is a property of the site
+         rather than of any one page, so it belongs in the shared layout —
+         Google may re-check it against any URL it has indexed, not only
+         the home page. -->
+    <meta
+      name="google-site-verification"
+      content="XEii5ZkTUAtE1Mz4a7S1ZBdn_yIoz-52MbBtfT26vFI"
+    />
+
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
