@@ -66,7 +66,7 @@ const { service: s, next } = Astro.props;
   <main>
     <!-- ── Header ───────────────────────────────────────────── -->
     <section class="on-carbon relative overflow-hidden bg-carbon pb-20 pt-40 md:pb-24 md:pt-48">
-      <BleedImage image={serviceImage(s.slug)} scrim="soft" eager />
+      <BleedImage image={serviceImage(s.slug)} scrim="soft" eager parallax />
       <div
         aria-hidden="true"
         class="pointer-events-none absolute inset-0 opacity-40"

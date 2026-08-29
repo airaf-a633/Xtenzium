@@ -15,6 +15,19 @@ import type { Imagery } from '../data/imagery';
  */
 interface Props {
   image: Imagery;
+  /**
+   * Drift the ground against the scroll.
+   *
+   * Opt-in rather than automatic: this belongs on a section-sized frame,
+   * where a slow-moving ground behind faster copy reads as depth. On the
+   * small cards inside the horizontal gallery it would be a second axis of
+   * movement on something already travelling sideways, which reads as
+   * drift rather than as design.
+   *
+   * Emits the markup lib/parallax.ts already drives, so there is one
+   * implementation of this effect on the site rather than two.
+   */
+  parallax?: boolean;
   /** Darkens for legibility. Statement panels need more than headers. */
   scrim?: 'none' | 'soft' | 'strong' | 'left';
   treatment?: 'duotone' | 'none';
@@ -24,6 +37,7 @@ interface Props {
 
 const {
   image,
+  parallax = false,
   scrim = 'soft',
   treatment = 'duotone',
   eager = false,
@@ -41,6 +55,8 @@ const scrims: Record<string, string> = {
 <div
   class:list={['pointer-events-none absolute inset-0 overflow-hidden bg-carbon', className]}
   aria-hidden="true"
+  data-parallax={parallax ? '' : undefined}
+  data-parallax-strength={parallax ? '18' : undefined}
 >
   {/* Ground: always present, paints instantly, survives a dead photo. */}
   <img
@@ -48,6 +64,7 @@ const scrims: Record<string, string> = {
     alt=""
     aria-hidden="true"
     decoding="async"
+    data-parallax-img={parallax ? '' : undefined}
     class="absolute inset-0 h-full w-full object-cover"
   />
 
