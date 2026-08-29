@@ -124,7 +124,7 @@ export function initHero() {
           { yPercent: 0, opacity: 1 },
           {
             yPercent: mobile ? -6 : -14,
-            opacity: mobile ? 0.35 : 0.12,
+            opacity: mobile ? 0.45 : 0.3,
             ease: 'none',
             scrollTrigger: { ...st },
           },

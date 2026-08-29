@@ -61,8 +61,15 @@ export function initParallax() {
         ease: 'none',
         scrollTrigger: {
           trigger: frame,
-          start: 'top bottom',
-          end: 'bottom top',
+          // clamp() keeps the range inside the page's real scroll bounds.
+          // Without it a frame at the very top of the document — every page
+          // header is one — resolves its start a viewport above scroll
+          // zero, somewhere the reader can never reach. Half the travel is
+          // then spent before the page has moved, and the drift only
+          // appears as the header leaves. Clamped, the full range maps onto
+          // scrolling that can actually happen.
+          start: 'clamp(top bottom)',
+          end: 'clamp(bottom top)',
           scrub: true,
           invalidateOnRefresh: true,
         },
