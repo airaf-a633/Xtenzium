@@ -1,0 +1,11 @@
+# Xtenzium — https://www.xtenzium.com
+#
+# Everything here is public and meant to be found. The only reason this
+# file exists is the last line: crawlers look for a sitemap here first,
+# and without it they discover pages by following links, which is slower
+# and misses anything not linked from the home page.
+
+User-agent: *
+Allow: /
+
+Sitemap: https://www.xtenzium.com/sitemap-index.xml
