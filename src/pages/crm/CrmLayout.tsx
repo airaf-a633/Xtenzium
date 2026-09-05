@@ -26,6 +26,7 @@ const NAV_ITEMS = [
   { path: '/crm/projects', label: 'Projects', exact: false, icon: icon('M3 7.5A1.5 1.5 0 0 1 4.5 6h4l2 2.5h9A1.5 1.5 0 0 1 21 10v8a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18z') },
   { path: '/crm/tasks', label: 'Tasks', exact: false, icon: icon('M9 11.5 11.5 14 16 8.5M21 12.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h10') },
   { path: '/crm/analytics', label: 'Analytics', exact: false, icon: icon('M4 19V5M4 19h16M8 16V11M12 16V8M16 16v-3') },
+  { path: '/crm/testimonials', label: 'Testimonials', exact: false, icon: icon('M9 11H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v9a4 4 0 0 1-4 4M19 11h-4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v9a4 4 0 0 1-4 4') },
   { path: '/crm/team', label: 'Team', exact: false, icon: icon('M12 11.5a3.75 3.75 0 1 0 0-7.5 3.75 3.75 0 0 0 0 7.5M4.5 20.5c0-3.6 3.4-6.5 7.5-6.5s7.5 2.9 7.5 6.5') },
 ];
 

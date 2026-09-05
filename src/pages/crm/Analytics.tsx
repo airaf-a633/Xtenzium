@@ -44,6 +44,10 @@ type OutboundRow = { day: string; host: string | null; clicks: number };
 type AttributionRow = { referring_host: string | null; landing_path: string; sessions: number; leads: number; conversion_percent: number | null };
 type RealtimeRow = { path: string; visitors: number; last_seen: string };
 
+type SearchQueryRow = { day: string; query: string; clicks: number; impressions: number; position: number | null };
+type SearchPageRow = { day: string; page: string; clicks: number; impressions: number; position: number | null };
+type SearchDailyRow = { day: string; clicks: number; impressions: number; queries: number; ctr_percent: number | null; position: number | null };
+
 type Range = '7' | '30' | '90';
 
 const RANGES: ReadonlyArray<{ value: Range; label: string }> = [
@@ -107,6 +111,16 @@ const Analytics = () => {
   const [outbound, setOutbound] = useState<OutboundRow[]>([]);
   const [attribution, setAttribution] = useState<AttributionRow[]>([]);
   const [realtime, setRealtime] = useState<RealtimeRow[]>([]);
+  /* Search Console lives in its own request and its own state.
+     It is a separate migration with a separate manual setup in Google
+     Cloud, so it will be absent for a while after the rest works — and
+     folding it into the check above would take the whole page down to a
+     "not installed" screen for a panel that is merely pending. */
+  const [queries, setQueries] = useState<SearchQueryRow[]>([]);
+  const [searchPages, setSearchPages] = useState<SearchPageRow[]>([]);
+  const [searchDaily, setSearchDaily] = useState<SearchDailyRow[]>([]);
+  const [searchReady, setSearchReady] = useState(false);
+
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   /* The views may not exist yet — migrations are applied by hand — and
@@ -168,6 +182,59 @@ const Analytics = () => {
       cancelled = true;
     };
   }, [range]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const since = new Date();
+    since.setDate(since.getDate() - Number(range));
+    const day = since.toISOString().slice(0, 10);
+
+    Promise.all([
+      supabase.from('search_console_queries').select('*').gte('day', day),
+      supabase.from('search_console_pages').select('*').gte('day', day),
+      supabase.from('search_console_daily').select('*').gte('day', day).order('day'),
+    ]).then(([q, p, d]) => {
+      if (cancelled) return;
+      /* Absent is the expected state until the sync has run once, and it
+         is not an error worth showing. */
+      if (q.error || p.error || d.error) {
+        setSearchReady(false);
+        return;
+      }
+      setQueries((q.data ?? []) as SearchQueryRow[]);
+      setSearchPages((p.data ?? []) as SearchPageRow[]);
+      setSearchDaily((d.data ?? []) as SearchDailyRow[]);
+      setSearchReady(true);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [range]);
+
+  const search = useMemo(() => {
+    const clicks = searchDaily.reduce((a, r) => a + num(r.clicks), 0);
+    const impressions = searchDaily.reduce((a, r) => a + num(r.impressions), 0);
+    /* Position averaged over impressions, not over days: ranking 3rd for
+       a query nobody searches should not outweigh ranking 30th for one
+       that hundreds do. */
+    const posWeight = searchDaily.reduce((a, r) => a + num(r.position) * num(r.impressions), 0);
+    return {
+      clicks,
+      impressions,
+      ctr: impressions ? Math.round((clicks / impressions) * 1000) / 10 : 0,
+      position: impressions ? Math.round((posWeight / impressions) * 10) / 10 : 0,
+    };
+  }, [searchDaily]);
+
+  const topQueries = useMemo(
+    () => rank(queries, r => r.query, r => num(r.impressions), 12),
+    [queries],
+  );
+  const topSearchPages = useMemo(
+    () => rank(searchPages, r => r.page, r => num(r.impressions), 10),
+    [searchPages],
+  );
 
   const totals = useMemo(() => {
     const sum = (k: keyof DailyRow) => daily.reduce((acc, r) => acc + num(r[k]), 0);
@@ -493,6 +560,35 @@ const Analytics = () => {
               <Funnel steps={funnelSteps} />
             </ChartCard>
           </div>
+
+          {searchReady && (
+            <>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <Stat label="Search impressions" value={int(search.impressions)} />
+                <Stat label="Search clicks" value={int(search.clicks)} />
+                <Stat label="Search CTR" value={pct(search.ctr)} />
+                <Stat label="Avg position" value={search.position ? search.position.toFixed(1) : '—'} />
+              </div>
+
+              <div className="grid gap-4 lg:grid-cols-2">
+                <ChartCard
+                  title="What visitors search for"
+                  hint="From Search Console, by impressions. Google withholds rare queries to protect the people who typed them, so these totals run slightly under the Performance report."
+                  rows={topQueries.map(d => [d.label, `${int(d.value)} impressions`])}
+                >
+                  <BarRows data={topQueries} format={int} />
+                </ChartCard>
+
+                <ChartCard
+                  title="Pages that appear in search"
+                  hint="Which of your pages Google is actually putting in front of people."
+                  rows={topSearchPages.map(d => [d.label, `${int(d.value)} impressions`])}
+                >
+                  <BarRows data={topSearchPages} format={int} />
+                </ChartCard>
+              </div>
+            </>
+          )}
 
           <ChartCard
             title="On the site now"

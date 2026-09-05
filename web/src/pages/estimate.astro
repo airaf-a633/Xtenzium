@@ -8,6 +8,11 @@ import { QUESTIONS } from '../lib/estimate';
 import Faq from '../components/Faq.astro';
 import Testimonial from '../components/Testimonial.astro';
 import { unverified } from '../lib/placeholder';
+import { getTestimonials, pickTestimonial, attributionOf } from '../lib/testimonials';
+
+// Real client quotes, fetched at build time. Nothing renders until one
+// exists that is both published and consented to — see 014_testimonials.sql.
+const testimonial = pickTestimonial(await getTestimonials(), 'estimate');
 
 const drivers = [
   { n: '01', title: 'What it is', body: 'A marketing site and a connected-hardware fleet are different orders of magnitude. This sets the floor; everything else scales it.' },
@@ -409,12 +414,10 @@ const faqs = [
       </div>
     </section>
 
-    {/* Gated: invented quote and attribution. */}
-    {unverified(true) && (
+    {testimonial && (
       <Testimonial
-        quote="They told us the smaller option would do the job. It did. That conversation is the reason we came back twice."
-        attribution="Operations Director"
-        role="Logistics client"
+        quote={testimonial.quote}
+        {...attributionOf(testimonial)}
       />
     )}
 

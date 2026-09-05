@@ -19,6 +19,51 @@ const {
 
 const canonical = new URL(path, Astro.site).href;
 const ogImage = new URL(image, Astro.site).href;
+
+/**
+ * Breadcrumbs, derived from the path rather than declared per page.
+ *
+ * Two things this buys, and one thing it does not:
+ *
+ *  - Google renders a breadcrumb trail in place of the raw URL in a
+ *    result, so "Xtenzium › Work › Dinely" appears instead of a slug.
+ *  - It states the hierarchy explicitly. A crawler that has indexed one
+ *    case study now has a labelled link to /work, which is the parent it
+ *    would otherwise have to infer from the nav on every page.
+ *  - It does not help anything rank. Nothing on this page does; the site
+ *    is new and thin on links, and that is a content problem.
+ *
+ * Deriving it from `path` means it cannot drift out of step with the
+ * URL, which is exactly how hand-written breadcrumb markup goes stale.
+ * Only the segments that are real pages get a name here; anything not
+ * listed falls back to its slug in title case, which is right for
+ * /work/dinely and would be wrong for a segment that is not a page.
+ */
+const SEGMENT_NAMES: Record<string, string> = {
+  work: 'Work',
+  services: 'Services',
+  journal: 'Journal',
+};
+
+const segments = path.split('/').filter(Boolean);
+const titleCase = (slug: string) =>
+  slug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+
+const breadcrumbs =
+  segments.length === 0
+    ? []
+    : [
+        { name: 'Home', item: new URL('/', Astro.site).href },
+        ...segments.map((segment, i) => ({
+          // The last crumb is this page, so it takes the page's own title
+          // rather than a guess made from the slug.
+          name:
+            i === segments.length - 1
+              ? (SEGMENT_NAMES[segment] ?? title.split('—')[0].trim() ?? titleCase(segment))
+              : (SEGMENT_NAMES[segment] ?? titleCase(segment)),
+          item: new URL(`/${segments.slice(0, i + 1).join('/')}/`, Astro.site).href,
+        })),
+      ];
 ---
 
 <!doctype html>
@@ -63,6 +108,23 @@ const ogImage = new URL(image, Astro.site).href;
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=DM+Sans:opsz,wght@9..40,400..700&family=DM+Mono:wght@400;500&display=swap"
     />
+
+    {breadcrumbs.length > 1 && (
+      <script
+        is:inline
+        type="application/ld+json"
+        set:html={JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'BreadcrumbList',
+          itemListElement: breadcrumbs.map((crumb, i) => ({
+            '@type': 'ListItem',
+            position: i + 1,
+            name: crumb.name,
+            item: crumb.item,
+          })),
+        })}
+      />
+    )}
 
     <ClientRouter />
     <slot name="head" />

@@ -8,7 +8,11 @@ import StackingCards from '../components/StackingCards.astro';
 import Coverflow from '../components/Coverflow.astro';
 import Testimonial from '../components/Testimonial.astro';
 import WatermarkX from '../components/WatermarkX.astro';
-import { unverified } from '../lib/placeholder';
+import { getTestimonials, pickTestimonial, attributionOf } from '../lib/testimonials';
+
+// Real client quotes, fetched at build time. Nothing renders until one
+// exists that is both published and consented to — see 014_testimonials.sql.
+const testimonial = pickTestimonial(await getTestimonials(), 'home');
 import { getWork, publishable } from '../lib/content';
 import { credits } from '../data/credits';
 import { services as servicesData } from '../data/services';
@@ -353,13 +357,11 @@ const stats = [
     </section>
 
     <!-- ═══ 06b · Testimonial ═════════════════════════════════ -->
-    {/* Gated: invented quote and attribution. */}
-    {unverified(true) && (
-    <Testimonial
-      quote="They didn't just ship a website. They built the thing our operations actually run on, and then handed it over so we could keep going without them."
-      attribution="Operations Director"
-      role="Fleet telematics client"
-    />
+    {testimonial && (
+      <Testimonial
+        quote={testimonial.quote}
+        {...attributionOf(testimonial)}
+      />
     )}
 
     <!-- ═══ 07 · Stats ══════════════════════════════════════════ -->

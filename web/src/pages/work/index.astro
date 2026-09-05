@@ -8,6 +8,11 @@ import Faq from '../../components/Faq.astro';
 import Testimonial from '../../components/Testimonial.astro';
 import { getWork, publishable } from '../../lib/content';
 import { unverified } from '../../lib/placeholder';
+import { getTestimonials, pickTestimonial, attributionOf } from '../../lib/testimonials';
+
+// Real client quotes, fetched at build time. Nothing renders until one
+// exists that is both published and consented to — see 014_testimonials.sql.
+const testimonial = pickTestimonial(await getTestimonials(), 'work');
 import { credits, studios } from '../../data/credits';
 
 const entries = await getWork();
@@ -398,12 +403,10 @@ const faqs = [
       </div>
     </section>
 
-    {/* Gated: invented quote and attribution. */}
-    {unverified(true) && (
+    {testimonial && (
       <Testimonial
-        quote="The write-up they published was the same document they gave us privately. Nothing was smoothed over. That is rarer than it should be."
-        attribution="Head of Product"
-        role="Clinical SaaS client"
+        quote={testimonial.quote}
+        {...attributionOf(testimonial)}
       />
     )}
 
