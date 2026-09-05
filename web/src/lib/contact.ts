@@ -1,4 +1,5 @@
 import { submitLead } from './supabase';
+ import { track, currentVisitor } from './analytics';
 
 /**
  * Contact form.
@@ -95,10 +96,15 @@ export function initContact() {
       company: company || null,
       message,
       source: 'contact',
-      payload: { budget: budget || null, service: service || null },
+      // The visitor id rides along so a lead can be traced back to the
+      // session that produced it. `payload` is already jsonb and already
+      // written here, so attribution costs no schema change to `leads` —
+      // which matters, because that table belongs to the CRM.
+      payload: { budget: budget || null, service: service || null, visitor: currentVisitor() },
     });
 
     if (res.ok) {
+      track('form_submit', { form: 'contact', service: service || null });
       setStatus(
         'Sent. You will hear back within one working day — usually sooner.',
         'ok',

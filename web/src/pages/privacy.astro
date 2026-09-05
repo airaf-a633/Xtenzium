@@ -36,15 +36,16 @@ const updated = '2026-09-05';
     <LegalPage
       eyebrow="Privacy"
       title="What we collect, and what we don't."
-      summary="Short, because there is little to describe. This site sets no cookies, runs no analytics, and tracks nobody. The only personal data we hold is what you type into a form and send us."
+      summary="Short, because there is little to describe. This site sets no cookies and sends nothing to an advertising network. We count visits ourselves, and the only personal data we hold is what you type into a form."
       updated={updated}
     >
       <h2>The short version</h2>
       <p>
         We collect the details you enter into the contact form or the project
-        estimator, and nothing else. There are no cookies on this site, no
-        analytics, no advertising pixels, and no third-party tracking of any
-        kind. Nothing is sold, rented, or shared for marketing.
+        estimator, and a count of which pages get read. There are no cookies on
+        this site, no advertising pixels, and no third-party analytics — no
+        Google Analytics, no Tag Manager, nothing that follows you to another
+        site. Nothing is sold, rented, or shared for marketing.
       </p>
       <p>
         <strong>Xtenzium</strong> is a digital agency based in Karachi, Sindh,
@@ -68,6 +69,29 @@ const updated = '2026-09-05';
           estimator produced. The answers are ranges and categories rather than
           anything identifying — the estimator asks nothing about you until it
           has already shown you a number.
+        </dd>
+
+        <dt>Page analytics</dt>
+        <dd>
+          Which pages are viewed, how far down them people read, which outbound
+          links get clicked, and whether a form was started and finished. It is
+          recorded by us, into our own database, and never leaves it.
+          <br /><br />
+          Each visit is tagged with a random identifier generated in your
+          browser and held in session storage. It is not a cookie, it is not
+          derived from anything about you, and it is discarded when you close
+          the tab — so the same browser tomorrow is a new visit and cannot be
+          connected to this one. It exists so that ten pages read by one person
+          are not counted as ten people.
+          <br /><br />
+          If you send an enquiry, that identifier is stored alongside it, which
+          is how we learn which pages lead to conversations. That link is only
+          as durable as the session it came from.
+          <br /><br />
+          If your browser sends a Do Not Track or Global Privacy Control
+          signal, none of this runs at all. Neither signal legally binds us
+          here; ignoring an explicit request while claiming to be the
+          privacy-respecting option is not a position worth holding.
         </dd>
 
         <dt>Server logs</dt>
@@ -137,15 +161,32 @@ const updated = '2026-09-05';
         This site sets <strong>no cookies</strong>. There is no consent banner
         because there is nothing to consent to.
       </p>
+      <p>Three things are kept in your browser's session storage:</p>
+      <ul>
+        <li>
+          How far down each page you had scrolled, so the back button returns
+          you where you were. This never leaves your device.
+        </li>
+        <li>
+          Whether you have dismissed the prompt that appears once when leaving,
+          so it does not appear again. This never leaves your device either.
+        </li>
+        <li>
+          The random visit identifier described above, which is the one thing
+          in this list that is sent to us.
+        </li>
+      </ul>
       <p>
-        One thing is stored in your browser: when you navigate between pages,
-        the site remembers how far down each page you had scrolled, so the back
-        button returns you where you were. It lives in your browser's session
-        storage, is cleared when you close the tab, and is never transmitted
-        anywhere — we cannot read it.
+        All three are cleared when you close the tab. None of them is a cookie,
+        and none is readable by any other site.
       </p>
 
       <h2>How long we keep it</h2>
+      <p>
+        Page analytics are pruned after 90 days. The aggregate — which pages
+        get read, which lead to enquiries — is what has value after that, and
+        holding the raw rows longer is a liability rather than an asset.
+      </p>
       <p>
         Enquiries are kept while the conversation is live and for as long as we
         may reasonably need them afterwards — a project has a history, and

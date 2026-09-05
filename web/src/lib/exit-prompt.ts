@@ -1,4 +1,5 @@
 import gsap from 'gsap';
+import { track } from './analytics';
 
 /**
  * A single, quiet prompt for a reader who is leaving.
@@ -81,6 +82,7 @@ export function initExitPrompt() {
     if (shown || dismissed()) return;
     shown = true;
     panel.hidden = false;
+    track('exit_prompt_shown');
     if (reduced) return;
     gsap.fromTo(
       panel,
@@ -132,7 +134,10 @@ export function initExitPrompt() {
 
   // Following either link counts as answering it.
   panel.querySelectorAll('a').forEach((a) => {
-    const onClick = () => remember();
+    const onClick = () => {
+      track('exit_prompt_click', { href: a.getAttribute('href') });
+      remember();
+    };
     a.addEventListener('click', onClick);
     cleanup.push(() => a.removeEventListener('click', onClick));
   });
