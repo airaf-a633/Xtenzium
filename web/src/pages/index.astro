@@ -125,6 +125,55 @@ const stats = [
   description="Karachi-based digital agency building web products and the custom hardware underneath them. Web development, design, IoT, and AI automation."
   path="/"
 >
+  <Fragment slot="head">
+    {/* The home page carried no structured data at all, which is an odd
+        gap: every inner page had it and the one search engines weight
+        most had none. ProfessionalService rather than a bare Organization,
+        because the business has a place and an area it serves, and that is
+        what a local search actually matches on.
+
+        No `sameAs` block: the footer's social icons currently point at
+        /contact rather than at real profiles, and listing accounts that
+        may not exist is worse than listing none. */}
+    <script
+      is:inline
+      type="application/ld+json"
+      set:html={JSON.stringify({
+        '@context': 'https://schema.org',
+        '@graph': [
+          {
+            '@type': ['Organization', 'ProfessionalService'],
+            '@id': 'https://www.xtenzium.com/#organization',
+            name: 'Xtenzium',
+            url: 'https://www.xtenzium.com',
+            email: 'contact@xtenzium.com',
+            slogan: 'We Architect Long-Term Success.',
+            description:
+              'Karachi-based digital agency building web products and the custom hardware underneath them.',
+            logo: 'https://www.xtenzium.com/og-image.png',
+            image: 'https://www.xtenzium.com/og-image.png',
+            address: {
+              '@type': 'PostalAddress',
+              addressLocality: 'Karachi',
+              addressRegion: 'Sindh',
+              addressCountry: 'PK',
+            },
+            areaServed: 'Worldwide',
+            knowsAbout: servicesData.map((sv) => sv.title),
+          },
+          {
+            '@type': 'WebSite',
+            '@id': 'https://www.xtenzium.com/#website',
+            url: 'https://www.xtenzium.com',
+            name: 'Xtenzium',
+            publisher: { '@id': 'https://www.xtenzium.com/#organization' },
+            inLanguage: 'en',
+          },
+        ],
+      })}
+    />
+  </Fragment>
+
   <Navbar />
 
   <main id="main">
