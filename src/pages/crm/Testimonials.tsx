@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../../lib/supabase';
+import type { Testimonial, TestimonialPlacement as Placement } from '../../types/database';
 import {
   Badge,
   Button,
@@ -39,25 +40,11 @@ import {
  * like one everywhere except the part that matters is a trap.
  */
 
-type Placement = 'any' | 'home' | 'work' | 'estimate';
 
-interface Testimonial {
-  id: string;
-  quote: string;
-  author_name: string | null;
-  author_role: string | null;
-  company: string | null;
-  project: string | null;
-  placement: Placement;
-  status: 'draft' | 'published';
-  consent: boolean;
-  consent_note: string | null;
-  sort_order: number;
-  created_at: string;
-  published_at: string | null;
-}
-
-type Draft = Omit<Testimonial, 'id' | 'created_at' | 'published_at'>;
+/* The columns a person edits. The timestamps are the database's to set —
+   `updated_at` is stamped by a trigger, so accepting one from the form
+   would be a value the server immediately overwrites. */
+type Draft = Omit<Testimonial, 'id' | 'created_at' | 'updated_at' | 'published_at'>;
 
 const BLANK: Draft = {
   quote: '',
@@ -119,7 +106,7 @@ const Testimonials = () => {
       .then(({ data, error }) => {
         if (error?.code === '42P01') setNotInstalled(true);
         else if (error) setFailed(error.message);
-        else setRows((data ?? []) as Testimonial[]);
+        else setRows((data ?? []) as unknown as Testimonial[]);
         setLoading(false);
       });
   };
@@ -158,7 +145,7 @@ const Testimonials = () => {
 
   const save = async () => {
     if (!draft.quote.trim()) {
-      toast({ title: 'A testimonial needs a quote.', tone: 'danger' });
+      toast('A testimonial needs a quote.', 'danger');
       return;
     }
     setSaving(true);
@@ -181,16 +168,16 @@ const Testimonials = () => {
 
     setSaving(false);
     if (error) {
-      toast({ title: 'Could not save', description: error.message, tone: 'danger' });
+      toast(`Could not save: ${error.message}`, 'danger');
       return;
     }
-    toast({
-      title: editing ? 'Testimonial updated' : 'Testimonial added',
-      description:
-        payload.status === 'published' && payload.consent
-          ? 'It goes live at the next deploy of the site.'
-          : undefined,
-    });
+    toast(
+      (editing ? 'Testimonial updated' : 'Testimonial added') +
+        (payload.status === 'published' && payload.consent
+          ? ' — it goes live at the next deploy'
+          : ''),
+      'success',
+    );
     reset();
     load();
   };
@@ -199,10 +186,10 @@ const Testimonials = () => {
     if (!window.confirm(`Delete this testimonial permanently?\n\n"${t.quote.slice(0, 90)}…"`)) return;
     const { error } = await supabase.from('testimonials').delete().eq('id', t.id);
     if (error) {
-      toast({ title: 'Could not delete', description: error.message, tone: 'danger' });
+      toast(`Could not delete: ${error.message}`, 'danger');
       return;
     }
-    toast({ title: 'Testimonial deleted' });
+    toast('Testimonial deleted', 'success');
     if (editing === t.id) reset();
     load();
   };

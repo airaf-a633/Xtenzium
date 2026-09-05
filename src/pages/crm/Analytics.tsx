@@ -160,16 +160,16 @@ const Analytics = () => {
         }
 
         const [d, p, w, rf, dv, g, q, ob, at, rt] = results.map(r => r.data ?? []);
-        setDaily(d as DailyRow[]);
-        setPages(p as PageRow[]);
-        setWhen(w as WhenRow[]);
-        setReferrers(rf as ReferrerRow[]);
-        setDevices(dv as DeviceRow[]);
-        setGeo(g as GeoRow[]);
-        setQuality(q as QualityRow[]);
-        setOutbound(ob as OutboundRow[]);
-        setAttribution(at as AttributionRow[]);
-        setRealtime(rt as RealtimeRow[]);
+        setDaily(d as unknown as DailyRow[]);
+        setPages(p as unknown as PageRow[]);
+        setWhen(w as unknown as WhenRow[]);
+        setReferrers(rf as unknown as ReferrerRow[]);
+        setDevices(dv as unknown as DeviceRow[]);
+        setGeo(g as unknown as GeoRow[]);
+        setQuality(q as unknown as QualityRow[]);
+        setOutbound(ob as unknown as OutboundRow[]);
+        setAttribution(at as unknown as AttributionRow[]);
+        setRealtime(rt as unknown as RealtimeRow[]);
         setLoading(false);
       })
       .catch(() => {
@@ -201,9 +201,9 @@ const Analytics = () => {
         setSearchReady(false);
         return;
       }
-      setQueries((q.data ?? []) as SearchQueryRow[]);
-      setSearchPages((p.data ?? []) as SearchPageRow[]);
-      setSearchDaily((d.data ?? []) as SearchDailyRow[]);
+      setQueries((q.data ?? []) as unknown as SearchQueryRow[]);
+      setSearchPages((p.data ?? []) as unknown as SearchPageRow[]);
+      setSearchDaily((d.data ?? []) as unknown as SearchDailyRow[]);
       setSearchReady(true);
     });
 

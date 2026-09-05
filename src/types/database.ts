@@ -249,6 +249,28 @@ export interface AppSetting {
   updated_at: string;
 }
 
+export type TestimonialPlacement = 'any' | 'home' | 'work' | 'estimate';
+
+export interface Testimonial {
+  id: string;
+  quote: string;
+  /* All three optional: the useful middle ground exists, where a client
+     will let their words be used but not their name. */
+  author_name: string | null;
+  author_role: string | null;
+  company: string | null;
+  project: string | null;
+  placement: TestimonialPlacement;
+  status: 'draft' | 'published';
+  /* Not a workflow state — a permission. See 014_testimonials.sql. */
+  consent: boolean;
+  consent_note: string | null;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+  published_at: string | null;
+}
+
 export type Database = {
   public: {
     Tables: {
@@ -433,6 +455,53 @@ export type Database = {
         Update: Partial<AppSetting>;
         Relationships: [];
       };
+
+      /* Client testimonials, from 014.
+         `status` and `consent` are separate on purpose: status is whether
+         we are ready to show a quote, consent is whether we are allowed
+         to. The RLS policy requires both, so the site cannot serve one
+         that has not been agreed to. */
+      testimonials: {
+        Row: Testimonial & Record<string, unknown>;
+        Insert: Omit<Testimonial, 'id' | 'created_at' | 'updated_at' | 'published_at'> & {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          published_at?: string | null;
+        };
+        Update: Partial<Omit<Testimonial, 'id'>>;
+        Relationships: [];
+      };
+
+      /* Search Console rows, from 015. Written by the daily sync with the
+         service role, which is why there is no anon insert policy. */
+      search_queries: {
+        Row: {
+          day: string;
+          query: string;
+          page: string;
+          clicks: number;
+          impressions: number;
+          position: number | null;
+          fetched_at: string;
+        } & Record<string, unknown>;
+        Insert: {
+          day: string;
+          query: string;
+          page: string;
+          clicks?: number;
+          impressions?: number;
+          position?: number | null;
+          fetched_at?: string;
+        };
+        Update: Partial<{
+          clicks: number;
+          impressions: number;
+          position: number | null;
+          fetched_at: string;
+        }>;
+        Relationships: [];
+      };
     };
     Views: {
       /* Aggregates from 007. Read-only, so only Row is meaningful. */
@@ -480,6 +549,128 @@ export type Database = {
           sessions: number;
           leads: number;
           conversion_percent: number | null;
+        } & Record<string, unknown>;
+        Relationships: [];
+      };
+
+      /* Dimensions, from 013. Every one carries `day` so the dashboard's
+         date range applies to all of them — `analytics_pages` above did
+         not, and the range silently governed half the screen. */
+      analytics_session_facts: {
+        Row: {
+          visitor: string;
+          day: string;
+          dow: number;
+          hour: number;
+          seconds: number;
+          landing_path: string | null;
+          referring_host: string | null;
+          device: string | null;
+          country: string | null;
+          city: string | null;
+          browser: string | null;
+          os: string | null;
+          pageviews: number;
+          max_scroll: number | null;
+        } & Record<string, unknown>;
+        Relationships: [];
+      };
+      analytics_when: {
+        Row: {
+          day: string;
+          dow: number;
+          hour: number;
+          sessions: number;
+          pageviews: number;
+        } & Record<string, unknown>;
+        Relationships: [];
+      };
+      analytics_referrers: {
+        Row: {
+          day: string;
+          referring_host: string | null;
+          sessions: number;
+          pageviews: number;
+        } & Record<string, unknown>;
+        Relationships: [];
+      };
+      analytics_devices: {
+        Row: {
+          day: string;
+          device: string | null;
+          browser: string | null;
+          os: string | null;
+          sessions: number;
+        } & Record<string, unknown>;
+        Relationships: [];
+      };
+      analytics_geo: {
+        Row: {
+          day: string;
+          country: string | null;
+          city: string | null;
+          sessions: number;
+        } & Record<string, unknown>;
+        Relationships: [];
+      };
+      analytics_quality: {
+        Row: {
+          day: string;
+          sessions: number;
+          bounced: number;
+          avg_pageviews: number | null;
+          avg_seconds: number | null;
+        } & Record<string, unknown>;
+        Relationships: [];
+      };
+      analytics_outbound: {
+        Row: {
+          day: string;
+          host: string | null;
+          clicks: number;
+        } & Record<string, unknown>;
+        Relationships: [];
+      };
+      analytics_realtime: {
+        Row: {
+          path: string;
+          visitors: number;
+          last_seen: string;
+        } & Record<string, unknown>;
+        Relationships: [];
+      };
+
+      /* Search Console, from 015. Copied in daily by web/api/gsc-sync.ts,
+         because the query someone typed is not in the referrer and has
+         not been for a decade. */
+      search_console_queries: {
+        Row: {
+          day: string;
+          query: string;
+          clicks: number;
+          impressions: number;
+          position: number | null;
+        } & Record<string, unknown>;
+        Relationships: [];
+      };
+      search_console_pages: {
+        Row: {
+          day: string;
+          page: string;
+          clicks: number;
+          impressions: number;
+          position: number | null;
+        } & Record<string, unknown>;
+        Relationships: [];
+      };
+      search_console_daily: {
+        Row: {
+          day: string;
+          clicks: number;
+          impressions: number;
+          queries: number;
+          ctr_percent: number | null;
+          position: number | null;
         } & Record<string, unknown>;
         Relationships: [];
       };
