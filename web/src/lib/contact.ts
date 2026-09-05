@@ -22,6 +22,27 @@ export function initContact() {
   if (typeof window === 'undefined') return;
 
   const form = document.querySelector<HTMLFormElement>('[data-contact-form]');
+
+  // Carry the service through from the page they came from.
+  //
+  // Each service page now asks in its own words and links here with
+  // ?service=. Without this the reader arrives having just clicked
+  // "tell us what the device has to do" and finds an empty dropdown
+  // asking the same question again — the link would be making a promise
+  // the form immediately breaks.
+  //
+  // Matched by value against the options the page already rendered, so an
+  // unrecognised or hand-edited parameter simply leaves the field alone
+  // rather than injecting anything.
+  if (form) {
+    const wanted = new URLSearchParams(window.location.search).get('service');
+    if (wanted) {
+      const select = form.querySelector<HTMLSelectElement>('select[name="service"]');
+      const match = select
+        && Array.from(select.options).find((o) => o.value === wanted);
+      if (select && match) select.value = match.value;
+    }
+  }
   if (!form) return;
 
   const statusEl = form.querySelector<HTMLElement>('[data-contact-status]');

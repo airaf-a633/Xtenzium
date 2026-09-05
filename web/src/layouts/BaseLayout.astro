@@ -87,12 +87,59 @@ const ogImage = new URL(image, Astro.site).href;
 
     <slot />
 
+    {/* A quiet prompt for a reader who is leaving. A corner panel rather
+        than a modal: it covers nothing, traps no focus, and the page stays
+        usable behind it. It offers what is already on offer everywhere
+        else — nothing is withheld in order to create the ask, because
+        withholding something to extract an email is the move this site is
+        positioned against. */}
+    <aside
+      data-exit-prompt
+      hidden
+      aria-label="Before you go"
+      class="fixed bottom-5 right-5 z-[65] w-[min(22rem,calc(100vw-2.5rem))] rounded-card border border-white/12 bg-carbon p-6 shadow-[0_24px_60px_-20px_rgba(10,9,8,0.7)]"
+    >
+      <button
+        type="button"
+        data-exit-prompt-close
+        aria-label="Dismiss"
+        class="absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-full text-white/40 transition-colors duration-300 hover:bg-white/10 hover:text-white"
+      >
+        <span aria-hidden="true">&times;</span>
+      </button>
+
+      <p class="eyebrow !text-copper-hi">Before you go</p>
+      <p class="mt-3 font-display text-lg font-bold leading-snug tracking-[-0.02em] text-white">
+        Most projects start months before anyone signs anything.
+      </p>
+      <p class="mt-2.5 text-sm leading-relaxed text-white/55">
+        Get a realistic range in four questions, or thirty minutes with the
+        people who would build it. Neither commits you to anything.
+      </p>
+
+      <div class="mt-5 flex flex-wrap gap-2.5">
+        <a
+          href="/estimate"
+          class="inline-flex items-center justify-center rounded-pill bg-copper px-5 py-2.5 text-sm font-bold text-white transition-colors duration-300 hover:bg-copper-hover"
+        >
+          Estimate a project
+        </a>
+        <a
+          href="/contact"
+          class="inline-flex items-center justify-center rounded-pill border border-white/25 px-5 py-2.5 text-sm font-bold text-white transition-colors duration-300 hover:bg-white hover:text-carbon"
+        >
+          Book a call
+        </a>
+      </div>
+    </aside>
+
     <script>
       import { initSmoothScroll, destroySmoothScroll, syncSmoothScroll } from '../lib/smooth-scroll';
       import { initReveal, destroyReveal } from '../lib/reveal';
       import { initSplit, destroySplit } from '../lib/split';
       import { initSectionExit, destroySectionExit } from '../lib/section-exit';
       import { initAnchorScroll, destroyAnchorScroll } from '../lib/anchor-scroll';
+      import { initExitPrompt, destroyExitPrompt } from '../lib/exit-prompt';
       import { initStatementPanels, destroyStatementPanels } from '../lib/statement-panel';
       import { initHero, destroyHero } from '../lib/hero';
       import { initCounters, destroyCounters } from '../lib/counter';
@@ -124,6 +171,7 @@ const ogImage = new URL(image, Astro.site).href;
         initSplit();
         initSectionExit();
         initAnchorScroll();
+        initExitPrompt();
         initStatementPanels();
         initCounters();
         initParallax();
@@ -174,6 +222,7 @@ const ogImage = new URL(image, Astro.site).href;
         destroySplit();
         destroySectionExit();
         destroyAnchorScroll();
+        destroyExitPrompt();
         destroyStatementPanels();
         destroyCounters();
         destroyParallax();

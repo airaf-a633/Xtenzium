@@ -243,8 +243,24 @@ export function initEstimate() {
     });
 
     if (res.ok) {
-      statusEl.textContent = 'Sent. Check your inbox in the next few minutes.';
-      statusEl.dataset.state = 'ok';
+      // Swap the spent form for the next step rather than leaving a line of
+      // text under it. This is the one moment in the funnel where somebody
+      // has just raised their hand, and it used to be a dead end.
+      const done = root.querySelector<HTMLElement>('[data-estimate-done]');
+      const sentTo = done?.querySelector<HTMLElement>('[data-estimate-sentto]');
+      if (sentTo) sentTo.textContent = email;
+
+      if (done) {
+        const capture = form.closest<HTMLElement>('[data-estimate-step]');
+        if (capture) capture.hidden = true;
+        done.hidden = false;
+        // Move focus to the new heading so a screen reader lands on the
+        // outcome instead of being left on a button that no longer exists.
+        done.querySelector<HTMLElement>('h2')?.focus();
+      } else {
+        statusEl.textContent = 'Sent. Check your inbox in the next few minutes.';
+        statusEl.dataset.state = 'ok';
+      }
       form.reset();
       return;
     }
