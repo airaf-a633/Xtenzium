@@ -21,7 +21,7 @@
 --   3. It is rate limited and slow. A dashboard that hits it on every
 --      page load is a dashboard that is sometimes empty.
 --
--- Data lands here from `web/api/gsc-sync.ts`, which Vercel runs daily.
+-- Data lands here from `api/gsc-sync.ts`, which Vercel runs daily.
 
 create table if not exists public.search_queries (
   -- The date the impressions happened, not the date we fetched them.
@@ -52,7 +52,7 @@ create table if not exists public.search_queries (
 );
 
 comment on table public.search_queries is
-  'Daily Google Search Console query data, copied in by web/api/gsc-sync.ts. Recent days are restated by Google for about three days, so the sync re-fetches a trailing window and upserts on (day, query, page).';
+  'Daily Google Search Console query data, copied in by api/gsc-sync.ts. Recent days are restated by Google for about three days, so the sync re-fetches a trailing window and upserts on (day, query, page).';
 
 create index if not exists search_queries_day_idx
   on public.search_queries (day desc);

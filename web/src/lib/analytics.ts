@@ -35,7 +35,7 @@ export type EventName =
   | 'exit_prompt_click';
 
 const VISITOR_KEY = 'xtz:visitor';
-/** Same-origin collector; see `web/api/collect.ts`. */
+/** Same-origin collector; see `api/collect.ts`. */
 const COLLECT = '/api/collect';
 const FLUSH_MS = 2000;
 const MAX_BATCH = 20;

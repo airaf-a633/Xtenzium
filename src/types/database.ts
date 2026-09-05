@@ -640,7 +640,7 @@ export type Database = {
         Relationships: [];
       };
 
-      /* Search Console, from 015. Copied in daily by web/api/gsc-sync.ts,
+      /* Search Console, from 015. Copied in daily by api/gsc-sync.ts,
          because the query someone typed is not in the referrer and has
          not been for a decade. */
       search_console_queries: {

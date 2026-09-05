@@ -33,7 +33,7 @@
 --
 -- Geo and client are set by the collector, not the browser: the site is
 -- static and posts straight to PostgREST, so nothing in the page ever
--- learns its own IP. `web/api/collect.ts` reads Vercel's geo headers and
+-- learns its own IP. `api/collect.ts` reads Vercel's geo headers and
 -- the user agent, writes these columns, and forwards the rest untouched.
 --
 -- Country and city only. No region, no postal, no coordinates, and never
