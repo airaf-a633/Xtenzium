@@ -91,10 +91,22 @@ const Analytics = () => {
         if (cancelled) return;
 
         /* Postgres reports an unknown relation as 42P01. Anything else is
-           a real failure and should not be dressed up as a setup step. */
-        if (dailyResult.error) {
-          if (dailyResult.error.code === '42P01') setNotInstalled(true);
-          else setFailed(true);
+           a real failure and should not be dressed up as a setup step.
+           All three are checked, not just the first: 011 was applied once
+           in a state where the daily view existed and the attribution one
+           did not, and that showed an empty chart rather than saying the
+           migration was half applied. */
+        const results = [dailyResult, pagesResult, attributionResult];
+        const missing = results.find(r => r.error?.code === '42P01');
+        const broken = results.find(r => r.error && r.error.code !== '42P01');
+
+        if (missing) {
+          setNotInstalled(true);
+          setLoading(false);
+          return;
+        }
+        if (broken) {
+          setFailed(true);
           setLoading(false);
           return;
         }
@@ -197,7 +209,7 @@ const Analytics = () => {
         <PageHeader title="Site analytics" />
         <ErrorState
           title="Not installed yet"
-          body="Run supabase/migrations/011_analytics.sql in the SQL editor. Nothing is collected until the table exists, and the site keeps working either way."
+          body="Run 011_analytics.sql and then 012_analytics_fixes.sql in the SQL editor. One of the views is missing, which means the migrations are only part applied. Nothing is collected until they are, and the site keeps working either way."
         />
       </>
     );
