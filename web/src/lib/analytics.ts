@@ -35,6 +35,8 @@ export type EventName =
   | 'exit_prompt_click';
 
 const VISITOR_KEY = 'xtz:visitor';
+/** Same-origin collector; see `web/api/collect.ts`. */
+const COLLECT = '/api/collect';
 const FLUSH_MS = 2000;
 const MAX_BATCH = 20;
 
@@ -114,25 +116,38 @@ async function flush(useBeacon = false) {
     timer = null;
   }
 
+  const payload = JSON.stringify(batch);
+
   // On page hide the tab may be gone before a fetch resolves, so hand the
   // last batch to sendBeacon, which the browser delivers on our behalf.
   if (useBeacon && navigator.sendBeacon) {
-    const url = import.meta.env.PUBLIC_SUPABASE_URL;
-    const key = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
-    if (url && key) {
-      try {
-        const blob = new Blob([JSON.stringify(batch)], { type: 'application/json' });
-        navigator.sendBeacon(
-          `${url}/rest/v1/page_events?apikey=${encodeURIComponent(key)}`,
-          blob,
-        );
-        return;
-      } catch {
-        /* fall through to the normal path */
-      }
+    try {
+      const blob = new Blob([payload], { type: 'application/json' });
+      if (navigator.sendBeacon(COLLECT, blob)) return;
+    } catch {
+      /* fall through to the normal path */
     }
   }
 
+  // The collector adds the two things this file cannot see: the country
+  // the request came from, and the browser family. Neither is derivable
+  // in the page — the site is static, so nothing here ever learns its own
+  // address — and `keepalive` lets the request outlive the navigation.
+  try {
+    const res = await fetch(COLLECT, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: payload,
+      keepalive: true,
+    });
+    if (res.ok) return;
+  } catch {
+    /* fall through */
+  }
+
+  // Fallback: straight to PostgREST, as before. Costs geography, not
+  // measurement — which is the right thing to lose if the edge function
+  // is missing, misconfigured or being deployed.
   try {
     await getSupabase()?.from('page_events').insert(batch);
   } catch {
