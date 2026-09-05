@@ -69,6 +69,17 @@ const ogImage = new URL(image, Astro.site).href;
   </head>
 
   <body>
+    <!-- Bypass block (WCAG 2.4.1). Off-screen until focused, then it lands
+         in the top-left as the first tab stop — a keyboard reader should
+         not have to walk the whole nav on every page to reach the content
+         they came for. -->
+    <a
+      href="#main"
+      class="sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:left-4 focus-visible:top-4 focus-visible:z-[70] focus-visible:rounded-pill focus-visible:bg-copper focus-visible:px-5 focus-visible:py-3 focus-visible:text-sm focus-visible:font-bold focus-visible:text-white"
+    >
+      Skip to content
+    </a>
+
     <!-- Reading progress. Driven by scale, never width. -->
     <div aria-hidden="true" class="pointer-events-none fixed inset-x-0 top-0 z-[60] h-[2px]">
       <div data-progress class="h-full origin-left bg-copper" style="scale: 0 1;"></div>

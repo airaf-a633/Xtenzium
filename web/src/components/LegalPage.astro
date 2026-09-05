@@ -1,0 +1,126 @@
+---
+import BleedImage from './BleedImage.astro';
+import { imagery } from '../data/imagery';
+
+/**
+ * Shared shell for the legal pages.
+ *
+ * Legal copy is still the brand. These pages carry the same carbon
+ * header, the same reveal hooks and the same parallax as every other page
+ * on the site — a policy set in a different typeface than the work is a
+ * policy that looks bolted on, which is exactly the impression it must
+ * not give.
+ *
+ * The prose styles are scoped here rather than global so they cannot leak
+ * into marketing sections, which set their own type. Same reasoning as
+ * `.prose-case` on the case studies.
+ */
+interface Props {
+  eyebrow: string;
+  title: string;
+  summary: string;
+  /** ISO date. Rendered readably, and machine-readable in the markup. */
+  updated: string;
+}
+
+const { eyebrow, title, summary, updated } = Astro.props;
+
+const updatedLabel = new Date(updated).toLocaleDateString('en-GB', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+});
+---
+
+<section class="on-carbon relative overflow-hidden bg-carbon pb-20 pt-40 md:pb-24 md:pt-48">
+  <BleedImage image={imagery.headerLegal} scrim="soft" eager parallax />
+
+  <div class="container-x relative z-10" data-reveal-group data-exit>
+    <p class="eyebrow !text-copper-hi" data-reveal="eyebrow">{eyebrow}</p>
+    <h1
+      data-reveal="line"
+      class="mt-4 max-w-3xl font-display text-[clamp(2.25rem,6vw,4.25rem)] font-bold leading-[1.02] tracking-[-0.035em] text-white"
+    >
+      {title}
+    </h1>
+    <p class="mt-7 max-w-2xl text-lg leading-relaxed text-white/60" data-reveal="body">
+      {summary}
+    </p>
+    <p class="mt-8 font-mono text-[11px] uppercase tracking-[0.18em] text-white/40">
+      Last updated <time datetime={updated}>{updatedLabel}</time>
+    </p>
+  </div>
+</section>
+
+<section class="bg-bg py-20 md:py-28">
+  <div class="container-x" data-exit>
+    <article class="prose-legal max-w-[68ch]">
+      <slot />
+    </article>
+  </div>
+</section>
+
+<style is:global>
+  /* Scoped to the legal templates so it cannot reach marketing sections,
+     which set their own type. */
+  .prose-legal > * + * { margin-top: 1.3rem; }
+
+  .prose-legal h2 {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    color: var(--color-ink);
+    margin-top: 3rem;
+  }
+  .prose-legal h2:first-child { margin-top: 0; }
+
+  .prose-legal h3 {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--color-ink);
+    margin-top: 2rem;
+  }
+
+  .prose-legal p,
+  .prose-legal li {
+    font-size: 1.0625rem;
+    line-height: 1.72;
+    color: var(--color-ink-2);
+  }
+
+  .prose-legal ul { padding-left: 1.15rem; list-style: disc; }
+  .prose-legal li + li { margin-top: 0.5rem; }
+  .prose-legal strong { color: var(--color-ink); font-weight: 600; }
+
+  .prose-legal a {
+    color: var(--color-copper);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  /* A definition row — "what we collect / why" reads better as a pair
+     than as a paragraph pretending to be one. */
+  .prose-legal dl {
+    margin-top: 1.3rem;
+    border-top: 1px solid var(--color-line);
+  }
+  .prose-legal dt {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-copper);
+    padding-top: 1.15rem;
+  }
+  .prose-legal dd {
+    margin: 0.5rem 0 1.15rem;
+    font-size: 1.0625rem;
+    line-height: 1.72;
+    color: var(--color-ink-2);
+    border-bottom: 1px solid var(--color-line);
+    padding-bottom: 1.15rem;
+  }
+</style>

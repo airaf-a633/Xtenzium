@@ -1,0 +1,186 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Navbar from '../components/Navbar.astro';
+import Footer from '../components/Footer.astro';
+import LegalPage from '../components/LegalPage.astro';
+
+/**
+ * Written from what the site actually does, not from a template.
+ *
+ * Every claim below was checked against the code: lib/contact.ts and
+ * lib/estimate.ts for what the forms send, lib/supabase.ts for where it
+ * goes, BaseLayout for storage and third-party requests. A policy that
+ * describes collection a site does not do — or omits collection it does —
+ * is worse than no policy, because it is a documented promise nobody
+ * checked.
+ *
+ * TODO(airaf): two things here need a decision rather than a draft.
+ *   1. Retention. The text says leads are kept while a conversation is
+ *      live and reviewed periodically. Give it a real period and this
+ *      becomes a commitment instead of a description.
+ *   2. Supabase region. If the project is not hosted in the EU, EU/UK
+ *      enquiries involve an international transfer and that should be
+ *      named explicitly rather than implied.
+ */
+const updated = '2026-09-05';
+---
+
+<BaseLayout
+  title="Privacy Policy — Xtenzium"
+  description="What Xtenzium collects when you use this site, why, where it is stored, and how to have it removed. No cookies, no analytics, no tracking."
+  path="/privacy"
+>
+  <Navbar />
+
+  <main id="main">
+    <LegalPage
+      eyebrow="Privacy"
+      title="What we collect, and what we don't."
+      summary="Short, because there is little to describe. This site sets no cookies, runs no analytics, and tracks nobody. The only personal data we hold is what you type into a form and send us."
+      updated={updated}
+    >
+      <h2>The short version</h2>
+      <p>
+        We collect the details you enter into the contact form or the project
+        estimator, and nothing else. There are no cookies on this site, no
+        analytics, no advertising pixels, and no third-party tracking of any
+        kind. Nothing is sold, rented, or shared for marketing.
+      </p>
+      <p>
+        <strong>Xtenzium</strong> is a digital agency based in Karachi, Sindh,
+        Pakistan, and is the controller of the data described here. Reach us
+        about anything on this page at{' '}
+        <a href="mailto:contact@xtenzium.com">contact@xtenzium.com</a>.
+      </p>
+
+      <h2>What we collect</h2>
+      <dl>
+        <dt>Contact form</dt>
+        <dd>
+          Your name, email address, and message, which are required; and your
+          company, budget range and the service you are asking about, which are
+          optional and blank unless you fill them in.
+        </dd>
+
+        <dt>Project estimator</dt>
+        <dd>
+          Your email address, the four answers you selected, and the range the
+          estimator produced. The answers are ranges and categories rather than
+          anything identifying — the estimator asks nothing about you until it
+          has already shown you a number.
+        </dd>
+
+        <dt>Server logs</dt>
+        <dd>
+          Our host records ordinary request information, including IP address,
+          browser user agent and the page requested. This is standard web
+          server logging, used to keep the site available and to investigate
+          abuse. We do not build profiles from it.
+        </dd>
+      </dl>
+
+      <p>
+        We do not ask for, and have no use for, special category data — health,
+        political opinions, biometrics and the rest. Please do not send it
+        through these forms.
+      </p>
+
+      <h2>Why we hold it</h2>
+      <p>
+        To reply to you. An enquiry is a request to be contacted back, and the
+        details you send are used to answer it and to carry on that
+        conversation — quoting, scoping, and delivering work if it gets that
+        far. In data protection terms this is our legitimate interest in
+        responding to people who deliberately contact a business, and the steps
+        necessary before entering a contract at your request.
+      </p>
+      <p>
+        We do not send marketing email. If that ever changes, it will be
+        something you opt into rather than something you are enrolled in by
+        having once made an enquiry.
+      </p>
+
+      <h2>Where it goes</h2>
+      <p>
+        Form submissions are stored in a Supabase database that only we can read
+        — the public site can write an enquiry and cannot read any of them
+        back. Access is limited to the people at Xtenzium who need it to reply
+        to you.
+      </p>
+      <p>Three third parties are involved in running this site:</p>
+      <ul>
+        <li>
+          <strong>Supabase</strong> — the database that stores enquiries, acting
+          as our processor.
+        </li>
+        <li>
+          <strong>Vercel</strong> — hosting and delivery, which involves the
+          server logging described above.
+        </li>
+        <li>
+          <strong>Google Fonts</strong> — the site loads three typefaces from
+          Google's servers, which means your browser makes a request to Google
+          and your IP address is visible to them as part of it. No cookie is
+          set by this and we receive nothing from it, but it is a request to a
+          third party and you are entitled to know it happens.
+        </li>
+      </ul>
+      <p>
+        Xtenzium is in Pakistan, so an enquiry sent from the UK or the EU
+        involves a transfer outside that jurisdiction. If you would rather not
+        use the form for that reason, email is fine, and so is asking us to
+        delete the record after we have replied.
+      </p>
+
+      <h2>Cookies and browser storage</h2>
+      <p>
+        This site sets <strong>no cookies</strong>. There is no consent banner
+        because there is nothing to consent to.
+      </p>
+      <p>
+        One thing is stored in your browser: when you navigate between pages,
+        the site remembers how far down each page you had scrolled, so the back
+        button returns you where you were. It lives in your browser's session
+        storage, is cleared when you close the tab, and is never transmitted
+        anywhere — we cannot read it.
+      </p>
+
+      <h2>How long we keep it</h2>
+      <p>
+        Enquiries are kept while the conversation is live and for as long as we
+        may reasonably need them afterwards — a project has a history, and
+        deleting the enquiry that started it makes that history incomplete.
+        Records that went nowhere are reviewed and cleared periodically. If you
+        want yours removed sooner, ask, and we will.
+      </p>
+
+      <h2>Your rights</h2>
+      <p>
+        You can ask us for a copy of what we hold about you, ask us to correct
+        it, ask us to delete it, or object to us holding it at all. If you are
+        in the UK or the EU, those rights come with a statutory deadline and we
+        will answer inside it; if you are elsewhere, we will do the same thing
+        anyway because there is no good reason not to.
+      </p>
+      <p>
+        One email to{' '}
+        <a href="mailto:contact@xtenzium.com">contact@xtenzium.com</a> is
+        enough. We do not require a form, and we will not make it difficult.
+      </p>
+      <p>
+        If you are in the UK or the EU and think we have handled your data
+        badly, you have the right to complain to your national data protection
+        authority. We would rather you told us first so we can fix it.
+      </p>
+
+      <h2>Changes</h2>
+      <p>
+        If this policy changes, the date at the top of the page changes with it.
+        A material change to how we handle enquiries will be described here
+        rather than quietly folded in.
+      </p>
+    </LegalPage>
+  </main>
+
+  <Footer />
+</BaseLayout>

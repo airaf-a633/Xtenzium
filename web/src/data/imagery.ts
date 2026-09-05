@@ -57,6 +57,7 @@ export const imagery = {
   headerJournal: { art: '/art/header-journal.svg', alt: '' },
   headerContact: { art: '/art/header-contact.svg', alt: '' },
   headerEstimate: { art: '/art/header-estimate.svg', alt: '' },
+  headerLegal: { art: '/art/header-legal.svg', alt: '' },
 } satisfies Record<string, Imagery>;
 
 /**
