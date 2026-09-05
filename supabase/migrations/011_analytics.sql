@@ -145,8 +145,15 @@ create policy "page_events_auth_delete"
 --
 -- The dashboard reads these rather than the raw table, so a change to
 -- how a metric is defined happens in one place.
+--
+-- Every one is `security_invoker`, and that is not optional. A Postgres
+-- view runs as its owner by default, which bypasses RLS on the table
+-- underneath it — so without this the public role is refused by
+-- `page_events` and then handed the same data by any view over it. The
+-- first version of this file omitted it and did exactly that.
 
-create or replace view public.analytics_daily as
+create or replace view public.analytics_daily
+with (security_invoker = on) as
 select
   date_trunc('day', created_at)                        as day,
   count(*) filter (where name = 'pageview')            as pageviews,
@@ -157,7 +164,8 @@ from public.page_events
 group by 1
 order by 1 desc;
 
-create or replace view public.analytics_pages as
+create or replace view public.analytics_pages
+with (security_invoker = on) as
 select
   path,
   count(*) filter (where name = 'pageview')                as pageviews,
@@ -181,7 +189,8 @@ order by pageviews desc;
 -- is already jsonb and already written by both forms, so the beacon puts
 -- its `visitor` in there and nothing about the leads table has to change
 -- — which matters, because that table belongs to the CRM.
-create or replace view public.analytics_attribution as
+create or replace view public.analytics_attribution
+with (security_invoker = on) as
 with sessions as (
   select
     visitor,
