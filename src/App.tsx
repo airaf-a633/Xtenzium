@@ -48,6 +48,7 @@ const BlogEdit    = lazy(() => import('./pages/admin/blogs/BlogEdit'));
 const CrmLogin       = lazy(() => import('./pages/crm/Login'));
 const CrmLayout       = lazy(() => import('./pages/crm/CrmLayout'));
 const CrmDashboard    = lazy(() => import('./pages/crm/Dashboard'));
+const CrmAnalytics    = lazy(() => import('./pages/crm/Analytics'));
 const Pipeline        = lazy(() => import('./pages/crm/pipeline/Pipeline'));
 const MyWork          = lazy(() => import('./pages/crm/MyWork'));
 const CrmSettings     = lazy(() => import('./pages/crm/Settings'));
@@ -165,6 +166,7 @@ const AppRoutes = () => {
           >
             <Route index                element={<CrmDashboard />} />
             <Route path="my-work"       element={<MyWork />} />
+            <Route path="analytics"     element={<CrmAnalytics />} />
             <Route path="settings"      element={<CrmSettings />} />
             <Route path="pipeline"      element={<Pipeline />} />
             <Route path="clients"       element={<Clients />} />

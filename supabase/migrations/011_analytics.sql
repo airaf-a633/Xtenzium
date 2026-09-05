@@ -2,10 +2,11 @@
 -- Xtenzium — First-party analytics
 -- Run this in: Supabase Dashboard → SQL Editor → New query
 --
--- NOT APPLIED BY THE AUTHOR. The CRM is being built in a separate
--- session that owns this schema, so this file is written and left for
--- whoever is holding the database to run. If 006_ is already taken by
--- then, renumber the file — nothing here depends on the number.
+-- Renumbered from 006, which collided: the CRM session had already taken
+-- that number with 006_identity_and_deals.sql. Two migrations sharing a
+-- number is how a schema history stops being an order. If this has
+-- already been run as 006, nothing needs redoing — the rename is to the
+-- file, not to anything in the database.
 -- ============================================================
 --
 -- Why this exists rather than Google Analytics:
