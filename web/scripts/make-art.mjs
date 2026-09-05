@@ -482,6 +482,9 @@ const files = {
   'header-about.svg': plotField(9001, 2400, 900),
   'header-journal.svg': typeGrid(3305, 2400, 900),
   'header-contact.svg': broadcast(5501, 2400, 900),
+  // Legal pages are setting and measure — clauses, columns, a rule under a
+  // heading — so they take the typographic motif rather than a circuit.
+  'header-legal.svg': typeGrid(7007, 2400, 900),
   'header-estimate.svg': plotField(6602, 2400, 900),
 
   // ── Industries ──

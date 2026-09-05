@@ -1,0 +1,137 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Navbar from '../components/Navbar.astro';
+import Footer from '../components/Footer.astro';
+import LegalPage from '../components/LegalPage.astro';
+
+/**
+ * Terms for the site, deliberately not for the work.
+ *
+ * The most common failure in an agency's terms page is quietly trying to
+ * govern client engagements from a page nobody signed. A prospect reading
+ * a website has not agreed to payment terms or an IP assignment, and
+ * pretending otherwise makes the real contract harder to enforce rather
+ * than easier. These cover the site; the engagement letter covers the
+ * work, and the page says so.
+ *
+ * TODO(airaf): governing law is stated as Pakistan, which follows from
+ * where the business sits. Confirm it matches the engagement letters —
+ * the two disagreeing is worse than either choice.
+ */
+const updated = '2026-09-05';
+---
+
+<BaseLayout
+  title="Terms of Use — Xtenzium"
+  description="The terms covering use of the Xtenzium website: what the content is, what the estimator is and is not, and where the site ends and a client agreement begins."
+  path="/terms"
+>
+  <Navbar />
+
+  <main id="main">
+    <LegalPage
+      eyebrow="Terms"
+      title="The terms for this site."
+      summary="These cover the website and nothing else. Work we do for you is governed by a written agreement you actually sign — not by a page you scrolled past."
+      updated={updated}
+    >
+      <h2>What these cover</h2>
+      <p>
+        This page covers your use of xtenzium.com. It is not a contract for
+        services, and reading a website is not entering one. If we work
+        together, that engagement is governed by a separate written agreement —
+        a scope, a price and terms, signed by both of us. Where the two ever
+        disagree, the signed agreement wins.
+      </p>
+
+      <h2>The estimator is an estimate</h2>
+      <p>
+        The project estimator returns a range from four questions. It is a
+        starting point for a conversation, deliberately wide, and it is
+        explicitly <strong>not a quote and not an offer</strong>. Nothing it
+        shows binds either of us. A real number comes after a scoping call,
+        in writing, once we understand what is actually being built.
+      </p>
+
+      <h2>What is on the site</h2>
+      <p>
+        We try to keep everything here accurate, and case studies describe real
+        projects. Even so, the site is provided as it is: we do not warrant that
+        it is complete, current, or uninterrupted, and technical detail written
+        about one project is not advice for yours.
+      </p>
+      <p>
+        Figures are labelled with where they come from. A number described as
+        measured was taken after launch; a number described as observed is true
+        by inspecting the thing itself; an estimate is labelled an estimate. We
+        would rather publish a smaller number we can defend than a larger one we
+        cannot.
+      </p>
+
+      <h2>Ownership</h2>
+      <p>
+        The design, code, written content and generated artwork on this site
+        belong to Xtenzium. You are welcome to read it, link to it, quote it
+        with attribution, and share it. You may not republish it as your own or
+        pass it off as somebody else's work.
+      </p>
+      <p>
+        Client names, product names and technology marks used across the site
+        belong to their respective owners and appear here to describe work and
+        tools, not to imply endorsement. Where work was delivered under another
+        studio's banner, the site says so and names the contribution rather than
+        implying we owned the project.
+      </p>
+
+      <h2>Using the site</h2>
+      <p>Please do not:</p>
+      <ul>
+        <li>submit the forms automatically, at volume, or with details that are not yours;</li>
+        <li>attempt to access data, accounts or systems you are not entitled to;</li>
+        <li>probe, scan or load-test the site without asking us first — ask, and we will usually say yes and tell you when;</li>
+        <li>use anything here to build something unlawful.</li>
+      </ul>
+      <p>
+        The forms carry basic anti-abuse measures. If they turn a genuine
+        enquiry away, email us instead — that is a bug on our side and we would
+        like to know.
+      </p>
+
+      <h2>Links out</h2>
+      <p>
+        The site links to live client work and to source repositories. Those are
+        other people's sites running under their own terms and privacy
+        practices, and we are not responsible for what happens once you leave.
+      </p>
+
+      <h2>Liability</h2>
+      <p>
+        To the extent the law allows, Xtenzium is not liable for loss arising
+        from use of this site or reliance on its content. Nothing here limits
+        liability that cannot lawfully be limited, and nothing here affects the
+        terms of a signed engagement.
+      </p>
+
+      <h2>Law</h2>
+      <p>
+        These terms are governed by the laws of Pakistan, and disputes about
+        this site fall to the courts of Karachi. A signed engagement may specify
+        something different, and where it does, it governs that work.
+      </p>
+
+      <h2>Changes</h2>
+      <p>
+        We may update these terms. The date at the top changes when we do, and
+        continuing to use the site after that means the updated version applies.
+      </p>
+
+      <h2>Contact</h2>
+      <p>
+        Questions about any of this go to{' '}
+        <a href="mailto:contact@xtenzium.com">contact@xtenzium.com</a>.
+      </p>
+    </LegalPage>
+  </main>
+
+  <Footer />
+</BaseLayout>

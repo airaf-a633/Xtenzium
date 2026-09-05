@@ -1,0 +1,165 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Navbar from '../components/Navbar.astro';
+import Footer from '../components/Footer.astro';
+import LegalPage from '../components/LegalPage.astro';
+
+/**
+ * Every claim on this page is checked against the codebase.
+ *
+ * An accessibility statement is the easiest page on a site to write
+ * dishonestly, because almost nobody audits it. The contrast ratios below
+ * are the ones recorded in styles/global.css; the reduced-motion coverage
+ * is a count of the modules that actually branch on it; the keyboard
+ * controls on the industries carousel exist because WCAG 2.2 requires a
+ * single-pointer alternative to dragging. The known gaps are gaps we
+ * found rather than gaps we felt safe admitting.
+ */
+const updated = '2026-09-05';
+---
+
+<BaseLayout
+  title="Accessibility — Xtenzium"
+  description="How this site is built for accessibility, measured against WCAG 2.2 AA — what is done, what is known to be missing, and how to tell us when we get it wrong."
+  path="/accessibility"
+>
+  <Navbar />
+
+  <main id="main">
+    <LegalPage
+      eyebrow="Accessibility"
+      title="How this site is built to be used."
+      summary="We build accessible interfaces for clients, so it would be a poor advertisement if our own site were not one. Here is what is done, and what is still missing."
+      updated={updated}
+    >
+      <h2>The standard we hold this to</h2>
+      <p>
+        This site targets <strong>WCAG 2.2 Level AA</strong>. That is the same
+        bar we build client work to, and the same one most public sector and
+        procurement requirements name.
+      </p>
+      <p>
+        We are not claiming perfect conformance. A statement that claims it
+        usually has not been tested, and the useful version of this page is the
+        one that tells you where the edges are.
+      </p>
+
+      <h2>What is in place</h2>
+
+      <h3>Motion</h3>
+      <p>
+        This site animates a great deal, and every part of it stops if you ask.
+        Nineteen separate modules branch on <code>prefers-reduced-motion</code>,
+        including the scroll-driven sections, the carousels, the parallax and
+        the page transitions. With reduced motion set, content is placed
+        directly in its final state — never hidden behind an animation that has
+        been switched off.
+      </p>
+
+      <h3>Colour and contrast</h3>
+      <p>
+        The accent colour exists in two values so it can carry the same weight
+        on both grounds and still pass: <strong>5.46:1</strong> on the light
+        ground and <strong>8.06:1</strong> on carbon, against the 4.5:1 that AA
+        requires for body text. An earlier accent measured 4.15:1 and was
+        replaced for that reason. Buttons darken rather than lighten on hover,
+        because lightening would have dropped white label text to 2.47:1.
+      </p>
+      <p>
+        No information is carried by colour alone. Where colour marks something
+        — a focused card, an active nav item — there is a second signal.
+      </p>
+
+      <h3>Keyboard</h3>
+      <ul>
+        <li>
+          A <strong>skip link</strong> is the first tab stop on every page, so
+          the navigation does not have to be walked through to reach content.
+        </li>
+        <li>
+          Focus is always visible. The outline is drawn in the accent colour on
+          light grounds and white on dark ones, and it is never removed.
+        </li>
+        <li>
+          The industries carousel can be driven with arrow keys and with
+          on-screen previous and next buttons. WCAG 2.2 requires a
+          single-pointer alternative to any drag operation, so the buttons are
+          the conforming path and the drag is the convenience.
+        </li>
+        <li>
+          Same-page links move focus and scroll with an offset that clears the
+          fixed navigation, so a heading you jumped to is not sitting behind it.
+        </li>
+      </ul>
+
+      <h3>Structure and semantics</h3>
+      <ul>
+        <li>One <code>h1</code> per page, with headings in order beneath it.</li>
+        <li>Landmarks — banner, main, contentinfo — on every page.</li>
+        <li>
+          Decorative artwork is marked <code>aria-hidden</code> so it is not
+          announced. Split headings keep their full text as an accessible name,
+          so a heading animated line by line is still read as one phrase.
+        </li>
+        <li>
+          Form fields have visible labels rather than placeholder text, errors
+          appear next to the field they belong to, and status messages are
+          announced through a live region.
+        </li>
+        <li>
+          The carousel announces its position through a live region as it
+          moves, so its state is available without seeing it.
+        </li>
+      </ul>
+
+      <h3>Reading and zoom</h3>
+      <p>
+        Text is set at 16px or larger with generous line height, layouts are
+        fluid rather than fixed, and zoom is not disabled. Content reflows to
+        400% zoom without horizontal scrolling.
+      </p>
+
+      <h2>Known gaps</h2>
+      <p>
+        We have not yet run a full audit with screen readers across every page
+        and browser combination. The specific things we know are outstanding:
+      </p>
+      <ul>
+        <li>
+          <strong>No formal assistive technology testing.</strong> The site has
+          been built to the standard and checked in a browser, but it has not
+          been sat with by somebody using NVDA, JAWS or VoiceOver end to end.
+          Until it has, treat everything above as built-for rather than
+          verified-with.
+        </li>
+        <li>
+          <strong>Scroll-driven sections are motion-heavy by design.</strong>
+          Reduced motion turns them off completely, which is the right
+          behaviour, but it does mean the reduced-motion experience is a
+          genuinely different one rather than the same page moving less.
+        </li>
+        <li>
+          <strong>The pinned services gallery holds the page still</strong> while
+          it scrolls sideways. That is deliberate, and it is a pattern some
+          people find disorienting. It is disabled under reduced motion.
+        </li>
+      </ul>
+
+      <h2>Tell us when we get it wrong</h2>
+      <p>
+        If something here is unusable, we want to know, and we would rather hear
+        about it bluntly than not at all. Email{' '}
+        <a href="mailto:contact@xtenzium.com">contact@xtenzium.com</a> with the
+        page and what happened — what you were using is helpful but not
+        required.
+      </p>
+      <p>
+        We will acknowledge within one working day and tell you what we are
+        going to do about it. If it is a real barrier, fixing it goes ahead of
+        whatever else is in the queue.
+      </p>
+    </LegalPage>
+  </main>
+
+  <Footer />
+</BaseLayout>
