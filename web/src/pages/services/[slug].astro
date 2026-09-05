@@ -101,19 +101,28 @@ const { service: s, next } = Astro.props;
           {s.summary}
         </p>
 
-        <div class="mt-9 flex flex-col gap-3 sm:flex-row" data-reveal="body">
-          <a
-            href="/contact"
-            class="inline-flex items-center justify-center rounded-pill bg-copper px-7 py-3.5 text-sm font-bold text-white transition-colors duration-300 hover:bg-copper-hover"
-          >
-            Book a scoping call
-          </a>
-          <a
-            href="/estimate"
-            class="inline-flex items-center justify-center rounded-pill border border-white/25 px-7 py-3.5 text-sm font-bold text-white transition-colors duration-300 hover:bg-white hover:text-carbon"
-          >
-            Estimate a project
-          </a>
+        {/* The ask is in this service's own terms. Every service page used
+            to close with the same two buttons, which asks somebody worried
+            about certification and somebody worried about attribution to do
+            the identical thing — tuned to neither. The note under it exists
+            to remove the reason not to click, which is almost always "I do
+            not have enough prepared yet". */}
+        <div class="mt-9" data-reveal="body">
+          <div class="flex flex-col gap-3 sm:flex-row">
+            <a
+              href={`/contact?service=${encodeURIComponent(s.title)}`}
+              class="inline-flex items-center justify-center rounded-pill bg-copper px-7 py-3.5 text-sm font-bold text-white transition-colors duration-300 hover:bg-copper-hover"
+            >
+              {s.cta.lead}
+            </a>
+            <a
+              href="/estimate"
+              class="inline-flex items-center justify-center rounded-pill border border-white/25 px-7 py-3.5 text-sm font-bold text-white transition-colors duration-300 hover:bg-white hover:text-carbon"
+            >
+              Estimate a project
+            </a>
+          </div>
+          <p class="mt-4 max-w-md text-sm leading-relaxed text-white/50">{s.cta.note}</p>
         </div>
       </div>
     </section>

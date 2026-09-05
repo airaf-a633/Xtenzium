@@ -40,6 +40,17 @@ export interface Service {
   deliverables: string[];
   capabilities: CapabilityGroup[];
   engagements: Engagement[];
+  /**
+   * The next step, in this service's own terms.
+   *
+   * Every service page used to end with the same two buttons — book a
+   * call, estimate a project. That asks an IoT prospect worrying about
+   * certification and a marketing prospect worrying about attribution to
+   * do the identical thing, which means it is tuned to neither. `lead` is
+   * the primary ask and `note` is the sentence that removes the reason
+   * not to take it.
+   */
+  cta: { lead: string; note: string };
   faqs: { q: string; a: string }[];
   order: number;
 }
@@ -114,6 +125,11 @@ export const services: Service[] = [
       },
     ],
     engagements: [FIXED, MILESTONE, RETAINER],
+    cta: {
+      lead: 'Send us the repo, or the idea',
+      note:
+        "If code already exists we will review it and tell you honestly whether extending it is cheaper than replacing it. If it does not, a paragraph about the problem is enough to start.",
+    },
     faqs: [
       { q: 'Do you work with our existing codebase?', a: 'Often, yes. We will review it first and tell you honestly whether extending it is cheaper than replacing it. Sometimes the answer is that your current code is fine and you have a different problem.' },
       { q: 'What stack do you use?', a: 'React, Next.js or Astro on the front, Node and PostgreSQL behind it, usually deployed to Vercel. We pick boring, well-supported tools deliberately — you should be able to hire for your own stack.' },
@@ -175,6 +191,11 @@ export const services: Service[] = [
       },
     ],
     engagements: [FIXED, MILESTONE],
+    cta: {
+      lead: 'Show us the product as it is today',
+      note:
+        "A link is plenty. You will get a straight read on what is costing you users, whether or not that turns into a project.",
+    },
     faqs: [
       { q: 'Can you work with our existing brand?', a: 'Yes. Evolving an identity is usually cheaper and less disruptive than replacing it, and we will say so if that is the right call rather than selling you a rebrand.' },
       { q: 'Do we get the source files?', a: 'Always. Figma files, vector artwork and any production assets are yours, editable, with no ongoing licence.' },
@@ -235,6 +256,11 @@ export const services: Service[] = [
       },
     ],
     engagements: [MILESTONE, FIXED, RETAINER],
+    cta: {
+      lead: 'Tell us what the device has to do',
+      note:
+        "Bring the constraint that worries you most — battery life, range, certification, unit cost — and we will tell you early if it is the one that decides the design.",
+    },
     faqs: [
       { q: 'Do you take hardware projects without the software?', a: 'We can, but the value we add is largest when we hold both ends. If you already have a software team we will work to their interface rather than imposing ours.' },
       { q: 'Why does hardware cost more than software?', a: 'Because iteration has a physical cost. Every board revision is a fabrication run and a lead time measured in weeks. We front-load design review to keep revisions down, but it is genuinely more work than a web build.' },
@@ -294,6 +320,11 @@ export const services: Service[] = [
       },
     ],
     engagements: [FIXED, MILESTONE, RETAINER],
+    cta: {
+      lead: 'Describe the process you keep doing by hand',
+      note:
+        "The useful first conversation is about the workflow, not the model. Sometimes the answer is a script rather than an LLM, and we will say so.",
+    },
     faqs: [
       { q: 'Will our data be used to train a model?', a: 'No. We use providers and configurations where your data is not retained for training, and we will document exactly where your data goes as part of the engagement.' },
       { q: 'What if AI is the wrong answer?', a: 'We will say so. A rules engine or a well-written script is often cheaper, faster and more reliable, and telling you that costs us a bigger invoice.' },
@@ -356,6 +387,11 @@ export const services: Service[] = [
       },
     ],
     engagements: [FIXED, RETAINER],
+    cta: {
+      lead: 'Bring the decision you are stuck on',
+      note:
+        "A stack choice, an architecture you have doubts about, a build-or-buy call. One session is often enough, and we will tell you if it is.",
+    },
     faqs: [
       { q: 'Will you recommend yourselves for the build?', a: 'Only if we are genuinely the right team, and we will say when we are not. The review is written so another agency can execute it, because advice you cannot act on independently is not advice.' },
       { q: 'How long does a review take?', a: 'Most take two to three weeks depending on how much there is to read. We will tell you the shape after a first conversation.' },
@@ -408,6 +444,11 @@ export const services: Service[] = [
       },
     ],
     engagements: [RETAINER, FIXED, MILESTONE],
+    cta: {
+      lead: 'Tell us what you are already measuring',
+      note:
+        "If the answer is nothing, that is the first finding. We would rather fix attribution before spending anything on traffic.",
+    },
     faqs: [
       { q: 'Do we own the ad accounts?', a: 'Yes. Campaigns are built in your accounts under your billing. If you stop working with us, nothing goes with us.' },
       { q: 'How long before we see results?', a: 'Paid can produce signal in weeks. Organic search realistically takes six months or more, and anyone promising faster is either buying links or misreading their own data.' },
@@ -456,6 +497,11 @@ export const services: Service[] = [
       },
     ],
     engagements: [RETAINER, FIXED],
+    cta: {
+      lead: 'Tell us what breaks, and how often',
+      note:
+        "Support is priced on what a system actually needs, so the honest version of this conversation starts with what is going wrong now.",
+    },
     faqs: [
       { q: 'Do you support software you did not build?', a: 'Yes. We start with a review and an honest assessment of what it will cost to hold it steady — occasionally that assessment is that it needs replacing.' },
       { q: 'Is a retainer mandatory after a build?', a: 'No, and we will not quote as though it is. Plenty of clients take the handover and run it themselves, which is the point of documenting it properly.' },

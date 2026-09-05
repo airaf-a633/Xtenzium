@@ -230,6 +230,50 @@ const faqs = [
               </div>
             </div>
 
+            {/* The hand-off.
+                Sending the email used to end at a line of text — the one
+                moment in the whole funnel where somebody has just raised
+                their hand, and the page had nothing further to say. This
+                replaces the form once it succeeds, so the next step is the
+                only thing on screen rather than an afterthought under a
+                spent form. */}
+            <div data-estimate-done hidden>
+              <p class="eyebrow !text-copper-hi">On its way</p>
+              <h2
+                tabindex="-1"
+                class="mt-3 font-display text-2xl font-bold tracking-[-0.03em] text-white outline-none md:text-3xl"
+              >
+                Sent. Now the useful part.
+              </h2>
+              <p class="mt-3 max-w-md text-sm leading-relaxed text-white/55">
+                The breakdown is on its way to
+                <span data-estimate-sentto class="text-white/80"></span>. A range
+                is a starting point though — thirty minutes turns it into a
+                written scope and a number, and you keep both either way.
+              </p>
+
+              <div class="mt-7 flex flex-col gap-3 sm:flex-row">
+                <a
+                  href="/contact?source=estimate"
+                  class="inline-flex items-center justify-center rounded-pill bg-copper px-7 py-3.5 text-sm font-bold text-white transition-colors duration-300 hover:bg-copper-hover"
+                >
+                  Book the scoping call
+                </a>
+                <a
+                  href="/work"
+                  class="inline-flex items-center justify-center rounded-pill border border-white/25 px-7 py-3.5 text-sm font-bold text-white transition-colors duration-300 hover:bg-white hover:text-carbon"
+                >
+                  See what that range built
+                </a>
+              </div>
+
+              <p class="mt-6 text-xs leading-relaxed text-white/35">
+                One email, no sequence — exactly as promised. If it has not
+                arrived in ten minutes it is in spam, or you can reach us at
+                <a href="mailto:contact@xtenzium.com" class="text-copper-hi">contact@xtenzium.com</a>.
+              </p>
+            </div>
+
             <button
               type="button"
               data-estimate-back
