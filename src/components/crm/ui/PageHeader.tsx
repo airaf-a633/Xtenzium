@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 
 /* One header component so every page in the CRM starts at the same
    baseline and the eye doesn't have to re-find the title on each
@@ -16,7 +17,15 @@ export const PageHeader = ({
   back?: { to: string; label: string };
   actions?: ReactNode;
 }) => (
-  <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
+  <>
+    {/* Every page already tells this component its name, so the tab and
+        the browser history get it for free — no page has to remember to
+        set a title, and none can drift from its own heading. */}
+    <Helmet>
+      <title>{`${title} · Xtenzium CRM`}</title>
+    </Helmet>
+
+    <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
     <div className="min-w-0">
       {back && (
         <Link
@@ -34,6 +43,7 @@ export const PageHeader = ({
       </h1>
       {subtitle && <p className="m-0 mt-1.5 text-[13.5px] text-crm-ink-3">{subtitle}</p>}
     </div>
-    {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
-  </header>
+      {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
+    </header>
+  </>
 );

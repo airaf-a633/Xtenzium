@@ -8,6 +8,7 @@ export { Badge, Dot, PROJECT_STATUS_TONE, PROJECT_STATUS_LABEL } from './Badge';
 export type { Tone } from './Badge';
 
 export { Avatar, AvatarStack } from './Avatar';
+export { Mark } from './Mark';
 export { Card, CardHeader, Label, Stat } from './Card';
 export { Skeleton, SkeletonRows, SkeletonTiles, Spinner, EmptyState, ErrorState } from './Feedback';
 export { Field, Input, Textarea, Select, SearchInput } from './Field';

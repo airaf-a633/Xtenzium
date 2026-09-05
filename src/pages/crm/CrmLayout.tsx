@@ -3,7 +3,7 @@ import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { useAuth } from '../../context/AuthContext';
 import { CrmThemeProvider, useCrmTheme } from '../../components/crm/CrmThemeProvider';
-import { ToastProvider, Avatar, IconButton, Menu } from '../../components/crm/ui';
+import { ToastProvider, Avatar, IconButton, Mark, Menu } from '../../components/crm/ui';
 import { CommandProvider, useCommands } from '../../components/crm/CommandProvider';
 import NotificationBell from '../../components/crm/NotificationBell';
 import { usePresence } from '../../components/crm/useRealtimeRows';
@@ -101,8 +101,8 @@ const Sidebar = ({
     <div className="flex h-full flex-col bg-crm-surface">
       {/* Wordmark */}
       <div className="flex items-center gap-2.5 border-b border-crm-line px-4 py-3.5">
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-crm-sm bg-crm-copper font-crm-display text-[15px] font-bold text-crm-copper-ink">
-          X
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-crm-sm bg-crm-copper text-crm-copper-ink">
+          <Mark className="h-[18px] w-[18px]" />
         </span>
         <span className="min-w-0">
           <span className="block font-crm-display text-[13.5px] font-bold leading-tight tracking-[-0.01em] text-crm-ink">

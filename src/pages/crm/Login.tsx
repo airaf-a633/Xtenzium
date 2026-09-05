@@ -4,7 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { useAuth } from '../../context/AuthContext';
 import { CrmThemeProvider, useCrmTheme } from '../../components/crm/CrmThemeProvider';
-import { Button, ErrorState, Field } from '../../components/crm/ui';
+import { Button, ErrorState, Field, Mark } from '../../components/crm/ui';
 
 const CONTROL =
   'h-10 w-full rounded-crm-md border border-crm-line bg-crm-ground px-3 text-[14px] text-crm-ink ' +
@@ -54,8 +54,8 @@ const LoginForm = () => {
 
       <div className="w-full max-w-[380px]">
         <div className="mb-8 flex flex-col items-center text-center">
-          <span className="mb-4 flex h-11 w-11 items-center justify-center rounded-crm-lg bg-crm-copper font-crm-display text-[22px] font-bold leading-none text-crm-copper-ink">
-            X
+          <span className="mb-4 flex h-11 w-11 items-center justify-center rounded-crm-lg bg-crm-copper text-crm-copper-ink">
+            <Mark className="h-7 w-7" />
           </span>
           <h1 className="m-0 font-crm-display text-[21px] font-bold tracking-[-0.02em] text-crm-ink">
             Xtenzium CRM

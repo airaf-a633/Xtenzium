@@ -2,35 +2,35 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <!-- Default SEO — overridden per-page by react-helmet-async -->
-    <title>Xtenzium — We Architect Long-Term Success</title>
-    <meta name="description" content="Xtenzium is a full-service digital agency in Karachi, Pakistan. We deliver web development, UI/UX design, IoT hardware, AI automation, and digital marketing solutions that drive measurable growth." />
-    <meta name="keywords" content="digital agency Pakistan, web development Karachi, UI UX design, IoT solutions, React development, AI automation, custom software Pakistan" />
-    <meta name="author" content="Xtenzium" />
-    <meta name="robots" content="index, follow" />
-    <link rel="canonical" href="https://www.xtenzium.com/" />
+    <!--
+      This document is the CRM and admin shell, and nothing else. The
+      public site is the Astro app served from / — it has its own head,
+      its own SEO and its own favicon. Everything here is scoped to an
+      internal tool.
+    -->
+    <title>Xtenzium CRM</title>
+    <meta name="description" content="Internal CRM for Xtenzium — pipeline, projects, tasks and time." />
 
-    <!-- Open Graph -->
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="Xtenzium" />
-    <meta property="og:title" content="Xtenzium — We Architect Long-Term Success" />
-    <meta property="og:description" content="Full-service digital agency in Karachi delivering web development, UI/UX design, IoT hardware, AI automation, and digital marketing." />
-    <meta property="og:image" content="https://www.xtenzium.com/og-image.png" />
-    <meta property="og:url" content="https://www.xtenzium.com/" />
+    <!--
+      Deliberately noindex. This shell previously carried the marketing
+      site's `index, follow` plus a canonical pointing at the homepage,
+      which invited Google to index the CRM and to treat it as a
+      duplicate of xtenzium.com. It is behind a login and has no
+      business in a search result.
+    -->
+    <meta name="robots" content="noindex, nofollow" />
 
-    <!-- Twitter Card -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@xtenzium" />
-    <meta name="twitter:title" content="Xtenzium — We Architect Long-Term Success" />
-    <meta name="twitter:description" content="Full-service digital agency in Karachi delivering web development, UI/UX design, IoT hardware, AI automation, and digital marketing." />
-    <meta name="twitter:image" content="https://www.xtenzium.com/og-image.png" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="mask-icon" href="/favicon.svg" color="#F2895C" />
 
-    <!-- Geo / Local -->
-    <meta name="geo.region" content="PK-SD" />
-    <meta name="geo.placename" content="Karachi, Pakistan" />
+    <!--
+      Matches the CRM's carbon ground, so mobile browser chrome and the
+      PWA-ish shell don't frame a dark app in white.
+    -->
+    <meta name="theme-color" content="#100D0B" />
+    <meta name="color-scheme" content="dark light" />
   </head>
   <body>
     <div id="root"></div>
