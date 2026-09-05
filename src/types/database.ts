@@ -448,6 +448,41 @@ export type Database = {
         } & Record<string, unknown>;
         Relationships: [];
       };
+
+      /* Site analytics, from 011. Aggregated in SQL rather than in the
+         page: `page_events` grows per interaction rather than per record,
+         so counting it in the browser would move megabytes to produce
+         five numbers. */
+      analytics_daily: {
+        Row: {
+          day: string;
+          pageviews: number;
+          visitors: number;
+          form_submits: number;
+          estimates_completed: number;
+        } & Record<string, unknown>;
+        Relationships: [];
+      };
+      analytics_pages: {
+        Row: {
+          path: string;
+          pageviews: number;
+          visitors: number;
+          avg_scroll_percent: number | null;
+          form_submits: number;
+        } & Record<string, unknown>;
+        Relationships: [];
+      };
+      analytics_attribution: {
+        Row: {
+          referring_host: string | null;
+          landing_path: string;
+          sessions: number;
+          leads: number;
+          conversion_percent: number | null;
+        } & Record<string, unknown>;
+        Relationships: [];
+      };
     };
     Functions: { [_ in never]: never };
     Enums: { [_ in never]: never };
