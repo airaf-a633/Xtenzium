@@ -1,206 +1,352 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
+import { useAuth } from '../../../context/AuthContext';
 import { DEFAULT_USD_TO_PKR } from '../../../lib/settings';
-import Banner from '../../../components/crm/Banner';
 import type { TeamMember } from '../../../types/database';
+import {
+  Avatar,
+  Badge,
+  Button,
+  Card,
+  CardHeader,
+  EmptyState,
+  ErrorState,
+  IconButton,
+  Input,
+  PageHeader,
+  SkeletonRows,
+  useToast,
+} from '../../../components/crm/ui';
 
-const inputStyle: React.CSSProperties = {
-  padding: '10px 12px', background: '#0f0f0f', border: '1px solid #222', borderRadius: 8,
-  color: '#ddd', fontSize: 14, outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit',
-};
-const labelStyle: React.CSSProperties = { display: 'block', color: '#666', fontSize: 12, marginBottom: 6, fontWeight: 500 };
-const cardStyle: React.CSSProperties = { background: '#141414', border: '1px solid #1e1e1e', borderRadius: 12, padding: 24 };
+const XIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+    <path d="M18 6 6 18M6 6l12 12" />
+  </svg>
+);
 
 const Team = () => {
+  const { user } = useAuth();
+  const { toast } = useToast();
+
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [failed, setFailed] = useState<string | null>(null);
 
   const [name, setName] = useState('');
   const [designation, setDesignation] = useState('');
   const [adding, setAdding] = useState(false);
+  const [linking, setLinking] = useState<string | null>(null);
 
   const [rateInput, setRateInput] = useState(String(DEFAULT_USD_TO_PKR));
   const [rateSaving, setRateSaving] = useState(false);
-  const [rateSaved, setRateSaved] = useState(false);
 
   useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      const [membersResult, settingResult] = await Promise.all([
-        supabase.from('team_members').select('*').order('name', { ascending: true }),
+    let cancelled = false;
+
+    const fetchAll = () =>
+      Promise.all([
+        supabase.from('team_members').select('*').order('name'),
         supabase.from('app_settings').select('value').eq('key', 'usd_to_pkr').maybeSingle(),
       ]);
-      if (membersResult.error) setError(membersResult.error.message);
-      setMembers((membersResult.data ?? []) as TeamMember[]);
-      if (settingResult.data) setRateInput(settingResult.data.value);
+
+    fetchAll().then(([m, setting]) => {
+      if (cancelled) return;
+      if (m.error) {
+        setFailed(m.error.message);
+        setLoading(false);
+        return;
+      }
+      setMembers((m.data ?? []) as TeamMember[]);
+      if (setting.data) setRateInput((setting.data as { value: string }).value);
       setLoading(false);
+    });
+
+    return () => {
+      cancelled = true;
     };
-    load();
   }, []);
 
-  const handleAddMember = async () => {
+  const me = useMemo(
+    () => members.find(m => m.user_id && m.user_id === user?.id) ?? null,
+    [members, user],
+  );
+
+  const addMember = async () => {
     if (!name.trim()) return;
     setAdding(true);
-    setError(null);
-    const { data, error: insertError } = await supabase
+    const { data, error } = await supabase
       .from('team_members')
       .insert({ name: name.trim(), designation: designation.trim() || null })
       .select()
       .single();
     setAdding(false);
-    if (insertError) {
-      setError(insertError.message);
+    if (error || !data) {
+      toast('That member didn’t save.', 'danger');
       return;
     }
-    setMembers(prev => [...prev, data as TeamMember].sort((a, b) => a.name.localeCompare(b.name)));
+    setMembers(list => [...list, data as TeamMember].sort((a, b) => a.name.localeCompare(b.name)));
     setName('');
     setDesignation('');
+    toast(`${(data as TeamMember).name} added`, 'success');
   };
 
-  const handleRemoveMember = async (member: TeamMember) => {
-    if (!confirm(`Remove ${member.name} from the team? Tasks assigned to them will become unassigned.`)) return;
-    setError(null);
-    const { error: deleteError } = await supabase.from('team_members').delete().eq('id', member.id);
-    if (deleteError) {
-      setError(deleteError.message);
+  const removeMember = async (member: TeamMember) => {
+    if (!confirm(`Remove ${member.name}? Tasks assigned to them become unassigned.`)) return;
+    const previous = members;
+    setMembers(list => list.filter(m => m.id !== member.id));
+    const { error } = await supabase.from('team_members').delete().eq('id', member.id);
+    if (error) {
+      setMembers(previous);
+      toast('Couldn’t remove that member.', 'danger');
+    }
+  };
+
+  /* Claiming, rather than an admin assigning accounts.
+     Listing auth users needs a service-role key, which must never reach
+     the browser — so each person claims their own row instead. The
+     unique index on user_id means an existing claim has to be released
+     first, which is why this is two writes rather than one. */
+  const claim = async (member: TeamMember) => {
+    if (!user) return;
+    setLinking(member.id);
+
+    if (me && me.id !== member.id) {
+      const { error: releaseError } = await supabase
+        .from('team_members')
+        .update({ user_id: null })
+        .eq('id', me.id);
+      if (releaseError) {
+        setLinking(null);
+        toast('Couldn’t move your link off the previous member.', 'danger');
+        return;
+      }
+    }
+
+    const { data, error } = await supabase
+      .from('team_members')
+      .update({ user_id: user.id })
+      .eq('id', member.id)
+      .select()
+      .single();
+    setLinking(null);
+
+    if (error || !data) {
+      toast(
+        error?.message.includes('duplicate') || error?.code === '23505'
+          ? 'Another account already claims that member.'
+          : 'That link didn’t save.',
+        'danger',
+      );
       return;
     }
-    setMembers(prev => prev.filter(m => m.id !== member.id));
+
+    setMembers(list =>
+      list.map(m => {
+        if (m.id === member.id) return data as TeamMember;
+        if (m.user_id === user.id) return { ...m, user_id: null };
+        return m;
+      }),
+    );
+    toast(`You are now ${(data as TeamMember).name}`, 'success');
   };
 
-  const handleSaveRate = async () => {
+  const release = async (member: TeamMember) => {
+    setLinking(member.id);
+    const { error } = await supabase
+      .from('team_members')
+      .update({ user_id: null })
+      .eq('id', member.id);
+    setLinking(null);
+    if (error) {
+      toast('Couldn’t unlink that member.', 'danger');
+      return;
+    }
+    setMembers(list => list.map(m => (m.id === member.id ? { ...m, user_id: null } : m)));
+    toast('Unlinked', 'info');
+  };
+
+  const saveRate = async () => {
     const value = Number(rateInput);
     if (!Number.isFinite(value) || value <= 0) {
-      setError('Exchange rate must be a positive number.');
+      toast('The rate has to be a positive number.', 'danger');
       return;
     }
     setRateSaving(true);
-    setError(null);
-    const { error: upsertError } = await supabase
+    const { error } = await supabase
       .from('app_settings')
       .upsert({ key: 'usd_to_pkr', value: String(value) });
     setRateSaving(false);
-    if (upsertError) {
-      setError(upsertError.message);
+    if (error) {
+      toast('That rate didn’t save.', 'danger');
       return;
     }
-    setRateSaved(true);
-    setTimeout(() => setRateSaved(false), 2000);
+    toast('Rate saved', 'success');
   };
 
   return (
-    <div style={{ maxWidth: 720 }}>
-      <div style={{ marginBottom: 28 }}>
-        <h1 style={{ color: '#ffffff', fontSize: 24, fontWeight: 700, margin: 0, letterSpacing: -0.5 }}>Team & Settings</h1>
-        <p style={{ color: '#555', fontSize: 14, marginTop: 6 }}>Manage who tasks can be assigned to, and the exchange rate used for USD totals.</p>
-      </div>
+    <div className="max-w-[820px]">
+      <PageHeader
+        title="Team"
+        subtitle="Who work can be assigned to, and the rate used to combine PKR and USD."
+      />
 
-      {error && <Banner type="error" message={error} />}
+      {failed && <ErrorState title="The team couldn’t load" body={failed} />}
 
-      {/* Exchange rate */}
-      <div style={{ ...cardStyle, marginBottom: 20 }}>
-        <h2 style={{ color: '#888', fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, margin: '0 0 16px' }}>
-          Exchange Rate
-        </h2>
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10 }}>
-          <div>
-            <label style={labelStyle}>1 USD equals (PKR)</label>
-            <input
-              style={{ ...inputStyle, width: 140 }}
-              type="number"
-              min="1"
-              value={rateInput}
-              onChange={e => setRateInput(e.target.value)}
-            />
-          </div>
-          <button
-            onClick={handleSaveRate}
-            disabled={rateSaving}
-            style={{
-              padding: '10px 18px', background: rateSaved ? '#10b981' : '#1e1e1e', color: rateSaved ? '#fff' : '#ddd',
-              border: 'none', borderRadius: 8, fontSize: 13.5, fontWeight: 600, cursor: rateSaving ? 'not-allowed' : 'pointer',
-            }}
-          >
-            {rateSaving ? 'Saving…' : rateSaved ? '✓ Saved' : 'Save rate'}
-          </button>
-        </div>
-        <p style={{ color: '#444', fontSize: 12, marginTop: 10 }}>
-          Used to combine PKR and USD project totals into a single figure on the dashboard and client pages.
-        </p>
-      </div>
-
-      {/* Team members */}
-      <div style={cardStyle}>
-        <h2 style={{ color: '#888', fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, margin: '0 0 16px' }}>
-          Team Members
-        </h2>
-
-        <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
-          <input
-            style={{ ...inputStyle, flex: '1 1 160px' }}
-            placeholder="Name"
-            value={name}
-            onChange={e => setName(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleAddMember()}
-          />
-          <input
-            style={{ ...inputStyle, flex: '1 1 160px' }}
-            placeholder="Designation (e.g. Developer)"
-            value={designation}
-            onChange={e => setDesignation(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleAddMember()}
-          />
-          <button
-            onClick={handleAddMember}
-            disabled={adding || !name.trim()}
-            style={{
-              padding: '10px 18px', background: '#ffffff', color: '#0a0a0a', border: 'none', borderRadius: 8,
-              fontSize: 13.5, fontWeight: 600, cursor: (adding || !name.trim()) ? 'not-allowed' : 'pointer',
-            }}
-          >
-            + Add member
-          </button>
-        </div>
-
-        {loading ? (
-          <div style={{ color: '#555', fontSize: 14 }}>Loading…</div>
-        ) : members.length === 0 ? (
-          <div style={{ color: '#444', fontSize: 13.5, textAlign: 'center', padding: '24px 0' }}>
-            No team members yet. Add your first one above.
-          </div>
-        ) : (
-          <div>
-            {members.map((m, i) => (
-              <div key={m.id} style={{
-                display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0',
-                borderBottom: i < members.length - 1 ? '1px solid #1a1a1a' : 'none',
-              }}>
-                <div style={{
-                  width: 32, height: 32, borderRadius: '50%', background: '#1e1e1e',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: '#aaa', fontSize: 13, fontWeight: 600, flexShrink: 0,
-                }}>
-                  {m.name.charAt(0).toUpperCase()}
+      {!failed && (
+        <div className="flex flex-col gap-5">
+          {/* ── Identity ──────────────────────────────────────── */}
+          <Card>
+            <CardHeader title="Your account" />
+            <div className="p-4">
+              {me ? (
+                <div className="flex flex-wrap items-center gap-3">
+                  <Avatar name={me.name} size="lg" />
+                  <div className="min-w-0 flex-1">
+                    <p className="m-0 text-[14px] font-medium text-crm-ink">{me.name}</p>
+                    <p className="m-0 mt-0.5 text-[12.5px] text-crm-ink-3">{user?.email}</p>
+                  </div>
+                  <Badge tone="success" dot>
+                    Linked
+                  </Badge>
+                  <Button size="sm" onClick={() => release(me)} loading={linking === me.id}>
+                    Unlink
+                  </Button>
                 </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ color: '#ddd', fontSize: 14 }}>{m.name}</div>
-                  {m.designation && <div style={{ color: '#555', fontSize: 12, marginTop: 2 }}>{m.designation}</div>}
+              ) : (
+                <div className="rounded-crm-md border border-crm-warning/30 bg-crm-warning-quiet px-3.5 py-3">
+                  <p className="m-0 text-[13px] font-medium text-crm-warning">
+                    You’re signed in as {user?.email}, but not linked to a team member
+                  </p>
+                  <p className="m-0 mt-1 text-[12.5px] text-crm-ink-2">
+                    Pick yourself from the list below. Until you do, the CRM can’t tell which work is
+                    yours — My Work stays empty, the notification bell is hidden, and comments and
+                    logged time aren’t attributed to anyone.
+                  </p>
                 </div>
-                <button
-                  onClick={() => handleRemoveMember(m)}
-                  style={{ background: 'none', border: 'none', color: '#444', cursor: 'pointer', padding: 4 }}
-                  title="Remove member"
+              )}
+            </div>
+          </Card>
+
+          {/* ── Members ───────────────────────────────────────── */}
+          <Card>
+            <CardHeader title="Team members" />
+            <div className="p-4">
+              <div className="mb-4 flex flex-wrap items-end gap-2">
+                <Input
+                  className="min-w-[160px] flex-1"
+                  label="Name"
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && addMember()}
+                  placeholder="Sara Khan"
+                />
+                <Input
+                  className="min-w-[160px] flex-1"
+                  label="Designation"
+                  value={designation}
+                  onChange={e => setDesignation(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && addMember()}
+                  placeholder="Electronics Lead"
+                />
+                <Button
+                  variant="primary"
+                  loading={adding}
+                  disabled={!name.trim()}
+                  onClick={addMember}
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
-                </button>
+                  Add member
+                </Button>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+
+              {loading ? (
+                <SkeletonRows rows={4} />
+              ) : members.length === 0 ? (
+                <EmptyState
+                  className="border-0"
+                  title="No team members yet"
+                  body="Add everyone who work gets assigned to. You can link your own account once you’re on the list."
+                />
+              ) : (
+                <ul className="m-0 list-none p-0">
+                  {members.map(m => {
+                    const isMe = me?.id === m.id;
+                    const claimedByOther = Boolean(m.user_id) && !isMe;
+                    return (
+                      <li
+                        key={m.id}
+                        className="flex flex-wrap items-center gap-3 border-b border-crm-line py-2.5 last:border-b-0"
+                      >
+                        <Avatar name={m.name} size="md" />
+                        <div className="min-w-0 flex-1">
+                          <p className="m-0 truncate text-[13.5px] text-crm-ink">{m.name}</p>
+                          {m.designation && (
+                            <p className="m-0 mt-0.5 truncate text-[12px] text-crm-ink-3">
+                              {m.designation}
+                            </p>
+                          )}
+                        </div>
+
+                        {isMe && (
+                          <Badge tone="copper" dot>
+                            You
+                          </Badge>
+                        )}
+                        {claimedByOther && <Badge tone="neutral">Linked</Badge>}
+
+                        {!isMe && (
+                          <Button
+                            size="sm"
+                            loading={linking === m.id}
+                            onClick={() => claim(m)}
+                            title={
+                              claimedByOther
+                                ? 'Claim this member for your account instead'
+                                : 'Link this member to your account'
+                            }
+                          >
+                            This is me
+                          </Button>
+                        )}
+
+                        <IconButton
+                          label={`Remove ${m.name}`}
+                          size="sm"
+                          icon={<XIcon />}
+                          onClick={() => removeMember(m)}
+                        />
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          </Card>
+
+          {/* ── Exchange rate ─────────────────────────────────── */}
+          <Card>
+            <CardHeader title="Exchange rate" />
+            <div className="p-4">
+              <div className="flex flex-wrap items-end gap-2">
+                <Input
+                  className="w-[160px]"
+                  label="1 USD equals (PKR)"
+                  type="number"
+                  min={1}
+                  value={rateInput}
+                  onChange={e => setRateInput(e.target.value)}
+                />
+                <Button variant="primary" loading={rateSaving} onClick={saveRate}>
+                  Save rate
+                </Button>
+              </div>
+              <p className="m-0 mt-3 text-[12.5px] text-crm-ink-3">
+                Combines PKR and USD totals into one figure on the dashboard, the pipeline forecast
+                and client pages. Every converted number says so where it appears.
+              </p>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,0 +1,273 @@
+/* ───────────────────────────────────────────────────────────────
+   Xtenzium CRM — token layer
+
+   Derived from the brand rebrand in web/src/styles/global.css, then
+   inverted: the site is a light editorial surface, the CRM is a dense
+   tool someone stares at all day, so the ground goes warm-dark and the
+   accent moves to the lighter copper the rebrand already validated
+   against carbon.
+
+   Palette rule (inherited from the brand): no neutral is a pure grey.
+   Every one is biased warm (hue ~28) so the ground reads as chosen.
+
+   Accent rule: copper is the only saturated colour in the chrome.
+   Status colours are semantic and deliberately kept off copper's hue
+   so a board full of state badges never fights a copper button.
+
+   Every token here is namespaced `crm-` and every one of them is
+   consumed through a Tailwind utility. Nothing in the CRM writes a
+   hex code. Nothing here leaks into the marketing site, which reads
+   its own `--bg-*` / `--text-*` variables from index.css.
+   ─────────────────────────────────────────────────────────────── */
+
+@theme {
+  /* ── Ground & surface — dark is the default, not the alternate ──
+     Three elevations, not five. A tool this dense needs the steps to
+     be obvious: page, card, hover/inset. */
+  --color-crm-ground:  #100D0B;
+  --color-crm-surface: #1A1614;
+  --color-crm-raised:  #231E1A;
+  --color-crm-line:    #2E2823;
+  --color-crm-line-hi: #3D352E;
+
+  /* ── Ink ──
+     ink-3 is #948A80 rather than something dimmer because it carries
+     real meta text — dates, client names, counts. At #73695F it
+     measured 3.08:1 on raised, which is a fail for anything under
+     18px. This clears 4.5:1 on all three surfaces. */
+  --color-crm-ink:   #F2EDE7;
+  --color-crm-ink-2: #A79D93;
+  --color-crm-ink-3: #948A80;
+  --color-crm-faint: #6B625A;  /* disabled / decorative only — not for text that matters */
+
+  /* ── Copper ──
+     #F2895C is the rebrand's `copper-hi`, already measured at 8.06:1
+     on carbon. Hover goes *lighter* here, the mirror of the site's
+     rule: on dark, copper buttons are dark-text-on-copper, so
+     lightening raises contrast instead of destroying it. */
+  --color-crm-copper:       #F2895C;
+  --color-crm-copper-hover: #F7A17C;
+  --color-crm-copper-ink:   #1A0E07;  /* text that sits ON copper */
+  --color-crm-copper-quiet: #40200F;  /* tinted fills, chips, active nav */
+  --color-crm-copper-line:  #6B3720;
+
+  /* ── Semantic state ──
+     Hues chosen to stay legible on warm dark and to stay clear of
+     copper's hue (18°): green 152°, amber 42°, rose 350°, blue 214°,
+     violet 262°. Rose rather than red for danger — a true red sits
+     close enough to copper to read as an accent rather than a warning. */
+  --color-crm-success: #6FBF95;
+  --color-crm-warning: #D9A441;
+  --color-crm-danger:  #F07185;
+  --color-crm-info:    #7BA7E8;
+  --color-crm-violet:  #B49AE8;
+
+  /* Quiet fills for the same five — badge and column backgrounds. */
+  --color-crm-success-quiet: #12301F;
+  --color-crm-warning-quiet: #35270C;
+  --color-crm-danger-quiet:  #3A1620;
+  --color-crm-info-quiet:    #16243A;
+  --color-crm-violet-quiet:  #241B3A;
+
+
+  /* ── Chart marks ──
+     A separate set from the UI accents on purpose. The accents above
+     are tuned for text contrast and sit at OKLCH L 0.70–0.75; as large
+     fills they glare. These sit in the 0.48–0.67 band the eye wants
+     for areas, and the whole set is machine-checked — lightness band,
+     chroma floor, adjacent-pair separation under deuteranopia and
+     tritanopia, normal-vision separation, and contrast against the
+     chart surface.
+
+     The ORDER is part of the contract: slot 1 is always assigned
+     first and hues are never cycled. It was chosen so no adjacent pair
+     collapses for a colourblind reader — red beside green fails at
+     ΔE 2.4, and this order keeps them apart. */
+  --color-crm-chart-1: #5587CF;  /* blue   */
+  --color-crm-chart-2: #D35E25;  /* copper */
+  --color-crm-chart-3: #399B6D;  /* green  */
+  --color-crm-chart-4: #B47900;  /* amber  */
+  --color-crm-chart-5: #9173C9;  /* violet */
+  --color-crm-chart-6: #DC4B68;  /* rose   */
+
+  /* Ordinal ramp: one hue, monotone lightness. For anything with an
+     inherent order — funnel stages, ageing buckets — where a
+     categorical palette would imply the steps are unrelated. */
+  --color-crm-ramp-1: #803105;
+  --color-crm-ramp-2: #A53E00;
+  --color-crm-ramp-3: #C55113;
+  --color-crm-ramp-4: #DE6D3A;
+  --color-crm-ramp-5: #F18D62;
+
+  /* Recessive: gridlines must be visible without competing. */
+  --color-crm-grid: #241F1B;
+
+  /* ── Type ──
+     Bricolage carries headings and any number that should feel like a
+     figure rather than a string. DM Sans runs the interface. DM Mono
+     handles labels, IDs, currency and anything tabular — a money
+     column that doesn't align is a money column nobody trusts. */
+  --font-crm-display: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif;
+  --font-crm-sans:    'DM Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-crm-mono:    'DM Mono', ui-monospace, monospace;
+
+  /* ── Radius — tighter than the site's 1.25rem cards.
+     Dense UI reads as sloppy at generous radii. ── */
+  --radius-crm-sm: 0.375rem;
+  --radius-crm-md: 0.5rem;
+  --radius-crm-lg: 0.75rem;
+  --radius-crm-xl: 1rem;
+
+  /* ── Elevation ── */
+  --shadow-crm-sm:      0 1px 2px rgba(0, 0, 0, 0.45);
+  --shadow-crm-card:    0 1px 2px rgba(0, 0, 0, 0.45), 0 8px 24px -14px rgba(0, 0, 0, 0.7);
+  --shadow-crm-pop:     0 4px 12px rgba(0, 0, 0, 0.5), 0 16px 40px -12px rgba(0, 0, 0, 0.75);
+  --shadow-crm-drag:    0 12px 32px -8px rgba(0, 0, 0, 0.75);
+
+  /* ── Motion — same curve as the brand, three speeds.
+     Exits run shorter than entrances; a panel that takes as long to
+     leave as it took to arrive feels stuck. ── */
+  --ease-crm: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ───────────────────────────────────────────────────────────────
+   Light theme
+
+   Not an inversion — the rebrand's own light values, so the CRM in
+   light mode and the marketing site are the same object. Applied only
+   when the CRM root is explicitly stamped, because a tool defaults
+   dark and the toggle is a preference, not an OS guess.
+   ─────────────────────────────────────────────────────────────── */
+.crm-root[data-crm-theme='light'] {
+  --color-crm-ground:  #FAFAF8;
+  --color-crm-surface: #FFFFFF;
+  --color-crm-raised:  #F4F3F0;
+  --color-crm-line:    #E3E0DC;
+  --color-crm-line-hi: #D3CEC7;
+
+  --color-crm-ink:   #2B2622;
+  --color-crm-ink-2: #6E665E;
+  --color-crm-ink-3: #736A62;
+  --color-crm-faint: #9C948B;
+
+  /* On light, copper is the rebrand's 5.46:1 value and hover goes
+     DARKER — buttons are white-on-copper here, so lightening would
+     drop the label to 2.47:1. Same rule as the site, same reason. */
+  --color-crm-copper:       #B8430F;
+  --color-crm-copper-hover: #94360B;
+  --color-crm-copper-ink:   #FFFFFF;
+  --color-crm-copper-quiet: #FDF2ED;
+  --color-crm-copper-line:  #F7D7C9;
+
+  --color-crm-success: #1F6B47;
+  --color-crm-warning: #8A5B08;
+  --color-crm-danger:  #B32D42;
+  --color-crm-info:    #2A5AA0;
+  --color-crm-violet:  #5E3FA0;
+
+  --color-crm-success-quiet: #E6F2EB;
+  --color-crm-warning-quiet: #F8EFDC;
+  --color-crm-danger-quiet:  #FBE9EC;
+  --color-crm-info-quiet:    #E9F0FA;
+  --color-crm-violet-quiet:  #EFEAF9;
+
+
+  /* Chart marks, light. Re-stepped against a white surface and
+     validated separately — an automatic flip of the dark set would
+     fail the contrast floor. */
+  --color-crm-chart-1: #477AC5;
+  --color-crm-chart-2: #C84E02;
+  --color-crm-chart-3: #229061;
+  --color-crm-chart-4: #A96C00;
+  --color-crm-chart-5: #8665BF;
+  --color-crm-chart-6: #D1395C;
+
+  --color-crm-ramp-1: #E9A082;
+  --color-crm-ramp-2: #E0825B;
+  --color-crm-ramp-3: #D46430;
+  --color-crm-ramp-4: #BB4800;
+  --color-crm-ramp-5: #973100;
+
+  --color-crm-grid: #EDEBE7;
+
+  --shadow-crm-sm:   0 1px 2px rgba(43, 38, 34, 0.06);
+  --shadow-crm-card: 0 1px 2px rgba(43, 38, 34, 0.06), 0 8px 24px -14px rgba(43, 38, 34, 0.2);
+  --shadow-crm-pop:  0 4px 12px rgba(43, 38, 34, 0.1), 0 16px 40px -12px rgba(43, 38, 34, 0.24);
+  --shadow-crm-drag: 0 12px 32px -8px rgba(43, 38, 34, 0.28);
+
+  color-scheme: light;
+}
+
+.crm-root {
+  color-scheme: dark;
+  font-family: var(--font-crm-sans);
+  color: var(--color-crm-ink-2);
+  background: var(--color-crm-ground);
+  font-size: 14px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* The marketing site hides the native cursor (`body { cursor: none }`)
+   and paints its own, which isn't mounted on CRM routes — so it just
+   leaves you with no cursor, including over the scrollbar gutter and
+   any margin beside a short page.
+
+   CSS alone can't fix it: reaching `body` from inside the CRM needs
+   `:has()`, and the build strips that rule. CrmThemeProvider sets it on
+   the body directly instead, and restores it on the way out.
+
+   Setting the cursor once here and letting it inherit is deliberate.
+   The previous `.crm-root * { cursor: revert }` had the same specificity
+   as Tailwind's own cursor utilities and was declared later, so it
+   silently killed every `cursor-grab` on the boards. An inherited value
+   loses to any utility, which is what you want. */
+.crm-root {
+  cursor: auto;
+}
+
+/* Focus is visible everywhere, always. Two solid pixels with an offset
+   rather than a soft ring, per WCAG 2.2 focus-appearance: a 1px
+   low-contrast shadow is not an indicator. */
+.crm-root :focus-visible {
+  outline: 2px solid var(--color-crm-copper);
+  outline-offset: 2px;
+  border-radius: var(--radius-crm-sm);
+}
+
+/* Scrollbars: the marketing site paints these accent-blue globally.
+   Reclaim them inside the CRM. */
+.crm-root ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.crm-root ::-webkit-scrollbar-track {
+  background: transparent;
+}
+.crm-root ::-webkit-scrollbar-thumb {
+  background: var(--color-crm-line-hi);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+.crm-root ::-webkit-scrollbar-thumb:hover {
+  background: var(--color-crm-faint);
+  background-clip: content-box;
+}
+
+/* Numbers that sit in columns line up. Applied wherever a figure is
+   compared to the figure above it. */
+.crm-num {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crm-root *,
+  .crm-root *::before,
+  .crm-root *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

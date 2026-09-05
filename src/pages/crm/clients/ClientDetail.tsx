@@ -1,9 +1,26 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../../../lib/supabase';
-import Banner from '../../../components/crm/Banner';
-import { getUsdToPkrRate, toPkr } from '../../../lib/settings';
-import type { Client, Project, ProjectStatus } from '../../../types/database';
+import { getUsdToPkrRate, DEFAULT_USD_TO_PKR, toPkr } from '../../../lib/settings';
+import { formatMoney, formatCurrencySplit } from '../../../lib/money';
+import type { Client, Project } from '../../../types/database';
+import {
+  Badge,
+  Button,
+  ButtonLink,
+  Card,
+  CardHeader,
+  EmptyState,
+  ErrorState,
+  Input,
+  PageHeader,
+  PROJECT_STATUS_LABEL,
+  PROJECT_STATUS_TONE,
+  SkeletonRows,
+  Stat,
+  Textarea,
+  useToast,
+} from '../../../components/crm/ui';
 
 interface FormState {
   name: string;
@@ -15,20 +32,10 @@ interface FormState {
 
 const INITIAL: FormState = { name: '', company: '', email: '', phone: '', notes: '' };
 
-const STATUS_COLORS: Record<ProjectStatus, string> = {
-  proposal: '#3b82f6', active: '#10b981', on_hold: '#f59e0b', completed: '#6b7280', cancelled: '#ef4444',
-};
-
-const inputStyle: React.CSSProperties = {
-  width: '100%', padding: '10px 12px', background: '#0f0f0f', border: '1px solid #222',
-  borderRadius: 8, color: '#ddd', fontSize: 14, outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit',
-};
-
-const labelStyle: React.CSSProperties = { display: 'block', color: '#666', fontSize: 12, marginBottom: 6, fontWeight: 500 };
-
 const ClientDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const isNew = !id || id === 'new';
 
   const [form, setForm] = useState<FormState>(INITIAL);
@@ -36,43 +43,73 @@ const ClientDetail = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
-  const [usdRate, setUsdRate] = useState<number | null>(null);
+  const [failed, setFailed] = useState<string | null>(null);
+  const [rate, setRate] = useState(DEFAULT_USD_TO_PKR);
 
   useEffect(() => {
-    getUsdToPkrRate().then(setUsdRate);
+    let cancelled = false;
+    getUsdToPkrRate().then(r => {
+      if (!cancelled) setRate(r);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
-    if (isNew) return;
-    const fetchClient = async () => {
-      setLoading(true);
-      const [clientResult, projectsResult] = await Promise.all([
+    if (isNew) return undefined;
+    let cancelled = false;
+
+    const fetchAll = () =>
+      Promise.all([
         supabase.from('clients').select('*').eq('id', id).single(),
-        supabase.from('projects').select('*').eq('client_id', id).order('created_at', { ascending: false }),
+        supabase
+          .from('projects')
+          .select('*')
+          .eq('client_id', id)
+          .order('created_at', { ascending: false }),
       ]);
-      if (clientResult.error) {
-        setError(clientResult.error.message);
-      } else if (clientResult.data) {
-        const c = clientResult.data as Client;
-        setClient(c);
+
+    fetchAll().then(([c, p]) => {
+      if (cancelled) return;
+      if (c.error) {
+        setFailed(c.error.message);
+      } else if (c.data) {
+        const row = c.data as Client;
+        setClient(row);
         setForm({
-          name: c.name, company: c.company ?? '', email: c.email ?? '',
-          phone: c.phone ?? '', notes: c.notes ?? '',
+          name: row.name,
+          company: row.company ?? '',
+          email: row.email ?? '',
+          phone: row.phone ?? '',
+          notes: row.notes ?? '',
         });
       }
-      setProjects((projectsResult.data ?? []) as Project[]);
+      setProjects((p.data ?? []) as Project[]);
       setLoading(false);
+    });
+
+    return () => {
+      cancelled = true;
     };
-    fetchClient();
   }, [id, isNew]);
 
-  const handleSave = async () => {
+  const money = useMemo(() => {
+    const byCurrency: Record<string, number> = {};
+    let total = 0;
+    let paid = 0;
+    projects.forEach(p => {
+      byCurrency[p.currency] = (byCurrency[p.currency] ?? 0) + Number(p.total_value);
+      total += toPkr(Number(p.total_value), p.currency, rate);
+      paid += toPkr(Number(p.amount_paid), p.currency, rate);
+    });
+    return { byCurrency, total, paid, outstanding: Math.max(0, total - paid) };
+  }, [projects, rate]);
+
+  const save = async () => {
     if (!form.name.trim()) return;
     setSaving(true);
-    setError(null);
     const payload = {
       name: form.name.trim(),
       company: form.company.trim() || null,
@@ -82,228 +119,226 @@ const ClientDetail = () => {
     };
 
     if (isNew) {
-      const { data, error: insertError } = await supabase.from('clients').insert(payload).select().single();
+      const { data, error } = await supabase.from('clients').insert(payload).select().single();
       setSaving(false);
-      if (insertError) {
-        setError(insertError.message);
-      } else if (data) {
-        navigate(`/crm/clients/${(data as Client).id}`, { replace: true });
-      }
-    } else {
-      const { error: updateError } = await supabase.from('clients').update(payload).eq('id', id!);
-      setSaving(false);
-      if (updateError) {
-        setError(updateError.message);
+      if (error || !data) {
+        toast('That client didn’t save.', 'danger');
         return;
       }
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2500);
-      setClient(prev => prev ? { ...prev, ...payload } : null);
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!confirm('Delete this client and all their projects, tasks, and notes? This cannot be undone.')) return;
-    setDeleting(true);
-    setError(null);
-    const { error: deleteError } = await supabase.from('clients').delete().eq('id', id!);
-    if (deleteError) {
-      setError(deleteError.message);
-      setDeleting(false);
+      toast('Client created', 'success');
+      navigate(`/crm/clients/${(data as Client).id}`, { replace: true });
       return;
     }
+
+    const { error } = await supabase.from('clients').update(payload).eq('id', id as string);
+    setSaving(false);
+    if (error) {
+      toast('That didn’t save.', 'danger');
+      return;
+    }
+    setClient(prev => (prev ? { ...prev, ...payload } : prev));
+    toast('Client saved', 'success');
+  };
+
+  const remove = async () => {
+    if (
+      !confirm(
+        'Delete this client, and every project, task and note attached to them? This cannot be undone.',
+      )
+    )
+      return;
+    setDeleting(true);
+    const { error } = await supabase.from('clients').delete().eq('id', id as string);
+    if (error) {
+      setDeleting(false);
+      toast('Couldn’t delete that client.', 'danger');
+      return;
+    }
+    toast('Client deleted', 'info');
     navigate('/crm/clients');
   };
 
-  const formatDate = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  const formatMoney = (n: number, currency = 'PKR') => `${currency} ${n.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+  const formatDate = (iso: string) =>
+    new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
-  const totalsByCurrency: Record<string, { total: number; paid: number }> = {};
-  projects.forEach(p => {
-    const c = p.currency;
-    if (!totalsByCurrency[c]) totalsByCurrency[c] = { total: 0, paid: 0 };
-    totalsByCurrency[c].total += Number(p.total_value);
-    totalsByCurrency[c].paid += Number(p.amount_paid);
-  });
-  const currencies = Object.keys(totalsByCurrency);
-  const pkrTotals = usdRate !== null
-    ? currencies.reduce((acc, c) => ({
-        total: acc.total + toPkr(totalsByCurrency[c].total, c, usdRate),
-        paid: acc.paid + toPkr(totalsByCurrency[c].paid, c, usdRate),
-      }), { total: 0, paid: 0 })
-    : null;
-
-  if (loading) return <div style={{ color: '#555', fontSize: 14 }}>Loading…</div>;
+  if (loading) {
+    return (
+      <div className="max-w-[820px]">
+        <PageHeader title="Client" back={{ to: '/crm/clients', label: 'Back to clients' }} />
+        <SkeletonRows rows={6} />
+      </div>
+    );
+  }
 
   if (!isNew && !client) {
     return (
-      <div style={{ textAlign: 'center', padding: '64px 0' }}>
-        <div style={{ color: '#555', fontSize: 16, marginBottom: 16 }}>Client not found.</div>
-        <Link to="/crm/clients" style={{ color: '#888', fontSize: 14 }}>← Back to clients</Link>
+      <div className="max-w-[820px]">
+        <PageHeader title="Client" back={{ to: '/crm/clients', label: 'Back to clients' }} />
+        <EmptyState
+          title="That client doesn’t exist"
+          body="It may have been deleted, or the link is wrong."
+          action={
+            <ButtonLink to="/crm/clients" size="sm">
+              Back to clients
+            </ButtonLink>
+          }
+        />
       </div>
     );
   }
 
   return (
-    <div style={{ maxWidth: 760 }}>
-      <Link
-        to="/crm/clients"
-        style={{ color: '#555', fontSize: 14, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 24 }}
-      >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <polyline points="15 18 9 12 15 6" />
-        </svg>
-        Back to clients
-      </Link>
+    <div className="max-w-[820px]">
+      <PageHeader
+        title={isNew ? 'New client' : (client as Client).name}
+        back={{ to: '/crm/clients', label: 'Back to clients' }}
+        subtitle={
+          isNew
+            ? undefined
+            : `${projects.length} ${projects.length === 1 ? 'project' : 'projects'}`
+        }
+        actions={
+          <Button variant="primary" loading={saving} disabled={!form.name.trim()} onClick={save}>
+            {isNew ? 'Create client' : 'Save changes'}
+          </Button>
+        }
+      />
 
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
-        <h1 style={{ color: '#ffffff', fontSize: 24, fontWeight: 700, margin: 0, letterSpacing: -0.5 }}>
-          {isNew ? 'New Client' : client!.name}
-        </h1>
-        <button
-          onClick={handleSave}
-          disabled={saving || !form.name.trim()}
-          style={{
-            padding: '10px 20px', background: saved ? '#10b981' : '#ffffff',
-            color: saved ? '#ffffff' : '#0a0a0a', border: 'none', borderRadius: 8,
-            fontSize: 14, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer',
-          }}
-        >
-          {saving ? 'Saving…' : saved ? '✓ Saved' : isNew ? 'Create client' : 'Save changes'}
-        </button>
-      </div>
+      {failed && <ErrorState title="That client couldn’t load" body={failed} />}
 
-      {error && <Banner type="error" message={error} />}
+      <div className="flex flex-col gap-5">
+        {!isNew && projects.length > 0 && (
+          <section aria-label="Money" className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(180px,1fr))]">
+            <Stat
+              label="Lifetime value"
+              value={formatMoney(money.total)}
+              sub={formatCurrencySplit(money.byCurrency)}
+              tone="copper"
+            />
+            <Stat label="Collected" value={formatMoney(money.paid)} tone="success" />
+            <Stat
+              label="Outstanding"
+              value={formatMoney(money.outstanding)}
+              sub={money.outstanding > 0 ? 'Delivered and unpaid' : 'Everything settled'}
+              tone={money.outstanding > 0 ? 'warning' : 'success'}
+            />
+          </section>
+        )}
 
-      <div style={{ background: '#141414', border: '1px solid #1e1e1e', borderRadius: 12, padding: 24, marginBottom: 20 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-          <div>
-            <label style={labelStyle}>Full name *</label>
-            <input style={inputStyle} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Jane Doe" />
+        <Card>
+          <CardHeader title="Details" />
+          <div className="grid gap-4 p-4 sm:grid-cols-2">
+            <Input
+              label="Full name"
+              required
+              value={form.name}
+              onChange={e => setForm({ ...form, name: e.target.value })}
+              placeholder="Jane Doe"
+            />
+            <Input
+              label="Company"
+              value={form.company}
+              onChange={e => setForm({ ...form, company: e.target.value })}
+              placeholder="Acme Inc."
+            />
+            <Input
+              label="Email"
+              type="email"
+              value={form.email}
+              onChange={e => setForm({ ...form, email: e.target.value })}
+              placeholder="jane@acme.com"
+            />
+            <Input
+              label="Phone"
+              value={form.phone}
+              onChange={e => setForm({ ...form, phone: e.target.value })}
+              placeholder="+92 300 1234567"
+            />
+            <Textarea
+              className="sm:col-span-2"
+              label="Notes"
+              rows={4}
+              value={form.notes}
+              onChange={e => setForm({ ...form, notes: e.target.value })}
+              placeholder="Context, preferences, how they found you…"
+            />
+            {client?.lead_id && (
+              <p className="m-0 text-[12.5px] text-crm-ink-3 sm:col-span-2">
+                Came in as a lead —{' '}
+                <Link to={`/admin/leads/${client.lead_id}`} className="text-crm-copper no-underline hover:underline">
+                  view the original enquiry
+                </Link>
+              </p>
+            )}
           </div>
-          <div>
-            <label style={labelStyle}>Company</label>
-            <input style={inputStyle} value={form.company} onChange={e => setForm({ ...form, company: e.target.value })} placeholder="Acme Inc." />
-          </div>
-          <div>
-            <label style={labelStyle}>Email</label>
-            <input style={inputStyle} type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="jane@acme.com" />
-          </div>
-          <div>
-            <label style={labelStyle}>Phone</label>
-            <input style={inputStyle} value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="+92 300 1234567" />
-          </div>
-        </div>
-        <div style={{ marginTop: 16 }}>
-          <label style={labelStyle}>Notes</label>
-          <textarea
-            style={{ ...inputStyle, resize: 'vertical' }}
-            rows={4}
-            value={form.notes}
-            onChange={e => setForm({ ...form, notes: e.target.value })}
-            placeholder="Context, preferences, how they found us…"
-          />
-        </div>
-        {client?.lead_id && (
-          <div style={{ marginTop: 16, fontSize: 12, color: '#555' }}>
-            Converted from a lead — <Link to={`/admin/leads/${client.lead_id}`} style={{ color: '#888' }}>view original lead</Link>
+        </Card>
+
+        {!isNew && (
+          <Card className="overflow-hidden">
+            <CardHeader
+              title="Projects"
+              action={
+                <ButtonLink to={`/crm/projects/new?client_id=${id}`} size="sm">
+                  New project
+                </ButtonLink>
+              }
+            />
+            {projects.length === 0 ? (
+              <EmptyState
+                className="m-4 border-0"
+                title="No projects yet"
+                body="Add one directly, or win a deal for this client on the pipeline."
+              />
+            ) : (
+              <ul className="m-0 list-none p-0">
+                {projects.map(p => {
+                  const due = Number(p.total_value) - Number(p.amount_paid);
+                  return (
+                    <li key={p.id} className="border-b border-crm-line last:border-b-0">
+                      <Link
+                        to={`/crm/projects/${p.id}`}
+                        className="flex flex-wrap items-center gap-3 px-4 py-3 no-underline transition-colors duration-150 ease-crm hover:bg-crm-raised"
+                      >
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-[13.5px] font-medium text-crm-ink">
+                            {p.name}
+                          </span>
+                          <span className="crm-num block text-[12px] text-crm-ink-3">
+                            {formatDate(p.created_at)}
+                          </span>
+                        </span>
+                        <Badge tone={PROJECT_STATUS_TONE[p.status] ?? 'neutral'} dot>
+                          {PROJECT_STATUS_LABEL[p.status] ?? p.status}
+                        </Badge>
+                        <span className="crm-num shrink-0 text-right font-crm-mono text-[12.5px] text-crm-ink-2">
+                          {formatMoney(Number(p.amount_paid), p.currency)}
+                          <span className="text-crm-faint"> / {formatMoney(Number(p.total_value), p.currency)}</span>
+                          {due > 0 && p.status !== 'cancelled' && (
+                            <span className="mt-0.5 block text-[11px] text-crm-warning">
+                              {formatMoney(due, p.currency)} owed
+                            </span>
+                          )}
+                        </span>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </Card>
+        )}
+
+        {!isNew && (
+          <div className="border-t border-crm-line pt-4">
+            <Button variant="danger" loading={deleting} onClick={remove}>
+              Delete client
+            </Button>
+            <p className="m-0 mt-2 text-[12px] text-crm-ink-3">
+              Removes their projects, tasks and notes too. There is no undo.
+            </p>
           </div>
         )}
       </div>
-
-      {!isNew && projects.length > 0 && (
-        <div style={{ background: '#141414', border: '1px solid #1e1e1e', borderRadius: 12, padding: 20, marginBottom: 20 }}>
-          <h2 style={{ color: '#888', fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, margin: '0 0 14px' }}>
-            Total Across {projects.length} Project{projects.length === 1 ? '' : 's'}
-          </h2>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24, alignItems: 'flex-start' }}>
-            {pkrTotals && (
-              <div>
-                <div style={{ color: '#666', fontSize: 11, marginBottom: 4 }}>Combined (PKR)</div>
-                <div style={{ color: '#ddd', fontSize: 19, fontWeight: 600 }}>{formatMoney(pkrTotals.paid, 'PKR')} / {formatMoney(pkrTotals.total, 'PKR')}</div>
-                {pkrTotals.total - pkrTotals.paid > 0 && (
-                  <div style={{ color: '#f59e0b', fontSize: 12, marginTop: 2 }}>{formatMoney(pkrTotals.total - pkrTotals.paid, 'PKR')} remaining</div>
-                )}
-              </div>
-            )}
-            {currencies.length > 1 && (
-              <div style={{ borderLeft: '1px solid #1e1e1e', paddingLeft: 24, display: 'flex', gap: 20, flexWrap: 'wrap' }}>
-                {currencies.map(c => {
-                  const t = totalsByCurrency[c];
-                  return (
-                    <div key={c}>
-                      <div style={{ color: '#555', fontSize: 11, marginBottom: 4 }}>originally in {c}</div>
-                      <div style={{ color: '#888', fontSize: 14 }}>{formatMoney(t.paid, '')} / {formatMoney(t.total, '')}</div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-          {usdRate !== null && <div style={{ color: '#444', fontSize: 11, marginTop: 12 }}>at 1 USD = {usdRate} PKR</div>}
-        </div>
-      )}
-
-      {!isNew && (
-        <>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-            <h2 style={{ color: '#ffffff', fontSize: 16, fontWeight: 600, margin: 0 }}>Projects</h2>
-            <Link
-              to={`/crm/projects/new?client_id=${id}`}
-              style={{ padding: '7px 14px', background: '#1e1e1e', color: '#ddd', borderRadius: 7, fontSize: 13, textDecoration: 'none' }}
-            >
-              + New Project
-            </Link>
-          </div>
-
-          {projects.length === 0 ? (
-            <div style={{ background: '#141414', border: '1px solid #1e1e1e', borderRadius: 12, padding: '32px', textAlign: 'center', color: '#444', fontSize: 14, marginBottom: 24 }}>
-              No projects yet for this client.
-            </div>
-          ) : (
-            <div style={{ background: '#141414', border: '1px solid #1e1e1e', borderRadius: 12, overflow: 'hidden', marginBottom: 24 }}>
-              {projects.map((p, i) => (
-                <Link
-                  key={p.id}
-                  to={`/crm/projects/${p.id}`}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 16, padding: '14px 20px',
-                    borderBottom: i < projects.length - 1 ? '1px solid #1a1a1a' : 'none',
-                    textDecoration: 'none',
-                  }}
-                >
-                  <div style={{ flex: 1 }}>
-                    <div style={{ color: '#ddd', fontSize: 14, fontWeight: 500 }}>{p.name}</div>
-                    <div style={{ color: '#555', fontSize: 12, marginTop: 2 }}>{formatDate(p.created_at)}</div>
-                  </div>
-                  <span style={{
-                    display: 'inline-block', padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600,
-                    background: `${STATUS_COLORS[p.status]}22`, color: STATUS_COLORS[p.status], textTransform: 'capitalize',
-                  }}>
-                    {p.status.replace('_', ' ')}
-                  </span>
-                  <span style={{ color: '#888', fontSize: 13, minWidth: 100, textAlign: 'right' }}>
-                    {formatMoney(Number(p.amount_paid), p.currency)} / {formatMoney(Number(p.total_value), p.currency)}
-                  </span>
-                </Link>
-              ))}
-            </div>
-          )}
-
-          <div style={{ paddingTop: 8, borderTop: '1px solid #1a1a1a' }}>
-            <button
-              onClick={handleDelete}
-              disabled={deleting}
-              style={{
-                padding: '8px 16px', background: 'transparent', border: '1px solid #2a1a1a', borderRadius: 8,
-                color: '#9b4545', fontSize: 13, cursor: deleting ? 'not-allowed' : 'pointer',
-              }}
-            >
-              {deleting ? 'Deleting…' : 'Delete client'}
-            </button>
-          </div>
-        </>
-      )}
     </div>
   );
 };

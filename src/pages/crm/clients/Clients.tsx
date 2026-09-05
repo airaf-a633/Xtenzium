@@ -1,133 +1,269 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../../lib/supabase';
-import Banner from '../../../components/crm/Banner';
-import type { Client, Project } from '../../../types/database';
+import { useAuth } from '../../../context/AuthContext';
+import { clientFields } from '../../../lib/view-fields';
+import { applyFilters, applySearch, applySort } from '../../../lib/views';
+import { formatMoney } from '../../../lib/money';
+import { getUsdToPkrRate, DEFAULT_USD_TO_PKR, toPkr } from '../../../lib/settings';
+import type { Client, Project, TeamMember } from '../../../types/database';
+import {
+  Avatar,
+  ButtonLink,
+  EmptyState,
+  ErrorState,
+  PageHeader,
+  SkeletonRows,
+  SkeletonTiles,
+  Stat,
+  TableShell,
+  Td,
+  Th,
+  Tr,
+} from '../../../components/crm/ui';
+import ViewBar from '../../../components/crm/ViewBar';
+import { useView } from '../../../components/crm/useView';
+import { cn } from '../../../lib/utils';
+
+const PlusIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+    <path d="M12 5v14M5 12h14" />
+  </svg>
+);
 
 const Clients = () => {
+  const { user } = useAuth();
   const [clients, setClients] = useState<Client[]>([]);
-  const [projectCounts, setProjectCounts] = useState<Record<string, number>>({});
-  const [search, setSearch] = useState('');
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [members, setMembers] = useState<TeamMember[]>([]);
+  const [rate, setRate] = useState(DEFAULT_USD_TO_PKR);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [failed, setFailed] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchClients = async () => {
-      setLoading(true);
-      setError(null);
-      const [clientsResult, projectsResult] = await Promise.all([
-        supabase.from('clients').select('*').order('created_at', { ascending: false }),
-        supabase.from('projects').select('client_id'),
-      ]);
-      if (clientsResult.error) setError(clientsResult.error.message);
-      setClients((clientsResult.data ?? []) as Client[]);
+    let cancelled = false;
 
-      const counts: Record<string, number> = {};
-      ((projectsResult.data ?? []) as Pick<Project, 'client_id'>[]).forEach(p => {
-        counts[p.client_id] = (counts[p.client_id] ?? 0) + 1;
-      });
-      setProjectCounts(counts);
+    const fetchAll = () =>
+      Promise.all([
+        supabase.from('clients').select('*').order('created_at', { ascending: false }),
+        supabase.from('projects').select('*'),
+        supabase.from('team_members').select('*').order('name'),
+        getUsdToPkrRate(),
+      ]);
+
+    fetchAll().then(([c, p, m, usdRate]) => {
+      if (cancelled) return;
+      if (c.error) {
+        setFailed(c.error.message);
+        setLoading(false);
+        return;
+      }
+      setClients((c.data ?? []) as Client[]);
+      setProjects((p.data ?? []) as Project[]);
+      setMembers((m.data ?? []) as TeamMember[]);
+      setRate(usdRate);
       setLoading(false);
+    });
+
+    return () => {
+      cancelled = true;
     };
-    fetchClients();
   }, []);
 
-  const filtered = clients.filter(c => {
-    const q = search.toLowerCase();
-    if (!q) return true;
-    return [c.name, c.company ?? '', c.email ?? ''].some(v => v.toLowerCase().includes(q));
-  });
+  const me = useMemo(
+    () => members.find(m => m.user_id && m.user_id === user?.id) ?? null,
+    [members, user],
+  );
 
-  const formatDate = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const view = useView('clients', me);
+  const fields = useMemo(() => clientFields(), []);
+
+  /* What a client is worth, and what they still owe. Derived from their
+     projects rather than stored, so it can never disagree with them. */
+  const byClient = useMemo(() => {
+    const map: Record<string, { count: number; value: number; outstanding: number }> = {};
+    projects.forEach(p => {
+      const entry = map[p.client_id] ?? { count: 0, value: 0, outstanding: 0 };
+      entry.count += 1;
+      entry.value += toPkr(Number(p.total_value), p.currency, rate);
+      if (p.status !== 'cancelled') {
+        const due = Number(p.total_value) - Number(p.amount_paid);
+        if (due > 0) entry.outstanding += toPkr(due, p.currency, rate);
+      }
+      map[p.client_id] = entry;
+    });
+    return map;
+  }, [projects, rate]);
+
+  const rows = useMemo(
+    () =>
+      applySort(
+        applySearch(applyFilters(clients, view.view.filters, fields), view.view.search, fields),
+        view.view.sort,
+        fields,
+      ),
+    [clients, view.view, fields],
+  );
+
+  const totalValue = Object.values(byClient).reduce((s, c) => s + c.value, 0);
+  const totalOutstanding = Object.values(byClient).reduce((s, c) => s + c.outstanding, 0);
+
+  const formatDate = (iso: string) =>
+    new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 28, flexWrap: 'wrap', gap: 16 }}>
-        <div>
-          <h1 style={{ color: '#ffffff', fontSize: 24, fontWeight: 700, margin: 0, letterSpacing: -0.5 }}>Clients</h1>
-          <p style={{ color: '#555', fontSize: 14, marginTop: 6 }}>{clients.length} total</p>
-        </div>
-        <Link
-          to="/crm/clients/new"
-          style={{
-            padding: '10px 18px', background: '#ffffff', color: '#0a0a0a', borderRadius: 8,
-            fontSize: 14, fontWeight: 600, textDecoration: 'none',
-          }}
-        >
-          + New Client
-        </Link>
-      </div>
+      <PageHeader
+        title="Clients"
+        subtitle={loading ? undefined : `${clients.length} total`}
+        actions={
+          <ButtonLink to="/crm/clients/new" variant="primary" icon={<PlusIcon />}>
+            New client
+          </ButtonLink>
+        }
+      />
 
-      {error && <Banner type="error" message={error} />}
+      {failed && <ErrorState title="Clients couldn’t load" body={failed} />}
 
-      <div style={{ position: 'relative', marginBottom: 20, maxWidth: 360 }}>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2"
-          style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }}>
-          <circle cx="11" cy="11" r="8" />
-          <line x1="21" y1="21" x2="16.65" y2="16.65" />
-        </svg>
-        <input
-          type="text"
-          placeholder="Search by name, company, email…"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          style={{
-            width: '100%', padding: '10px 14px 10px 36px', background: '#141414',
-            border: '1px solid #1e1e1e', borderRadius: 8, color: '#ffffff', fontSize: 14,
-            outline: 'none', boxSizing: 'border-box',
-          }}
-        />
-      </div>
-
-      {loading ? (
-        <div style={{ color: '#555', fontSize: 14, padding: '32px 0' }}>Loading clients…</div>
-      ) : filtered.length === 0 ? (
-        <div style={{ background: '#141414', border: '1px solid #1e1e1e', borderRadius: 12, padding: '48px 32px', textAlign: 'center', color: '#444', fontSize: 14 }}>
-          {search ? 'No clients match your search.' : 'No clients yet. Add one, or convert a qualified lead from /admin/leads.'}
-        </div>
-      ) : (
-        <div style={{ background: '#141414', border: '1px solid #1e1e1e', borderRadius: 12, overflow: 'hidden' }}>
-          <div style={{
-            display: 'grid', gridTemplateColumns: '2fr 2fr 1fr 1fr 120px', padding: '10px 20px',
-            borderBottom: '1px solid #1a1a1a', color: '#444', fontSize: 12, fontWeight: 600,
-            textTransform: 'uppercase', letterSpacing: 0.5,
-          }}>
-            <span>Name</span><span>Email / Company</span><span>Projects</span><span>Added</span><span />
-          </div>
-
-          {filtered.map((c, i) => (
-            <div key={c.id} style={{
-              display: 'grid', gridTemplateColumns: '2fr 2fr 1fr 1fr 120px', padding: '14px 20px',
-              borderBottom: i < filtered.length - 1 ? '1px solid #1a1a1a' : 'none', alignItems: 'center',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{
-                  width: 32, height: 32, borderRadius: '50%', background: '#1e1e1e',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: '#aaa', fontSize: 13, fontWeight: 600, flexShrink: 0,
-                }}>
-                  {c.name.charAt(0).toUpperCase()}
-                </div>
-                <span style={{ color: '#ddd', fontSize: 14 }}>{c.name}</span>
+      {!failed && (
+        <>
+          <section className="mb-5" aria-label="Summary">
+            {loading ? (
+              <SkeletonTiles count={3} />
+            ) : (
+              <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(180px,1fr))]">
+                <Stat label="Clients" value={clients.length} />
+                <Stat
+                  label="Lifetime value"
+                  value={formatMoney(totalValue)}
+                  sub="Across every project"
+                  tone="copper"
+                />
+                <Stat
+                  label="Outstanding"
+                  value={formatMoney(totalOutstanding)}
+                  sub={totalOutstanding > 0 ? 'Delivered and unpaid' : 'Everything settled'}
+                  tone={totalOutstanding > 0 ? 'warning' : 'success'}
+                />
               </div>
-              <div>
-                <div style={{ color: '#aaa', fontSize: 14 }}>{c.email ?? '—'}</div>
-                {c.company && <div style={{ color: '#444', fontSize: 12, marginTop: 2 }}>{c.company}</div>}
-              </div>
-              <span style={{ color: '#888', fontSize: 14 }}>{projectCounts[c.id] ?? 0}</span>
-              <span style={{ color: '#444', fontSize: 13 }}>{formatDate(c.created_at)}</span>
-              <Link
-                to={`/crm/clients/${c.id}`}
-                style={{
-                  display: 'inline-block', padding: '6px 14px', border: '1px solid #2a2a2a', borderRadius: 6,
-                  color: '#888', fontSize: 13, textDecoration: 'none', width: 'fit-content', justifySelf: 'end',
-                }}
-              >
-                View
-              </Link>
-            </div>
-          ))}
-        </div>
+            )}
+          </section>
+
+          <ViewBar
+            fields={fields}
+            view={view.view}
+            onChange={view.setView}
+            onReset={view.resetView}
+            savedViews={view.savedViews}
+            activeViewId={view.activeViewId}
+            onApplySaved={view.applySavedView}
+            onSave={view.saveView}
+            onUpdateActive={view.updateActiveView}
+            onDelete={view.deleteView}
+            shareUrl={view.shareUrl}
+            viewsUnavailable={view.viewsUnavailable}
+            searchPlaceholder="Search clients…"
+          />
+
+          {loading ? (
+            <SkeletonRows rows={6} />
+          ) : rows.length === 0 ? (
+            <EmptyState
+              title={clients.length === 0 ? 'No clients yet' : 'Nothing matches'}
+              body={
+                clients.length === 0
+                  ? 'Add one directly, or win a deal on the pipeline — that creates the client and its first project for you.'
+                  : 'No client fits the current filters. Clear them to see everyone.'
+              }
+              action={
+                clients.length === 0 ? (
+                  <ButtonLink to="/crm/clients/new" variant="primary" size="sm">
+                    Add a client
+                  </ButtonLink>
+                ) : undefined
+              }
+            />
+          ) : (
+            <TableShell>
+              <thead>
+                <tr>
+                  <Th>Client</Th>
+                  <Th>Contact</Th>
+                  <Th align="right">Projects</Th>
+                  <Th align="right">Value</Th>
+                  <Th align="right">Outstanding</Th>
+                  <Th align="right">Added</Th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map(c => {
+                  const stats = byClient[c.id] ?? { count: 0, value: 0, outstanding: 0 };
+                  return (
+                    <Tr key={c.id}>
+                      <Td>
+                        <Link
+                          to={`/crm/clients/${c.id}`}
+                          className="inline-flex items-center gap-2.5 no-underline"
+                        >
+                          <Avatar name={c.name} size="md" />
+                          <span className="min-w-0">
+                            <span className="block truncate text-[13.5px] font-medium text-crm-ink">
+                              {c.name}
+                            </span>
+                            {c.company && (
+                              <span className="block truncate text-[12px] text-crm-ink-3">
+                                {c.company}
+                              </span>
+                            )}
+                          </span>
+                        </Link>
+                      </Td>
+                      <Td>
+                        {c.email ? (
+                          <a
+                            href={`mailto:${c.email}`}
+                            className="text-[13px] text-crm-ink-2 no-underline hover:text-crm-copper"
+                          >
+                            {c.email}
+                          </a>
+                        ) : (
+                          <span className="text-[13px] text-crm-faint">—</span>
+                        )}
+                        {c.phone && (
+                          <span className="mt-0.5 block text-[12px] text-crm-ink-3">{c.phone}</span>
+                        )}
+                      </Td>
+                      <Td align="right" className="font-crm-mono text-[12.5px]">
+                        {stats.count || '—'}
+                      </Td>
+                      <Td align="right" className="font-crm-mono text-[12.5px]">
+                        {stats.value > 0 ? formatMoney(stats.value) : '—'}
+                      </Td>
+                      <Td
+                        align="right"
+                        className={cn(
+                          'font-crm-mono text-[12.5px]',
+                          stats.outstanding > 0 && 'text-crm-warning',
+                        )}
+                      >
+                        {stats.outstanding > 0 ? formatMoney(stats.outstanding) : '—'}
+                      </Td>
+                      <Td align="right" className="font-crm-mono text-[12px] text-crm-ink-3">
+                        {formatDate(c.created_at)}
+                      </Td>
+                    </Tr>
+                  );
+                })}
+              </tbody>
+            </TableShell>
+          )}
+
+          {!loading && (
+            <p className="m-0 mt-4 font-crm-mono text-[10.5px] uppercase tracking-[0.1em] text-crm-faint">
+              Money normalised at USD 1 = PKR {rate}
+            </p>
+          )}
+        </>
       )}
     </div>
   );

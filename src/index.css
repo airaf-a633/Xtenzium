@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./styles/crm-theme.css";
 
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800;900&display=swap');
@@ -61,10 +62,20 @@ body {
   overflow-x: hidden;
 }
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+/* This reset MUST live in @layer base.
+   Unlayered rules beat every layered one regardless of specificity, and
+   Tailwind's utilities live in @layer utilities — so an unlayered
+   `* { margin: 0; padding: 0 }` silently cancels every margin and
+   padding utility in the app. That is what flattened the CRM: no
+   sidebar offset, no card padding, no section spacing.
+   Layering it keeps the reset for the marketing site while letting
+   utilities do their job. */
+@layer base {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
 }
 
 html.lenis, html.lenis body {

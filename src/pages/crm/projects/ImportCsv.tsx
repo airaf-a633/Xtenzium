@@ -1,8 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../../../lib/supabase';
 import { parseCsv } from '../../../lib/csv';
-import Banner from '../../../components/crm/Banner';
+import {
+  Badge,
+  Button,
+  ButtonLink,
+  Card,
+  ErrorState,
+  PageHeader,
+  TableShell,
+  Td,
+  Th,
+  Tr,
+} from '../../../components/crm/ui';
+import { formatMoney as formatPkr } from '../../../lib/money';
+import { cn } from '../../../lib/utils';
 import type { Client, Project, ProjectStatus } from '../../../types/database';
 
 interface ParsedRow {
@@ -45,12 +57,10 @@ const mapStatus = (raw: string): ProjectStatus => {
   return 'proposal';
 };
 
-const formatMoney = (n: number) => `PKR ${n.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+const formatMoney = (n: number) => formatPkr(n);
 
-const cardStyle: React.CSSProperties = { background: '#141414', border: '1px solid #1e1e1e', borderRadius: 12, padding: 24 };
 
 const ImportCsv = () => {
-  const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [fileName, setFileName] = useState('');
   const [rows, setRows] = useState<ParsedRow[]>([]);
@@ -211,111 +221,150 @@ const ImportCsv = () => {
   };
 
   return (
-    <div style={{ maxWidth: 960 }}>
-      <Link to="/crm/projects" style={{ color: '#555', fontSize: 14, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 24 }}>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6" /></svg>
-        Back to projects
-      </Link>
-
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ color: '#ffffff', fontSize: 24, fontWeight: 700, margin: 0, letterSpacing: -0.5 }}>Import Projects from CSV</h1>
-        <p style={{ color: '#555', fontSize: 14, marginTop: 6 }}>
-          Upload a CSV with columns like Project Name, Client, Start Date, Status, Contract (PKR), Paid (PKR). Clients that don't exist yet will be created automatically.
-        </p>
-      </div>
+    <div className="max-w-[980px]">
+      <PageHeader
+        title="Import projects"
+        back={{ to: '/crm/projects', label: 'Back to projects' }}
+        subtitle="A CSV with Project Name, Client, Start Date, Status, Contract and Paid. Clients that don\u2019t exist yet are created for you."
+        actions={
+          result ? (
+            <ButtonLink to="/crm/projects" variant="primary">
+              View projects
+            </ButtonLink>
+          ) : undefined
+        }
+      />
 
       {result && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
-          <div style={{ flex: 1 }}>
-            <Banner type="success" message={`Imported ${result.projects} project${result.projects === 1 ? '' : 's'}${result.clients > 0 ? ` and created ${result.clients} new client${result.clients === 1 ? '' : 's'}` : ''}.`} />
-          </div>
-          <button
-            onClick={() => navigate('/crm/projects')}
-            style={{ padding: '10px 18px', background: '#ffffff', color: '#0a0a0a', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer', marginBottom: 16 }}
-          >
-            View projects →
-          </button>
+        <div className="mb-4 rounded-crm-md border border-crm-success/30 bg-crm-success-quiet px-3.5 py-3">
+          <p className="m-0 text-[13px] font-medium text-crm-success">
+            Imported {result.projects} {result.projects === 1 ? 'project' : 'projects'}
+            {result.clients > 0
+              ? `, and created ${result.clients} new ${result.clients === 1 ? 'client' : 'clients'}`
+              : ''}
+            .
+          </p>
         </div>
       )}
-      {parseError && <Banner type="error" message={parseError} />}
-      {importError && <Banner type="error" message={importError} />}
 
-      <div style={{ ...cardStyle, marginBottom: 20 }}>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".csv,text/csv"
-          onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
-          style={{ display: 'none' }}
-        />
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={!clientsLoaded}
-            style={{
-              padding: '10px 18px', background: '#1e1e1e', color: '#ddd', border: 'none', borderRadius: 8,
-              fontSize: 14, fontWeight: 600, cursor: clientsLoaded ? 'pointer' : 'not-allowed',
+      {parseError && (
+        <div className="mb-4">
+          <ErrorState title="That file couldn\u2019t be read" body={parseError} />
+        </div>
+      )}
+      {importError && (
+        <div className="mb-4">
+          <ErrorState title="The import stopped" body={importError} />
+        </div>
+      )}
+
+      <Card className="mb-5">
+        <div className="flex flex-wrap items-center gap-3 p-4">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv,text/csv"
+            onChange={e => {
+              const f = e.target.files?.[0];
+              if (f) handleFile(f);
             }}
+            className="hidden"
+          />
+          <Button
+            variant="secondary"
+            disabled={!clientsLoaded}
+            onClick={() => fileInputRef.current?.click()}
           >
             Choose CSV file
-          </button>
-          <span style={{ color: fileName ? '#aaa' : '#444', fontSize: 13.5 }}>
+          </Button>
+          <span className={cn('text-[13px]', fileName ? 'text-crm-ink-2' : 'text-crm-faint')}>
             {fileName || 'No file selected'}
           </span>
         </div>
-      </div>
+      </Card>
 
       {rows.length > 0 && (
         <>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 10 }}>
-            <div style={{ color: '#888', fontSize: 13.5 }}>
-              {importableRows.length} row{importableRows.length === 1 ? '' : 's'} ready to import
-              {newClientNames.length > 0 && ` · ${newClientNames.length} new client${newClientNames.length === 1 ? '' : 's'} will be created`}
-              {blockedRows.length > 0 && ` · ${blockedRows.length} row${blockedRows.length === 1 ? '' : 's'} skipped (no client name)`}
-            </div>
-            <button
+          {/* Nothing is written until this button is pressed \u2014 everything
+              above is a preview of what would happen. */}
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+            <p className="m-0 text-[13px] text-crm-ink-2">
+              <span className="crm-num font-medium text-crm-ink">{importableRows.length}</span>{' '}
+              {importableRows.length === 1 ? 'row' : 'rows'} ready
+              {newClientNames.length > 0 && (
+                <>
+                  {' \u00b7 '}
+                  <span className="text-crm-info">
+                    {newClientNames.length} new{' '}
+                    {newClientNames.length === 1 ? 'client' : 'clients'}
+                  </span>
+                </>
+              )}
+              {blockedRows.length > 0 && (
+                <>
+                  {' \u00b7 '}
+                  <span className="text-crm-warning">
+                    {blockedRows.length} skipped, no client name
+                  </span>
+                </>
+              )}
+            </p>
+            <Button
+              variant="primary"
+              loading={importing}
+              disabled={importableRows.length === 0}
               onClick={handleImport}
-              disabled={importing || importableRows.length === 0}
-              style={{
-                padding: '10px 20px', background: '#ffffff', color: '#0a0a0a', border: 'none', borderRadius: 8,
-                fontSize: 14, fontWeight: 600, cursor: (importing || importableRows.length === 0) ? 'not-allowed' : 'pointer',
-              }}
             >
-              {importing ? 'Importing…' : `Import ${importableRows.length} project${importableRows.length === 1 ? '' : 's'}`}
-            </button>
+              Import {importableRows.length}{' '}
+              {importableRows.length === 1 ? 'project' : 'projects'}
+            </Button>
           </div>
 
-          <div style={{ background: '#141414', border: '1px solid #1e1e1e', borderRadius: 12, overflow: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid #1a1a1a' }}>
-                  {['Project', 'Client', 'Start', 'Status', 'Contract', 'Paid', 'Issues'].map(h => (
-                    <th key={h} style={{ textAlign: 'left', padding: '10px 14px', color: '#444', fontSize: 11.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, whiteSpace: 'nowrap' }}>
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map(r => (
-                  <tr key={r.rowNumber} style={{ borderBottom: '1px solid #1a1a1a', opacity: r.clientName ? 1 : 0.5 }}>
-                    <td style={{ padding: '10px 14px', color: '#ddd' }}>{r.projectName}</td>
-                    <td style={{ padding: '10px 14px', color: r.clientName ? '#aaa' : '#ef4444' }}>
-                      {r.clientName || 'missing'}
-                      {r.isNewClient && <span style={{ marginLeft: 6, fontSize: 10.5, color: '#3b82f6', background: '#3b82f622', padding: '1px 6px', borderRadius: 10 }}>new</span>}
-                    </td>
-                    <td style={{ padding: '10px 14px', color: '#888', whiteSpace: 'nowrap' }}>{r.startDateIso ?? '—'}</td>
-                    <td style={{ padding: '10px 14px', color: '#888', textTransform: 'capitalize', whiteSpace: 'nowrap' }}>{r.status.replace('_', ' ')}</td>
-                    <td style={{ padding: '10px 14px', color: '#aaa', whiteSpace: 'nowrap' }}>{formatMoney(r.totalValue)}</td>
-                    <td style={{ padding: '10px 14px', color: '#aaa', whiteSpace: 'nowrap' }}>{formatMoney(r.amountPaid)}</td>
-                    <td style={{ padding: '10px 14px', color: '#f59e0b', fontSize: 12 }}>
-                      {r.issues.length > 0 ? r.issues.join('; ') : ''}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <TableShell>
+            <thead>
+              <tr>
+                <Th>Project</Th>
+                <Th>Client</Th>
+                <Th>Start</Th>
+                <Th>Status</Th>
+                <Th align="right">Contract</Th>
+                <Th align="right">Paid</Th>
+                <Th>Issues</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map(r => (
+                <Tr key={r.rowNumber} className={cn(!r.clientName && 'opacity-50')}>
+                  <Td className="text-crm-ink">{r.projectName}</Td>
+                  <Td>
+                    {r.clientName ? (
+                      <span className="inline-flex items-center gap-1.5">
+                        <span className="text-crm-ink-2">{r.clientName}</span>
+                        {r.isNewClient && <Badge tone="info">new</Badge>}
+                      </span>
+                    ) : (
+                      <span className="text-crm-danger">missing</span>
+                    )}
+                  </Td>
+                  <Td className="whitespace-nowrap font-crm-mono text-[12px] text-crm-ink-3">
+                    {r.startDateIso ?? '\u2014'}
+                  </Td>
+                  <Td className="whitespace-nowrap capitalize text-crm-ink-3">
+                    {r.status.replace('_', ' ')}
+                  </Td>
+                  <Td align="right" className="whitespace-nowrap font-crm-mono text-[12px]">
+                    {formatMoney(r.totalValue)}
+                  </Td>
+                  <Td align="right" className="whitespace-nowrap font-crm-mono text-[12px]">
+                    {formatMoney(r.amountPaid)}
+                  </Td>
+                  <Td className="text-[12px] text-crm-warning">
+                    {r.issues.length > 0 ? r.issues.join('; ') : ''}
+                  </Td>
+                </Tr>
+              ))}
+            </tbody>
+          </TableShell>
         </>
       )}
     </div>
