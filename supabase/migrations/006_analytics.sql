@@ -20,20 +20,25 @@
 --
 -- ── The visitor identifier ─────────────────────────────────────────
 --
--- `visitor` is a hash of (IP + user agent + a daily-rotating salt),
--- computed on the way in and never reversible. It is deliberately
--- useless the day after it is written:
+-- `visitor` is a random id minted in the browser and held in
+-- sessionStorage. Not a hash of anything: the site is static and posts
+-- straight to Supabase, so there is no server in the path and the client
+-- never learns its own IP. An identifier that cannot be built is worse
+-- than a plain one, so this is the plain one.
 --
---   - It distinguishes two people on the same page today, which is what
---     makes a session and a bounce rate meaningful.
---   - It cannot follow anybody into tomorrow, which is what makes it
---     cookieless in substance and not just in mechanism.
+-- What that buys and what it costs:
 --
--- That trade is the point. Multi-day attribution is the thing being
--- given up, and it is worth giving up: it is what forces a consent
--- banner, and the funnel questions worth answering — which page produced
--- the enquiry, where enquiries come from, where the estimator is
--- abandoned — are all answerable inside a day.
+--   - It separates two people on a page right now, which is what makes a
+--     session, a bounce and a funnel step mean anything.
+--   - It dies when the tab closes. The same person tomorrow — or in a
+--     second tab today — is a new visitor, so `visitors` reads closer to
+--     sessions than to people.
+--
+-- Multi-session identity is the thing given up, and it is worth giving
+-- up: it is exactly what would require a cookie and therefore a consent
+-- banner. The questions worth answering — which page produced an
+-- enquiry, where enquiries come from, where the estimator is abandoned —
+-- all live inside one session.
 
 -- ─── Events ───────────────────────────────────────────────
 
@@ -66,7 +71,7 @@ create table if not exists public.page_events (
   -- carries other people's query strings.
   referrer     text,
 
-  -- Daily-rotating pseudonymous id. See the note above.
+  -- Per-session pseudonymous id. See the note above.
   visitor      text not null,
 
   -- Coarse device class, from viewport width at send time. Not a
@@ -91,8 +96,8 @@ create index if not exists page_events_created_name_idx
 create index if not exists page_events_path_idx
   on public.page_events (path, created_at desc);
 
--- "What did this visitor do" — sessions, bounce, and the path that
--- preceded an enquiry. Only useful within a day, by design.
+-- "What did this visitor do" — the session: bounce, funnel order, and
+-- the path that preceded an enquiry.
 create index if not exists page_events_visitor_idx
   on public.page_events (visitor, created_at desc);
 
@@ -163,21 +168,46 @@ from public.page_events
 group by 1
 order by pageviews desc;
 
--- The one Google Analytics cannot produce: enquiries joined to the page
--- the visitor was on when they sent one. `leads.source` is already
--- written by the forms, so this is the bridge between traffic and money.
-create or replace view public.analytics_lead_sources as
+-- The one Google Analytics cannot produce: enquiries joined to the
+-- traffic that produced them.
+--
+-- The first draft of this view joined leads to events by day, which
+-- credited every landing path with every lead created that day. That is
+-- not attribution, it is multiplication, and it would have read as a
+-- wildly successful site.
+--
+-- Real attribution needs the two tables to share a key. `leads.payload`
+-- is already jsonb and already written by both forms, so the beacon puts
+-- its `visitor` in there and nothing about the leads table has to change
+-- — which matters, because that table belongs to the CRM.
+create or replace view public.analytics_attribution as
+with sessions as (
+  select
+    visitor,
+    min(created_at)                                          as started_at,
+    (array_agg(path order by created_at))[1]                 as landing_path,
+    (array_agg(referrer order by created_at))[1]             as referring_host,
+    count(*) filter (where name = 'pageview')                as pageviews
+  from public.page_events
+  group by visitor
+)
 select
-  e.referrer                as referring_host,
-  e.path                    as landing_path,
-  count(distinct e.visitor) as visitors,
-  count(distinct l.id)      as leads
-from public.page_events e
+  s.referring_host,
+  s.landing_path,
+  count(*)                                    as sessions,
+  count(l.id)                                 as leads,
+  round(
+    count(l.id)::numeric / nullif(count(*), 0) * 100,
+    1
+  )                                           as conversion_percent
+from sessions s
 left join public.leads l
-  on date_trunc('day', l.created_at) = date_trunc('day', e.created_at)
-where e.name = 'pageview'
+  on l.payload->>'visitor' = s.visitor
 group by 1, 2
-order by leads desc nulls last, visitors desc;
+order by leads desc, sessions desc;
+
+comment on view public.analytics_attribution is
+  'Sessions joined to the enquiries they produced, keyed on the visitor id the forms carry in leads.payload. A lead with no visitor in its payload — anything submitted before the beacon shipped, or with JS blocked — counts as a session-less lead and simply does not appear here.';
 
 comment on table public.page_events is
-  'First-party, cookieless analytics. `visitor` is a daily-rotating hash and is not stable across days by design. Public role may insert and must never be granted select.';
+  'First-party, cookieless analytics. `visitor` is a per-session random id held in sessionStorage and is not stable across sessions by design. Public role may insert and must never be granted select.';

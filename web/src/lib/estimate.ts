@@ -1,4 +1,5 @@
 import gsap from 'gsap';
+import { track, currentVisitor } from './analytics';
 import { submitLead } from './supabase';
 
 /**
@@ -234,6 +235,7 @@ export function initEstimate() {
       message: [`Estimator range: ${low} – ${high}`, '', ...picked].join('\n'),
       source: 'estimate',
       payload: {
+        visitor: currentVisitor(),
         low,
         high,
         answers: Object.fromEntries(
@@ -243,6 +245,7 @@ export function initEstimate() {
     });
 
     if (res.ok) {
+      track('estimate_complete', { low, high });
       // Swap the spent form for the next step rather than leaving a line of
       // text under it. This is the one moment in the funnel where somebody
       // has just raised their hand, and it used to be a dead end.
