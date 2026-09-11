@@ -442,6 +442,7 @@ const Pipeline = () => {
         onClose={() => setSelected(null)}
         onSaved={replace}
         onRequestClose={(deal, outcome) => setClosing({ deal, outcome })}
+        onDeleted={id => setDeals(list => list.filter(d => d.id !== id))}
       />
 
       {closing && (
