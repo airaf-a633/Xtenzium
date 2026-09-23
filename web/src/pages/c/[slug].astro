@@ -9,14 +9,14 @@
  */
 import '../../styles/global.css';
 import Logo from '../../components/Logo.astro';
-import { cards, ORG, type Card } from '../../data/cards';
+import { cards, ORG, fullName, type Card } from '../../data/cards';
 
 export function getStaticPaths() {
   return cards.map((card) => ({ params: { slug: card.slug }, props: { card } }));
 }
 
 const { card } = Astro.props as { card: Card };
-const name = `${card.first} ${card.last}`;
+const name = fullName(card);
 const wa = `https://wa.me/${card.phone.replace('+', '')}?text=${encodeURIComponent(`Hi ${card.first}, we met at the conference.`)}`;
 const siteLink = `${ORG.site}/?utm_source=card&utm_medium=nfc&utm_campaign=${card.slug}`;
 
@@ -98,7 +98,7 @@ const actions = [
           <div class="min-w-0 pb-1">
             <p data-a-fade class="eyebrow !text-copper-hi">{card.title}</p>
             <h1 class="mt-2 font-display text-[2.1rem] font-bold leading-[1.02] tracking-[-0.03em]">
-              <span class="block overflow-hidden"><span data-a-line class="block">{card.first}</span></span>
+              <span class="block overflow-hidden"><span data-a-line class="block">{card.initial ? `${card.initial} ${card.first}` : card.first}</span></span>
               <span class="block overflow-hidden"><span data-a-line class="block">{card.last}</span></span>
             </h1>
           </div>

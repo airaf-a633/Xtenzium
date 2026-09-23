@@ -8,6 +8,8 @@
 export interface Card {
   slug: string;
   first: string;
+  /** Leading initial shown before the first name, e.g. "M." */
+  initial?: string;
   last: string;
   title: string;
   /** E.164, no spaces — used for tel:, wa.me and the vCard. */
@@ -33,7 +35,7 @@ export const cards: Card[] = [
     slug: 'airaf',
     first: 'Airaf',
     last: 'Adil',
-    title: 'Senior Founder',
+    title: 'Senior Partner',
     phone: '+923343365685',
     phoneDisplay: '+92 334 3365685',
     email: 'airafadil619@gmail.com',
@@ -44,7 +46,7 @@ export const cards: Card[] = [
     slug: 'sharab',
     first: 'Sharab',
     last: 'Khan',
-    title: 'Senior Founder',
+    title: 'Senior Partner',
     phone: '+923303460954',
     phoneDisplay: '+92 330 3460954',
     email: 'sharab.khan101010@gmail.com',
@@ -53,8 +55,9 @@ export const cards: Card[] = [
   {
     slug: 'umar',
     first: 'Umar',
+    initial: 'M.',
     last: 'Siddiqui',
-    title: 'Senior Founder',
+    title: 'Senior Partner',
     phone: '+923140302995',
     phoneDisplay: '+92 314 0302995',
     email: 'umarsiddiquifcb@gmail.com',
@@ -62,14 +65,16 @@ export const cards: Card[] = [
   },
 ];
 
+export const fullName = (c: Card) => [c.initial, c.first, c.last].filter(Boolean).join(' ');
+
 const esc = (s: string) => s.replace(/([,;\\])/g, '\\$1');
 
 export function vcard(c: Card): string {
   const lines = [
     'BEGIN:VCARD',
     'VERSION:3.0',
-    `N:${esc(c.last)};${esc(c.first)};;;`,
-    `FN:${esc(`${c.first} ${c.last}`)}`,
+    `N:${esc(c.last)};${esc(c.first)};${esc(c.initial ?? '')};;`,
+    `FN:${esc(fullName(c))}`,
     `ORG:${ORG.name}`,
     `TITLE:${esc(c.title)}`,
     `TEL;TYPE=CELL,VOICE:${c.phone}`,
