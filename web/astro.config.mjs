@@ -8,7 +8,7 @@ export default defineConfig({
   site: 'https://www.xtenzium.com',
   integrations: [
     sitemap({
-      filter: (page) => !page.includes('/crm') && !page.includes('/admin'),
+      filter: (page) => !page.includes('/crm') && !page.includes('/admin') && !page.includes('/c/'),
     }),
   ],
   vite: {
