@@ -1,0 +1,339 @@
+---
+/**
+ * Digital business card — the page an NFC tap or QR scan lands on.
+ *
+ * Deliberately not on BaseLayout: this is opened on a phone, mid
+ * conversation, by someone who wants a contact saved in one tap. No nav,
+ * no smooth scroll, no exit prompt — just the person, the save button,
+ * and a way to leave their own details.
+ */
+import '../../styles/global.css';
+import Logo from '../../components/Logo.astro';
+import { cards, ORG, type Card } from '../../data/cards';
+
+export function getStaticPaths() {
+  return cards.map((card) => ({ params: { slug: card.slug }, props: { card } }));
+}
+
+const { card } = Astro.props as { card: Card };
+const name = `${card.first} ${card.last}`;
+const wa = `https://wa.me/${card.phone.replace('+', '')}?text=${encodeURIComponent(`Hi ${card.first}, we met at the conference.`)}`;
+const siteLink = `${ORG.site}/?utm_source=card&utm_medium=nfc&utm_campaign=${card.slug}`;
+
+const actions = [
+  { label: 'Call', sub: card.phoneDisplay, href: `tel:${card.phone}`, icon: 'M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2' },
+  { label: 'WhatsApp', sub: 'Message directly', href: wa, icon: 'M3 21l1.65-4.8A9 9 0 1 1 8 19.5L3 21z' },
+  { label: 'Email', sub: card.email, href: `mailto:${card.email}`, icon: 'M3 6h18v12H3zM3 7l9 6 9-6' },
+  { label: 'LinkedIn', sub: 'Connect', href: card.linkedin, icon: 'M4 9h4v11H4zM6 4.5a2 2 0 1 1 0 4 2 2 0 0 1 0-4M10 9h4v1.6c.6-1 1.8-1.8 3.5-1.8 3 0 3.5 2 3.5 4.6V20h-4v-5.6c0-1.4-.3-2.4-1.6-2.4-1.4 0-1.9 1-1.9 2.4V20h-4z' },
+  ...(card.personal
+    ? [{ label: 'Portfolio', sub: card.personal.label, href: card.personal.url, icon: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18M3 12h18M12 3c2.5 2.7 3.8 5.7 3.8 9s-1.3 6.3-3.8 9c-2.5-2.7-3.8-5.7-3.8-9S9.5 5.7 12 3' }]
+    : []),
+];
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>{name} — {ORG.name}</title>
+    <meta name="description" content={`${name}, ${card.title} at ${ORG.name}. Save the contact or leave your details.`} />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="theme-color" content="#0A0908" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta property="og:title" content={`${name} — ${ORG.name}`} />
+    <meta property="og:description" content={`${card.title}, ${ORG.name}. ${ORG.tagline}`} />
+    <meta property="og:image" content={new URL('/og-image.png', ORG.site).href} />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=DM+Sans:opsz,wght@9..40,400..700&display=swap"
+    />
+    <!-- Hide animated elements before first paint so GSAP starts from a
+         clean frame. Reduced-motion readers skip it entirely, and a 2.5s
+         failsafe reveals everything if the module never runs. -->
+    <style>
+      .a-pre [data-a-fade], .a-pre [data-a-avatar], .a-pre [data-a-line],
+      .a-pre [data-a-save], .a-pre [data-a-item], .a-pre [data-a-reveal] { opacity: 0; }
+    </style>
+    <script is:inline>
+      if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        document.documentElement.classList.add('a-pre');
+        setTimeout(() => document.documentElement.classList.remove('a-pre'), 2500);
+      }
+    </script>
+  </head>
+
+  <body class="min-h-dvh bg-bg font-sans text-ink antialiased">
+    <main class="mx-auto w-full max-w-md pb-12">
+      <!-- ── Identity ─────────────────────────────────────── -->
+      <section class="relative overflow-hidden bg-carbon px-6 pb-8 pt-6 text-white sm:mt-6 sm:rounded-card">
+        <div data-a-fade class="flex items-center justify-between">
+          <a href={siteLink} class="flex items-center gap-2.5" aria-label="Xtenzium home">
+            <Logo size={28} labelled={false} />
+            <span class="font-display text-[1.05rem] font-bold tracking-[-0.02em]">Xtenzium</span>
+          </a>
+          <span class="eyebrow !text-white/40">Karachi · PK</span>
+        </div>
+
+        <div class="mt-8 flex items-end gap-5 [perspective:600px]">
+          <div
+            data-a-avatar
+            aria-hidden="true"
+            data-a-tilt class="relative grid h-[104px] w-[104px] shrink-0 place-items-center overflow-hidden rounded-[1.75rem] [transform-style:preserve-3d] shadow-[0_20px_40px_-12px_rgba(242,137,92,0.45)] bg-gradient-to-br from-copper-hi to-copper ring-1 ring-white/10"
+          >
+            <span data-a-ring class="absolute inset-[-40%] rounded-full border border-white/20"></span>
+            <span data-a-ring class="absolute inset-[-10%] rounded-full border border-white/15"></span>
+            <span data-a-initials class="relative font-display text-[2.5rem] [transform:translateZ(30px)] font-bold tracking-[-0.04em] text-white">
+              {card.first[0]}{card.last[0]}
+            </span>
+          </div>
+          <div class="min-w-0 pb-1">
+            <p data-a-fade class="eyebrow !text-copper-hi">{card.title}</p>
+            <h1 class="mt-2 font-display text-[2.1rem] font-bold leading-[1.02] tracking-[-0.03em]">
+              <span class="block overflow-hidden"><span data-a-line class="block">{card.first}</span></span>
+              <span class="block overflow-hidden"><span data-a-line class="block">{card.last}</span></span>
+            </h1>
+          </div>
+        </div>
+
+        <p data-a-fade class="mt-6 text-[0.95rem] leading-relaxed text-white/60">
+          Software, design and custom hardware under one roof. From web and mobile
+          platforms to PCBs, embedded and IoT.
+        </p>
+
+        <a
+          href={`/c/${card.slug}.vcf`}
+          data-save data-a-save
+          class="mt-7 flex min-h-[3.25rem] w-full items-center justify-center gap-2.5 rounded-pill bg-copper px-6 text-[0.95rem] font-bold text-white transition-colors duration-300 hover:bg-copper-hover"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M6 10l6 6 6-6M4 20h16" /></svg>
+          Save contact
+        </a>
+      </section>
+
+      <!-- ── Reach ────────────────────────────────────────── -->
+      <section class="px-4 pt-5">
+        <ul class="overflow-hidden rounded-card border border-line bg-surface [perspective:800px]">
+          {actions.map((a) => (
+            <li data-a-item class="border-b border-line last:border-b-0">
+              <a
+                href={a.href}
+                target={a.href.startsWith('http') ? '_blank' : undefined}
+                rel={a.href.startsWith('http') ? 'noopener' : undefined}
+                class="flex items-center gap-4 px-5 py-4 transition-colors duration-200 active:bg-bg-tint"
+              >
+                <span class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-copper-lo text-copper">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={a.icon} /></svg>
+                </span>
+                <span class="min-w-0 flex-1">
+                  <span class="block text-[0.95rem] font-semibold text-ink">{a.label}</span>
+                  <span class="block truncate text-sm text-ink-2">{a.sub}</span>
+                </span>
+                <span aria-hidden="true" class="text-ink-3">&rsaquo;</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+
+        <a
+          href={siteLink}
+          data-a-item class="mt-3 flex items-center justify-between rounded-card border border-line bg-surface px-5 py-4"
+        >
+          <span>
+            <span class="block text-[0.95rem] font-semibold text-ink">xtenzium.com</span>
+            <span class="block text-sm text-ink-2">Our work, services and case studies</span>
+          </span>
+          <span aria-hidden="true" class="text-copper">&rarr;</span>
+        </a>
+      </section>
+
+      <!-- ── Swap details ─────────────────────────────────── -->
+      <section class="px-4 pt-5">
+        <div data-a-reveal class="rounded-card border border-copper-line bg-copper-lo/60 p-5">
+          <p class="eyebrow !text-copper">Swap details</p>
+          <h2 class="mt-2 font-display text-xl font-bold tracking-[-0.02em] text-ink">
+            Leave yours, and {card.first} will follow up.
+          </h2>
+          <p class="mt-1.5 text-sm leading-relaxed text-ink-2">
+            Takes ten seconds. Goes to {card.first} directly, nowhere else.
+          </p>
+
+          <form data-card-form class="relative mt-5 space-y-3" novalidate>
+            <input name="name" required autocomplete="name" placeholder="Your name" aria-label="Your name"
+              class="min-h-[3rem] w-full rounded-2xl border border-line-strong bg-surface px-4 text-[0.95rem] placeholder:text-ink-3 focus:border-copper focus:outline-none" />
+            <input name="email" type="email" required autocomplete="email" placeholder="Email" aria-label="Email"
+              class="min-h-[3rem] w-full rounded-2xl border border-line-strong bg-surface px-4 text-[0.95rem] placeholder:text-ink-3 focus:border-copper focus:outline-none" />
+            <div class="grid grid-cols-2 gap-3">
+              <input name="phone" type="tel" autocomplete="tel" placeholder="Phone" aria-label="Phone"
+                class="min-h-[3rem] w-full rounded-2xl border border-line-strong bg-surface px-4 text-[0.95rem] placeholder:text-ink-3 focus:border-copper focus:outline-none" />
+              <input name="company" autocomplete="organization" placeholder="Company" aria-label="Company"
+                class="min-h-[3rem] w-full rounded-2xl border border-line-strong bg-surface px-4 text-[0.95rem] placeholder:text-ink-3 focus:border-copper focus:outline-none" />
+            </div>
+            <textarea name="message" rows="2" placeholder="What are you working on? (optional)" aria-label="What are you working on"
+              class="w-full rounded-2xl border border-line-strong bg-surface px-4 py-3 text-[0.95rem] placeholder:text-ink-3 focus:border-copper focus:outline-none"></textarea>
+
+            <div aria-hidden="true" class="absolute left-[-9999px] h-0 w-0 overflow-hidden">
+              <input name="website" data-card-hp tabindex="-1" autocomplete="off" />
+            </div>
+
+            <button type="submit"
+              class="min-h-[3rem] w-full rounded-pill bg-ink px-6 text-sm font-bold text-white transition-colors duration-300 hover:bg-carbon disabled:opacity-50">
+              Send my details
+            </button>
+            <p data-card-status role="status" aria-live="polite"
+              class="text-sm text-ink-2 data-[state=error]:text-copper data-[state=ok]:text-emerald-700"></p>
+          </form>
+        </div>
+      </section>
+
+      <footer data-a-reveal class="px-6 pt-8 text-center">
+        <p class="font-display text-sm font-semibold text-ink-2">{ORG.tagline}</p>
+        <p class="mt-1 text-xs text-ink-3">{ORG.email}</p>
+      </footer>
+    </main>
+
+    <script define:vars={{ owner: card.slug, ownerName: name }}>
+      window.__card = { owner, ownerName };
+    </script>
+    <script>
+      import gsap from 'gsap';
+      import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+      gsap.registerPlugin(ScrollTrigger);
+      const root = document.documentElement;
+
+      gsap.matchMedia().add(
+        { motion: '(prefers-reduced-motion: no-preference)', reduce: '(prefers-reduced-motion: reduce)' },
+        (ctx) => {
+          root.classList.remove('a-pre');
+          if (ctx.conditions?.reduce) return;
+
+          gsap.defaults({ ease: 'expo.out', duration: 0.9 });
+
+          // Entrance: the identity panel assembles in reading order.
+          gsap.timeline({ delay: 0.05 })
+            .from('[data-a-fade]', { autoAlpha: 0, y: 12, stagger: 0.08 }, 0)
+            .from('[data-a-avatar]', { autoAlpha: 0, rotationY: -180, rotationX: 20, scale: 0.7, z: -120, duration: 1.4, ease: 'back.out(1.3)' }, 0.1)
+            .from('[data-a-ring]', { scale: 0.3, autoAlpha: 0, stagger: 0.12, duration: 1.4 }, 0.3)
+            .from('[data-a-line]', { yPercent: 110, stagger: 0.1, duration: 1 }, 0.2)
+            .from('[data-a-save]', { autoAlpha: 0, y: 16, scale: 0.96 }, 0.55)
+            .from('[data-a-item]', { autoAlpha: 0, rotationX: -75, y: 10, transformOrigin: '50% 0%', stagger: 0.07, duration: 0.9 }, 0.7);
+
+          // 3D tilt: the avatar follows the finger / cursor, and on phones the
+          // device itself (gyro). iOS gates motion behind a gesture, so the
+          // permission is asked on the first touch — Android needs none.
+          const tile = document.querySelector<HTMLElement>('[data-a-tilt]');
+          if (tile) {
+            const rx = gsap.quickTo(tile, 'rotationX', { duration: 0.8, ease: 'power3.out' });
+            const ry = gsap.quickTo(tile, 'rotationY', { duration: 0.8, ease: 'power3.out' });
+            const clamp = gsap.utils.clamp(-18, 18);
+            const aim = (x: number, y: number) => { ry(clamp(x * 18)); rx(clamp(-y * 18)); };
+
+            const onPointer = (e: PointerEvent) =>
+              aim(e.clientX / innerWidth * 2 - 1, e.clientY / innerHeight * 2 - 1);
+            addEventListener('pointermove', onPointer, { passive: true });
+            addEventListener('pointerleave', () => aim(0, 0));
+
+            const onTilt = (e: DeviceOrientationEvent) => {
+              if (e.gamma == null || e.beta == null) return;
+              aim(e.gamma / 30, (e.beta - 45) / 30);
+            };
+            const DOE = (window as any).DeviceOrientationEvent;
+            if (DOE && typeof DOE.requestPermission === 'function') {
+              addEventListener('touchend', () => {
+                DOE.requestPermission().then((s: string) => {
+                  if (s === 'granted') addEventListener('deviceorientation', onTilt);
+                }).catch(() => {});
+              }, { once: true });
+            } else {
+              addEventListener('deviceorientation', onTilt);
+            }
+
+            // Until someone touches it, a slow idle sway so it reads as 3D.
+            gsap.to(tile, { rotationY: 12, rotationX: -6, duration: 2.6, ease: 'sine.inOut', yoyo: true, repeat: 1, delay: 1.6 });
+          }
+
+          // Scroll depth: the identity panel tips back as it leaves.
+          gsap.to('main > section:first-child', {
+            rotationX: 12, scale: 0.94, transformOrigin: '50% 100%', transformPerspective: 900, ease: 'none',
+            scrollTrigger: { trigger: 'main > section:first-child', start: 'top top', end: 'bottom top', scrub: true },
+          });
+
+          // Idle: the avatar rings breathe, slowly — alive, not busy.
+          gsap.to('[data-a-ring]', {
+            scale: 1.08, duration: 3.2, ease: 'sine.inOut', yoyo: true, repeat: -1, stagger: 0.8, delay: 1.6,
+          });
+
+          // A single copper sheen across Save contact, to draw the thumb.
+          const save = document.querySelector<HTMLElement>('[data-a-save]');
+          if (save) {
+            save.style.position = 'relative';
+            save.style.overflow = 'hidden';
+            const sheen = document.createElement('span');
+            sheen.setAttribute('aria-hidden', 'true');
+            sheen.style.cssText = 'position:absolute;inset:0;width:40%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.35),transparent);pointer-events:none;';
+            save.appendChild(sheen);
+            gsap.fromTo(sheen, { xPercent: -150 }, { xPercent: 350, duration: 1.4, ease: 'power2.inOut', delay: 1.5, repeat: -1, repeatDelay: 3.5 });
+          }
+
+          // Below the fold: reveal on scroll.
+          gsap.utils.toArray<HTMLElement>('[data-a-reveal]').forEach((el) => {
+            gsap.from(el, {
+              autoAlpha: 0, y: 28, duration: 1,
+              scrollTrigger: { trigger: el, start: 'top 92%', once: true },
+            });
+          });
+        },
+      );
+    </script>
+    <script>
+      import { submitLead } from '../../lib/supabase';
+
+      const form = document.querySelector<HTMLFormElement>('[data-card-form]');
+      const status = form?.querySelector<HTMLElement>('[data-card-status]');
+      const mountedAt = Date.now();
+      const { owner, ownerName } = (window as any).__card as { owner: string; ownerName: string };
+
+      const say = (text: string, state: string) => {
+        if (!status) return;
+        status.textContent = text;
+        status.dataset.state = state;
+      };
+
+      form?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = form.querySelector<HTMLButtonElement>('button[type="submit"]')!;
+        const d = new FormData(form);
+        const get = (k: string) => String(d.get(k) || '').trim();
+
+        if (get('website')) { say('Thanks, we will be in touch.', 'ok'); form.reset(); return; }
+        if (Date.now() - mountedAt < 2000) { say('One moment, then try again.', 'error'); return; }
+        if (!get('name') || !get('email')) { say('Name and email, please.', 'error'); return; }
+
+        btn.disabled = true;
+        say('Sending…', 'pending');
+
+        // `leads.source` is constrained to contact|estimate, so card leads
+        // ride as `contact` and are told apart by payload.via — no migration.
+        const res = await submitLead({
+          name: get('name'),
+          email: get('email'),
+          company: get('company') || null,
+          message: `[Card: met ${ownerName}] ${get('message') || 'Swapped details via digital card.'}`,
+          source: 'contact',
+          payload: { via: "card", tap: new URLSearchParams(location.search).get("via"), owner, phone: get('phone') || null, ua: navigator.userAgent },
+        });
+
+        if (res.ok) {
+          say(`Sent. ${ownerName.split(' ')[0]} has your details.`, 'ok');
+          form.reset();
+          return;
+        }
+        btn.disabled = false;
+        say('That did not send. Tap Save contact above and message us directly.', 'error');
+      });
+    </script>
+  </body>
+</html>
