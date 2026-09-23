@@ -68,7 +68,13 @@ const actions = [
   <body class="min-h-dvh bg-bg font-sans text-ink antialiased">
     <main class="mx-auto w-full max-w-md pb-12">
       <!-- ── Identity ─────────────────────────────────────── -->
-      <section class="relative overflow-hidden bg-carbon px-6 pb-8 pt-6 text-white sm:mt-6 sm:rounded-card">
+      <!-- The identity panel is a physical card: scrolling flips it over to
+           show the back, then turns it face-up again. -->
+      <div data-flip-wrap class="relative flex min-h-[100svh] flex-col justify-center overflow-hidden bg-carbon px-4 py-8 [perspective:1400px] sm:rounded-card">
+      <div aria-hidden="true" class="pointer-events-none absolute inset-0 opacity-[0.05]" style="background-image:radial-gradient(circle at 1px 1px,#fff 1px,transparent 0);background-size:22px 22px"></div>
+      <div aria-hidden="true" data-stage-glow class="pointer-events-none absolute left-1/2 top-1/2 h-[28rem] w-[28rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-copper/20 blur-[90px]"></div>
+      <div data-flip class="relative [transform-style:preserve-3d]">
+      <section data-face-front class="relative overflow-hidden rounded-card border border-white/10 bg-[#15120F] px-6 pb-8 pt-6 text-white shadow-[0_40px_80px_-30px_rgba(0,0,0,0.9)]" style="backface-visibility:hidden;-webkit-backface-visibility:hidden">
         <div data-a-fade class="flex items-center justify-between">
           <a href={siteLink} class="flex items-center gap-2.5" aria-label="Xtenzium home">
             <Logo size={28} labelled={false} />
@@ -111,7 +117,33 @@ const actions = [
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M6 10l6 6 6-6M4 20h16" /></svg>
           Save contact
         </a>
+        <span data-glare aria-hidden="true" class="pointer-events-none absolute inset-0 opacity-0" style="background:linear-gradient(115deg,transparent 30%,rgba(242,137,92,.28) 48%,rgba(255,255,255,.18) 52%,transparent 70%)"></span>
       </section>
+
+      <div
+        data-face-back
+        aria-hidden="true"
+        class="absolute inset-0 flex flex-col items-center justify-center overflow-hidden rounded-card border border-white/10 bg-[#15120F] px-8 text-center text-white"
+        style="transform:rotateY(180deg);backface-visibility:hidden;-webkit-backface-visibility:hidden"
+      >
+        <div class="absolute inset-0 opacity-[0.07]" style="background-image:radial-gradient(circle at 1px 1px,#fff 1px,transparent 0);background-size:18px 18px"></div>
+        <div class="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-copper/25 blur-3xl"></div>
+        <div data-back-mark class="relative"><Logo size={84} labelled={false} /></div>
+        <p data-back-in class="relative mt-5 font-display text-[1.9rem] font-bold tracking-[-0.03em]">Xtenzium</p>
+        <p data-back-in class="relative mt-1 text-sm text-white/55">{ORG.tagline}</p>
+        <div data-back-in class="relative mt-6 flex flex-wrap justify-center gap-2">
+          {['Software', 'Design', 'Hardware', 'AI'].map((t) => (
+            <span class="rounded-pill border border-white/15 px-3 py-1 text-xs font-semibold text-white/70">{t}</span>
+          ))}
+        </div>
+        <p data-back-in class="eyebrow relative mt-7 !text-copper-hi">65+ projects · 36% avg client ROI</p>
+      </div>
+      </div>
+      <p data-scroll-hint aria-hidden="true" class="eyebrow relative mt-6 flex flex-col items-center gap-2 !text-white/35">
+        Scroll to flip
+        <svg data-hint-arrow width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M6 13l6 6 6-6" /></svg>
+      </p>
+      </div>
 
       <!-- ── Reach ────────────────────────────────────────── -->
       <section class="px-4 pt-5">
@@ -184,6 +216,10 @@ const actions = [
             </button>
             <p data-card-status role="status" aria-live="polite"
               class="text-sm text-ink-2 data-[state=error]:text-copper data-[state=ok]:text-emerald-700"></p>
+            <a data-card-wa hidden target="_blank" rel="noopener"
+              class="flex min-h-[3rem] w-full items-center justify-center rounded-pill border border-copper px-6 text-sm font-bold text-copper">
+              Send on WhatsApp instead
+            </a>
           </form>
         </div>
       </section>
@@ -194,8 +230,8 @@ const actions = [
       </footer>
     </main>
 
-    <script define:vars={{ owner: card.slug, ownerName: name }}>
-      window.__card = { owner, ownerName };
+    <script define:vars={{ owner: card.slug, ownerName: name, phone: card.phone.replace("+", "") }}>
+      window.__card = { owner, ownerName }; window.__cardPhone = phone;
     </script>
     <script>
       import gsap from 'gsap';
@@ -255,11 +291,41 @@ const actions = [
             gsap.to(tile, { rotationY: 12, rotationX: -6, duration: 2.6, ease: 'sine.inOut', yoyo: true, repeat: 1, delay: 1.6 });
           }
 
-          // Scroll depth: the identity panel tips back as it leaves.
-          gsap.to('main > section:first-child', {
-            rotationX: 12, scale: 0.94, transformOrigin: '50% 100%', transformPerspective: 900, ease: 'none',
-            scrollTrigger: { trigger: 'main > section:first-child', start: 'top top', end: 'bottom top', scrub: true },
-          });
+          // The flip. The panel pins, lifts off the page, turns over to show
+          // the back of the card — the mark's two chevrons sliding together —
+          // then turns face-up again and releases. Scrubbed, so the reader's
+          // thumb is literally turning the card.
+          const flip = document.querySelector<HTMLElement>('[data-flip]');
+          const wrap = document.querySelector<HTMLElement>('[data-flip-wrap]');
+          if (flip && wrap) {
+            gsap.to('[data-hint-arrow]', { y: 6, duration: 0.9, ease: 'sine.inOut', yoyo: true, repeat: -1 });
+            const marks = gsap.utils.toArray<SVGGElement>('[data-back-mark] svg > g');
+            gsap.set('[data-back-in]', { autoAlpha: 0, y: 14 });
+            gsap.set(marks, { x: (i) => (i ? 10 : -10), autoAlpha: 0 });
+
+            gsap.timeline({
+              defaults: { ease: 'none' },
+              scrollTrigger: {
+                trigger: wrap, start: 'top top', end: '+=900',
+                pin: true, scrub: 0.8, anticipatePin: 1,
+              },
+            })
+              .to('[data-scroll-hint]', { autoAlpha: 0, y: 10, duration: 0.06 }, 0)
+              .to('[data-stage-glow]', { scale: 1.4, autoAlpha: 0.6, duration: 0.45 }, 0)
+              // lift
+              .to(flip, { scale: 0.9, z: 60, rotationX: 8, duration: 0.15, ease: 'power2.out' })
+              .to('[data-glare]', { autoAlpha: 1, xPercent: 60, duration: 0.15 }, '<')
+              // over to the back
+              .to(flip, { rotationY: 180, rotationZ: -3, duration: 0.3, ease: 'power2.inOut' })
+              .to('[data-glare]', { autoAlpha: 0, duration: 0.1 }, '<')
+              .to(marks, { x: 0, autoAlpha: 1, duration: 0.12, ease: 'power3.out' }, '-=0.08')
+              .to('[data-back-in]', { autoAlpha: 1, y: 0, stagger: 0.03, duration: 0.1 }, '<')
+              // hold the back for a beat
+              .to({}, { duration: 0.12 })
+              // and face-up again, settling back onto the page
+              .to(flip, { rotationY: 360, rotationZ: 0, duration: 0.3, ease: 'power2.inOut' })
+              .to(flip, { scale: 1, z: 0, rotationX: 0, duration: 0.15, ease: 'power2.inOut' });
+          }
 
           // Idle: the avatar rings breathe, slowly — alive, not busy.
           gsap.to('[data-a-ring]', {
@@ -291,10 +357,62 @@ const actions = [
     <script>
       import { submitLead } from '../../lib/supabase';
 
+      /**
+       * Lead capture that does not lose a lead.
+       *
+       *  1. POST /api/lead — same-origin edge function, retries server-side.
+       *  2. Direct Supabase insert — if the edge function is unreachable.
+       *  3. Outbox on the visitor's phone, replayed on the next load or when
+       *     the connection returns — plus a pre-filled WhatsApp to the
+       *     founder, so a hand-off exists even if the phone never syncs.
+       *
+       * Every lead carries a client id, so a replayed outbox entry that had
+       * in fact landed can be spotted in the CRM.
+       */
+      const { owner, ownerName } = (window as any).__card as { owner: string; ownerName: string };
+      const OUTBOX = 'xt-card-outbox';
+      const tap = new URLSearchParams(location.search).get('via');
+
+      type Lead = { id: string; owner: string; ownerName: string; tap: string | null; name: string; email: string; phone: string | null; company: string | null; message: string | null };
+
+      const readBox = (): Lead[] => { try { return JSON.parse(localStorage.getItem(OUTBOX) || '[]'); } catch { return []; } };
+      const writeBox = (l: Lead[]) => { try { l.length ? localStorage.setItem(OUTBOX, JSON.stringify(l)) : localStorage.removeItem(OUTBOX); } catch { /* private mode */ } };
+
+      async function deliver(lead: Lead): Promise<boolean> {
+        try {
+          const ctl = new AbortController();
+          const t = setTimeout(() => ctl.abort(), 8000);
+          const r = await fetch('/api/lead', {
+            method: 'POST', headers: { 'content-type': 'application/json' },
+            body: JSON.stringify(lead), signal: ctl.signal, keepalive: true,
+          });
+          clearTimeout(t);
+          if (r.ok) return true;
+        } catch { /* fall through to the direct path */ }
+
+        const res = await submitLead({
+          name: lead.name, email: lead.email, company: lead.company,
+          message: `[Card: met ${lead.ownerName}] ${lead.message || 'Swapped details via digital card.'}`,
+          source: 'contact',
+          payload: { via: 'card', owner: lead.owner, tap: lead.tap, phone: lead.phone, id: lead.id },
+        });
+        return res.ok;
+      }
+
+      async function flush() {
+        const box = readBox();
+        if (!box.length) return;
+        const left: Lead[] = [];
+        for (const l of box) if (!(await deliver(l))) left.push(l);
+        writeBox(left);
+      }
+      flush();
+      addEventListener('online', flush);
+
       const form = document.querySelector<HTMLFormElement>('[data-card-form]');
       const status = form?.querySelector<HTMLElement>('[data-card-status]');
+      const waLink = form?.querySelector<HTMLAnchorElement>('[data-card-wa]');
       const mountedAt = Date.now();
-      const { owner, ownerName } = (window as any).__card as { owner: string; ownerName: string };
 
       const say = (text: string, state: string) => {
         if (!status) return;
@@ -309,30 +427,36 @@ const actions = [
         const get = (k: string) => String(d.get(k) || '').trim();
 
         if (get('website')) { say('Thanks, we will be in touch.', 'ok'); form.reset(); return; }
-        if (Date.now() - mountedAt < 2000) { say('One moment, then try again.', 'error'); return; }
-        if (!get('name') || !get('email')) { say('Name and email, please.', 'error'); return; }
+        if (Date.now() - mountedAt < 1500) { say('One moment, then try again.', 'error'); return; }
+        if (!get('name') || !/^\S+@\S+\.\S+$/.test(get('email'))) { say('A name and a valid email, please.', 'error'); return; }
+
+        const lead: Lead = {
+          id: crypto.randomUUID?.() ?? String(Date.now()),
+          owner, ownerName, tap,
+          name: get('name'), email: get('email'),
+          phone: get('phone') || null, company: get('company') || null, message: get('message') || null,
+        };
 
         btn.disabled = true;
         say('Sending…', 'pending');
+        const first = ownerName.split(' ')[0];
 
-        // `leads.source` is constrained to contact|estimate, so card leads
-        // ride as `contact` and are told apart by payload.via — no migration.
-        const res = await submitLead({
-          name: get('name'),
-          email: get('email'),
-          company: get('company') || null,
-          message: `[Card: met ${ownerName}] ${get('message') || 'Swapped details via digital card.'}`,
-          source: 'contact',
-          payload: { via: "card", tap: new URLSearchParams(location.search).get("via"), owner, phone: get('phone') || null, ua: navigator.userAgent },
-        });
-
-        if (res.ok) {
-          say(`Sent. ${ownerName.split(' ')[0]} has your details.`, 'ok');
+        if (await deliver(lead)) {
+          say(`Done. ${first} has your details and will be in touch.`, 'ok');
           form.reset();
+          btn.disabled = false;
           return;
         }
+
+        writeBox([...readBox(), lead]);
+        form.reset();
         btn.disabled = false;
-        say('That did not send. Tap Save contact above and message us directly.', 'error');
+        say(`Saved on your phone. It sends itself once you're back online. Want it to reach ${first} right now?`, 'ok');
+        if (waLink) {
+          const text = `Hi ${first}, we met at the conference. ${lead.name}${lead.company ? `, ${lead.company}` : ''} · ${lead.email}${lead.phone ? ` · ${lead.phone}` : ''}${lead.message ? `\n${lead.message}` : ''}`;
+          waLink.href = `https://wa.me/${(window as any).__cardPhone}?text=${encodeURIComponent(text)}`;
+          waLink.hidden = false;
+        }
       });
     </script>
   </body>
