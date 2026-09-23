@@ -51,6 +51,7 @@ export const cards: Card[] = [
     phoneDisplay: '+92 330 3460954',
     email: 'sharab.khan101010@gmail.com',
     linkedin: 'https://www.linkedin.com/in/sharab-khan-48118b333',
+    personal: { label: 'portfolio-sharab.vercel.app', url: 'https://portfolio-sharab.vercel.app/' },
   },
   {
     slug: 'umar',
@@ -62,6 +63,7 @@ export const cards: Card[] = [
     phoneDisplay: '+92 314 0302995',
     email: 'umarsiddiquifcb@gmail.com',
     linkedin: 'https://www.linkedin.com/in/umar-siddiqui-22b810340',
+    personal: { label: 'portfolioumar-xi.vercel.app', url: 'https://portfolioumar-xi.vercel.app/' },
   },
 ];
 
