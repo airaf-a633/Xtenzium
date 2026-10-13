@@ -11,6 +11,7 @@ import { supabase } from '../../lib/supabase';
 import type { TeamMember } from '../../types/database';
 import { LANDING_PATH, type LandingView } from '../../lib/landing';
 import { cn } from '../../lib/utils';
+import { useInboxCount } from './dialer/useInboxCount';
 
 const icon = (path: string) => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -21,6 +22,8 @@ const icon = (path: string) => (
 const NAV_ITEMS = [
   { path: '/crm', label: 'Dashboard', exact: true, icon: icon('M4 4h6v7H4zM14 4h6v4h-6zM14 12h6v8h-6zM4 15h6v5H4z') },
   { path: '/crm/my-work', label: 'My work', exact: false, icon: icon('M9 11.5 11.5 14 16 8.5M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18') },
+  { path: '/crm/inbox', label: 'Inbox', exact: false, badge: true, icon: icon('M4 13h4l2 3h4l2-3h4M4 13V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v7M4 13v5a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5') },
+  { path: '/crm/dialer', label: 'Dialer', exact: false, icon: icon('M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2') },
   { path: '/crm/pipeline', label: 'Pipeline', exact: false, icon: icon('M3 6h18M6 12h12M10 18h4') },
   { path: '/crm/clients', label: 'Clients', exact: false, icon: icon('M16 20v-1.5a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4V20M9 10.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M22 20v-1.5a4 4 0 0 0-3-3.87M16 3.63a4 4 0 0 1 0 7.75') },
   { path: '/crm/projects', label: 'Projects', exact: false, icon: icon('M3 7.5A1.5 1.5 0 0 1 4.5 6h4l2 2.5h9A1.5 1.5 0 0 1 21 10v8a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18z') },
@@ -86,6 +89,7 @@ const Sidebar = ({
   const location = useLocation();
   const { theme, toggleTheme } = useCrmTheme();
   const [signingOut, setSigningOut] = useState(false);
+  const inboxCount = useInboxCount(true);
 
   const handleSignOut = async () => {
     setSigningOut(true);
@@ -143,6 +147,11 @@ const Sidebar = ({
             >
               {item.icon}
               {item.label}
+              {'badge' in item && item.badge && inboxCount > 0 && (
+                <span className="ml-auto rounded-full bg-crm-copper px-1.5 py-px text-[10.5px] font-medium tabular-nums text-crm-copper-ink">
+                  {inboxCount}
+                </span>
+              )}
             </NavLink>
           );
         })}

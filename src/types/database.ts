@@ -243,6 +243,8 @@ export interface CallActivity {
   reason_tags: string[];
   note: string | null;
   flagged: boolean;
+  flag_resolved_at: string | null;
+  flag_resolved_by: string | null;
   created_at: string;
 }
 
@@ -265,6 +267,44 @@ export interface FollowupItem {
   handled_by: string | null;
   handled_at: string | null;
   created_at: string;
+}
+
+export interface EmailTemplate {
+  type: FollowupItem['type'];
+  subject: string;
+  body: string;
+  updated_by: string | null;
+  updated_at: string;
+}
+
+export interface CallScript {
+  id: string;
+  title: string;
+  body: string;
+  sort_order: number;
+  updated_at: string;
+}
+
+export interface DialerSettings {
+  id: boolean;
+  no_answer_days: number;
+  voicemail_days: number;
+  gatekeeper_name_days: number;
+  gatekeeper_blocked_days: number;
+  nurture_outsources_days: number;
+  nurture_timing_days: number;
+  max_attempts: number;
+  updated_at: string;
+}
+
+export interface DialerReport {
+  totals: { dials: number; conversations: number; interested: number; meetings: number };
+  by_day: { day: string; dials: number; conversations: number; meetings: number }[];
+  by_outcome: { outcome: string; n: number }[];
+  by_tier: { tier: string; dials: number; conversations: number; meetings: number }[];
+  by_list: { list: string; dials: number; conversations: number; meetings: number }[];
+  by_hour: { hour: number; dials: number; conversations: number }[];
+  funnel: { leads_called: number; conversations: number; interested: number; meetings: number; deals: number; won: number };
 }
 
 export interface Deal {
@@ -545,7 +585,26 @@ export type Database = {
       call_activities: {
         Row: CallActivity & Record<string, unknown>;
         Insert: Pick<CallActivity, 'lead_id' | 'outcome'> & Partial<Omit<CallActivity, 'id' | 'created_at'>>;
-        Update: never;
+        /* Only the owner resolving a flag ever updates a row. */
+        Update: Partial<Pick<CallActivity, 'flag_resolved_at' | 'flag_resolved_by'>>;
+        Relationships: [];
+      };
+      email_templates: {
+        Row: EmailTemplate & Record<string, unknown>;
+        Insert: Pick<EmailTemplate, 'type'> & Partial<Pick<EmailTemplate, 'subject' | 'body'>>;
+        Update: Partial<Pick<EmailTemplate, 'subject' | 'body'>>;
+        Relationships: [];
+      };
+      call_scripts: {
+        Row: CallScript & Record<string, unknown>;
+        Insert: Pick<CallScript, 'title'> & Partial<Pick<CallScript, 'body' | 'sort_order'>>;
+        Update: Partial<Pick<CallScript, 'title' | 'body' | 'sort_order'>>;
+        Relationships: [];
+      };
+      dialer_settings: {
+        Row: DialerSettings & Record<string, unknown>;
+        Insert: never;
+        Update: Partial<Omit<DialerSettings, 'id' | 'updated_at'>>;
         Relationships: [];
       };
       dnc_list: {
@@ -842,6 +901,14 @@ export type Database = {
           deal_id: string | null;
           attempts: number;
         };
+      };
+      dialer_report: {
+        Args: { p_from: string; p_to: string; p_tz?: string };
+        Returns: DialerReport;
+      };
+      dialer_board_counts: {
+        Args: Record<string, never>;
+        Returns: Record<string, number>;
       };
       import_call_leads: {
         Args: { p_list_id: string; p_rows: unknown };

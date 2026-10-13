@@ -1,18 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../context/AuthContext';
-import type { CallActivity, CallLead } from '../../../types/database';
+import type { CallActivity, CallLead, CallScript } from '../../../types/database';
 import {
-  GENERAL_CHIPS, OUTCOMES, SKIP_SHORTCUT, clockFor, dayStartInZone, dayStats, formatInZone,
-  formatPhone, outcomeByShortcut, voiceLink, zonedToUtc,
+  OUTCOMES, SKIP_SHORTCUT, clockFor, dayStartInZone, dayStats, formatInZone,
+  formatPhone, outcomeByShortcut, voiceLink,
   type DayStats, type OutcomeDef, type OutcomeGroup,
 } from '../../../lib/dialer-calls';
-import { SCRIPT } from '../../../lib/dialer-script';
+import { SCRIPT, type ScriptBlock } from '../../../lib/dialer-script';
 import {
   Badge, Button, ButtonLink, Card, CardHeader, EmptyState, ErrorState, Input, PageHeader,
-  Skeleton, Textarea, useToast,
+  Skeleton, useToast,
 } from '../../../components/crm/ui';
 import { cn } from '../../../lib/utils';
+import OutcomePanel, { type OutcomeSubmit } from './OutcomePanel';
 
 const ET = 'America/New_York';
 const GROUPS: { key: OutcomeGroup; title: string }[] = [
@@ -54,6 +55,7 @@ const CallScreen = () => {
   const [callbacksDue, setCallbacksDue] = useState(0);
   const [waiting, setWaiting] = useState(0);
   const [showScript, setShowScript] = useState(false);
+  const [script, setScript] = useState<ScriptBlock[]>(SCRIPT);
   const skipped = useRef<string[]>([]);
 
   // Contact details live on the card, because the rep learns them mid-call.
@@ -61,12 +63,7 @@ const CallScreen = () => {
   const [contactTitle, setContactTitle] = useState('');
   const [contactEmail, setContactEmail] = useState('');
 
-  // The outcome panel.
   const [outcome, setOutcome] = useState<OutcomeDef | null>(null);
-  const [tags, setTags] = useState<string[]>([]);
-  const [note, setNote] = useState('');
-  const [flagged, setFlagged] = useState(false);
-  const [atLocal, setAtLocal] = useState('');
   const [saving, setSaving] = useState(false);
 
   const leadTz = lead?.timezone ?? ET;
@@ -155,6 +152,25 @@ const CallScreen = () => {
     };
   }, [leadId]);
 
+  /* The pitch is edited by an admin in Dialer settings. The built-in
+     copy stays as the fallback so the screen is never blank. */
+  useEffect(() => {
+    let cancelled = false;
+    supabase
+      .from('call_scripts')
+      .select('*')
+      .order('sort_order')
+      .then(({ data }) => {
+        const rows = (data ?? []) as CallScript[];
+        if (!cancelled && rows.length > 0) {
+          setScript(rows.map(r => ({ title: r.title, lines: r.body.split('\n').filter(l => l.trim()) })));
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 30_000);
     return () => clearInterval(t);
@@ -162,21 +178,8 @@ const CallScreen = () => {
 
   /* ── actions ── */
 
-  const closePanel = () => {
-    setOutcome(null);
-    setTags([]);
-    setNote('');
-    setFlagged(false);
-    setAtLocal('');
-  };
-
-  const openOutcome = (def: OutcomeDef) => {
-    setOutcome(def);
-    setTags([]);
-    setNote('');
-    setFlagged(false);
-    setAtLocal('');
-  };
+  const closePanel = () => setOutcome(null);
+  const openOutcome = (def: OutcomeDef) => setOutcome(def);
 
   const advance = () => {
     setLoading(true);
@@ -190,31 +193,17 @@ const CallScreen = () => {
     advance();
   };
 
-  const save = async () => {
+  const save = async (v: OutcomeSubmit) => {
     if (!lead || !outcome || saving) return;
-
-    let at: string | null = null;
-    if (outcome.needs === 'callback_time' || outcome.needs === 'meeting_time') {
-      if (!atLocal) {
-        toast(outcome.needs === 'callback_time' ? 'Pick a callback time.' : 'Enter the meeting time.', 'danger');
-        return;
-      }
-      const when = zonedToUtc(atLocal, leadTz);
-      if (when.getTime() < Date.now() - 60_000) {
-        toast('That time has already passed.', 'danger');
-        return;
-      }
-      at = when.toISOString();
-    }
 
     setSaving(true);
     const { data, error } = await supabase.rpc('log_call', {
       p_lead_id: lead.id,
       p_outcome: outcome.key,
-      p_tags: tags,
-      p_note: note.trim() || null,
-      p_flagged: flagged,
-      p_at: at,
+      p_tags: v.tags,
+      p_note: v.note || null,
+      p_flagged: v.flagged,
+      p_at: v.at,
       p_contact_name: contactName.trim() || null,
       p_contact_title: contactTitle.trim() || null,
       p_contact_email: contactEmail.trim() || null,
@@ -261,14 +250,6 @@ const CallScreen = () => {
     return () => window.removeEventListener('keydown', h);
   }, []);
 
-  const onPanelKeyDown = (e: React.KeyboardEvent) => {
-    const tag = (e.target as HTMLElement).tagName;
-    if (e.key === 'Enter' && !e.shiftKey && tag !== 'BUTTON') {
-      e.preventDefault();
-      void save();
-    }
-  };
-
   const copyPhone = async () => {
     if (!lead?.phone_e164) return;
     try {
@@ -282,9 +263,6 @@ const CallScreen = () => {
   /* ── render ── */
 
   const clock = lead ? clockFor(lead.timezone, now) : null;
-  const wantsTime = outcome?.needs === 'callback_time' || outcome?.needs === 'meeting_time';
-  const preview = wantsTime && atLocal ? zonedToUtc(atLocal, leadTz) : null;
-  const chips = outcome?.chips ?? GENERAL_CHIPS;
 
   return (
     <div className="flex flex-col gap-4">
@@ -435,7 +413,7 @@ const CallScreen = () => {
               </button>
               {showScript && (
                 <div className="flex flex-col gap-4 border-t border-crm-line p-4">
-                  {SCRIPT.map(b => (
+                  {script.map(b => (
                     <div key={b.title}>
                       <p className="m-0 font-crm-mono text-[10px] uppercase tracking-[0.12em] text-crm-ink-3">{b.title}</p>
                       {b.lines.map((line, i) => (
@@ -487,73 +465,18 @@ const CallScreen = () => {
             ) : (
               <Card>
                 <CardHeader title={outcome.label} />
-                <div className="flex flex-col gap-3 p-4" onKeyDown={onPanelKeyDown}>
-                  {wantsTime && (
-                    <div>
-                      <Input
-                        label={`${outcome.needs === 'callback_time' ? 'Call back' : 'Meeting'} at — their time (${clock?.zoneLabel ?? 'ET'})`}
-                        type="datetime-local"
-                        value={atLocal}
-                        onChange={e => setAtLocal(e.target.value)}
-                        autoFocus
-                      />
-                      {preview && (
-                        <p className="m-0 mt-1.5 text-[12.5px] text-crm-ink-3">
-                          = {formatInZone(preview, leadTz)} · {formatInZone(preview, myTz)}
-                        </p>
-                      )}
-                    </div>
-                  )}
-
-                  <div className="flex flex-wrap gap-1.5">
-                    {chips.map(c => {
-                      const on = tags.includes(c);
-                      return (
-                        <button
-                          key={c}
-                          type="button"
-                          onClick={() => setTags(t => (on ? t.filter(x => x !== c) : [...t, c]))}
-                          className={cn(
-                            'cursor-pointer rounded-full border px-2.5 py-1 text-[12px] transition-colors',
-                            on
-                              ? 'border-crm-copper bg-crm-copper/10 text-crm-ink'
-                              : 'border-crm-line bg-crm-surface text-crm-ink-2 hover:border-crm-line-hi',
-                          )}
-                        >
-                          {c}
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  <Textarea
-                    label="Note (optional)"
-                    rows={3}
-                    value={note}
-                    onChange={e => setNote(e.target.value)}
-                    autoFocus={!wantsTime}
-                    hint="Enter saves · Shift+Enter for a new line"
+                <div className="p-4">
+                  <OutcomePanel
+                    key={outcome.key + lead.id}
+                    outcome={outcome}
+                    leadTz={leadTz}
+                    zoneLabel={clock?.zoneLabel ?? 'ET'}
+                    myTz={myTz}
+                    saving={saving}
+                    onSubmit={save}
+                    onCancel={closePanel}
+                    onInvalid={m => toast(m, 'danger')}
                   />
-
-                  <label className="flex cursor-pointer items-center gap-2 text-[13px] text-crm-ink-2">
-                    <input type="checkbox" checked={flagged} onChange={e => setFlagged(e.target.checked)} />
-                    Flag for the owner
-                  </label>
-
-                  {outcome.key === 'dnc' && (
-                    <p className="m-0 text-[12.5px] text-crm-danger">
-                      This blocks the number and the website for good.
-                    </p>
-                  )}
-
-                  <div className="flex gap-2">
-                    <Button variant={outcome.key === 'dnc' ? 'danger' : 'primary'} loading={saving} onClick={save}>
-                      Save &amp; next <Kbd>Enter</Kbd>
-                    </Button>
-                    <Button onClick={closePanel} disabled={saving}>
-                      Cancel <Kbd>Esc</Kbd>
-                    </Button>
-                  </div>
                 </div>
               </Card>
             )}

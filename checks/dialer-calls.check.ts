@@ -4,6 +4,7 @@
 import {
   OUTCOMES, clockFor, dayStartInZone, dayStats, formatInZone, formatPhone,
   isConversation, outcomeByShortcut, voiceLink, zonedToUtc,
+  BOARD_COLUMNS, columnForStatus, gmailCompose, outcomeLabel, renderTemplate,
 } from '../src/lib/dialer-calls';
 
 let failures = 0;
@@ -59,6 +60,28 @@ eq('unknown zone 13:00 ET open', clockFor(null, tue(17)).open, true);
 eq('unknown zone is flagged', clockFor(null, tue(17)).known, false);
 eq('clock text', clockFor('America/New_York', tue(14, 42)).time, '10:42 AM');
 eq('format in zone', formatInZone(zonedToUtc('2026-10-14T10:00', 'America/New_York'), 'America/New_York'), 'Wed, Oct 14, 10:00 AM EDT');
+
+/* Board: every outcome a column accepts must be a real one, and no outcome lands in two columns. */
+const known = new Set<string>(OUTCOMES.map(o => o.key));
+eq('board outcomes are real', BOARD_COLUMNS.flatMap(c => c.outcomes).every(k => known.has(k)), true);
+const placed = BOARD_COLUMNS.flatMap(c => c.outcomes);
+eq('no outcome in two columns', new Set(placed).size, placed.length);
+eq('every outcome has a column', OUTCOMES.every(o => placed.includes(o.key)), true);
+eq('every lead status has a column', ['new','retry','callback','followup','meeting','nurture','lost','disqualified','bad_data','dnc','exhausted'].every(s => columnForStatus(s)), true);
+eq('no_phone leads are not on the board', columnForStatus('no_phone'), undefined);
+eq('exhausted shows under Closed', columnForStatus('exhausted')?.key, 'closed');
+eq('outcome label', outcomeLabel('meeting_booked'), 'Meeting agreed');
+eq('unknown outcome label', outcomeLabel('some_new_thing'), 'some new thing');
+
+/* Templates */
+eq('merge fields', renderTemplate('Hi {{contact_name}}, re {{company_name}}', { contact_name: 'Dana', company_name: 'Acme' }), 'Hi Dana, re Acme');
+eq('spaces inside braces', renderTemplate('{{ company_name }}', { company_name: 'Acme' }), 'Acme');
+eq('unknown field stays visible', renderTemplate('Hi {{nme}}', { contact_name: 'x' }), 'Hi {{nme}}');
+eq('null field becomes empty', renderTemplate('A{{rep_note}}B', { rep_note: null }), 'AB');
+eq('empty note closes the gap', renderTemplate('Line\n\n{{rep_note}}\n\nNext', { rep_note: '' }), 'Line\n\nNext');
+eq('script placeholders with spaces are untouched', renderTemplate('{{contact or the owner}}', {}), '{{contact or the owner}}');
+eq('gmail link', gmailCompose('a@b.co', 'Hi & bye', 'x\ny'), 'https://mail.google.com/mail/?view=cm&fs=1&to=a%40b.co&su=Hi%20%26%20bye&body=x%0Ay');
+eq('gmail link with no address', gmailCompose(null, 's', 'b').includes('&to=&'), true);
 
 if (failures) {
   console.error(`${failures} dialer-calls check(s) failed`);

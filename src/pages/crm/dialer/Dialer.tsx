@@ -124,6 +124,18 @@ const Dialer = () => {
         <Stat label="No phone" value={totals.noPhone.toLocaleString()} sub="outreach only" />
       </div>
 
+      <div className="flex flex-wrap gap-2">
+        <ButtonLink to="/crm/dialer/board">Board</ButtonLink>
+        {role === 'admin' && (
+          <>
+            <ButtonLink to="/crm/inbox">Inbox</ButtonLink>
+            <ButtonLink to="/crm/calls/feed">Live feed</ButtonLink>
+            <ButtonLink to="/crm/calls/reports">Reports</ButtonLink>
+            <ButtonLink to="/crm/calls/settings">Settings</ButtonLink>
+          </>
+        )}
+      </div>
+
       <Card>
         <CardHeader title="Lists" />
         <div className="p-4">

@@ -5,6 +5,8 @@
    in the database (migration 018, log_call). This file only describes
    the buttons and how to present a call. */
 
+import type { CallLeadStatus } from '../types/database';
+
 export type OutcomeKey =
   | 'no_answer' | 'voicemail' | 'gatekeeper_name' | 'gatekeeper_blocked'
   | 'callback' | 'interested_info' | 'interested_proposal' | 'meeting_booked'
@@ -154,3 +156,52 @@ export const formatInZone = (date: Date, tz: string) =>
     timeZone: tz, weekday: 'short', month: 'short', day: 'numeric',
     hour: 'numeric', minute: '2-digit', timeZoneName: 'short',
   }).format(date);
+
+/* ─── Outcome labels ───────────────────────────────────── */
+
+export const outcomeLabel = (key: string): string =>
+  OUTCOMES.find(o => o.key === key)?.label ?? key.replace(/_/g, ' ');
+
+/* ─── Board ────────────────────────────────────────────────
+
+   Columns are groups of lead statuses. Dropping a card on a column
+   doesn't just rewrite the status — it logs a call, because that is
+   the only thing that moves a lead (retry dates, deals and follow-ups
+   all hang off it). So each column lists the outcomes that can land a
+   lead there, and the drop asks which one. */
+
+export interface BoardColumn {
+  key: string;
+  title: string;
+  statuses: CallLeadStatus[];
+  /** Outcomes that put a lead in this column. Empty = not a drop target. */
+  outcomes: OutcomeKey[];
+}
+
+export const BOARD_COLUMNS: BoardColumn[] = [
+  { key: 'new', title: 'New', statuses: ['new'], outcomes: [] },
+  { key: 'retry', title: 'Retry', statuses: ['retry'], outcomes: ['no_answer', 'voicemail', 'gatekeeper_name', 'gatekeeper_blocked'] },
+  { key: 'callback', title: 'Callback', statuses: ['callback'], outcomes: ['callback'] },
+  { key: 'followup', title: 'Follow-up', statuses: ['followup'], outcomes: ['interested_info', 'interested_proposal'] },
+  { key: 'meeting', title: 'Meeting', statuses: ['meeting'], outcomes: ['meeting_booked'] },
+  { key: 'nurture', title: 'Nurture', statuses: ['nurture'], outcomes: ['not_interested_outsources', 'not_interested_timing'] },
+  { key: 'closed', title: 'Closed', statuses: ['lost', 'disqualified', 'bad_data', 'dnc', 'exhausted'], outcomes: ['not_interested_inhouse', 'not_fit', 'wrong_number', 'dnc'] },
+];
+
+export const columnForStatus = (status: CallLeadStatus | string): BoardColumn | undefined =>
+  BOARD_COLUMNS.find(c => (c.statuses as string[]).includes(status));
+
+/* ─── Email templates ──────────────────────────────────── */
+
+/** Fill {{merge_fields}}. Unknown names are left visible so a typo shows up instead of vanishing. */
+export function renderTemplate(text: string, vars: Record<string, string | null | undefined>): string {
+  return text
+    .replace(/\{\{\s*(\w+)\s*\}\}/g, (whole, key: string) => (key in vars ? (vars[key] ?? '') : whole))
+    /* An empty {{rep_note}} leaves a hole of blank lines — close it. */
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+/** Opens Gmail's compose window with everything filled in. */
+export const gmailCompose = (to: string | null, subject: string, body: string) =>
+  `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to ?? '')}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
