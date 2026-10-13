@@ -31,6 +31,9 @@ const ProjectDetail   = lazy(() => import('./pages/crm/projects/ProjectDetail'))
 const ImportCsv       = lazy(() => import('./pages/crm/projects/ImportCsv'));
 const Tasks           = lazy(() => import('./pages/crm/tasks/Tasks'));
 const Team            = lazy(() => import('./pages/crm/team/Team'));
+const CallerLayout    = lazy(() => import('./pages/crm/dialer/CallerLayout'));
+const Dialer          = lazy(() => import('./pages/crm/dialer/Dialer'));
+const ImportLeads     = lazy(() => import('./pages/crm/dialer/ImportLeads'));
 
 // ─── Minimal fallback shown while chunks load ──────────────────────────────
 const PageLoader = () => (
@@ -84,6 +87,20 @@ const AppRoutes = () => {
       <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/crm/login" element={<CrmLogin />} />
+          {/* The caller's workspace sits OUTSIDE the admin shell: it is the
+              only route a caller may open. Declared first so /crm/dialer
+              never falls into the admin layout's catch-all. */}
+          <Route
+            path="/crm/dialer"
+            element={
+              <ProtectedRoute redirectTo="/crm/login" allow={['admin', 'caller']}>
+                <CallerLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Dialer />} />
+            <Route path="import" element={<ImportLeads />} />
+          </Route>
           <Route
             path="/crm"
             element={

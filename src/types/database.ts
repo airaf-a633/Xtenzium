@@ -167,6 +167,106 @@ export interface TeamMember {
   created_at: string;
 }
 
+export type UserRole = 'admin' | 'caller';
+
+/* One row per login. `role` decides what the database lets them touch —
+   see migration 016. A login with no profile row has no access at all. */
+export interface Profile {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  role: UserRole;
+  timezone: string;
+  daily_dial_target: number;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+/* ─── Dialer (migration 017) ─────────────────────────────── */
+
+export type CallLeadStatus =
+  | 'new' | 'retry' | 'callback' | 'followup' | 'meeting' | 'nurture' | 'lost'
+  | 'disqualified' | 'bad_data' | 'dnc' | 'exhausted' | 'no_phone';
+
+export interface CallList {
+  id: string;
+  name: string;
+  source_filename: string | null;
+  row_count: number;
+  skipped_count: number;
+  uploaded_by: string | null;
+  created_at: string;
+}
+
+export interface CallLead {
+  id: string;
+  list_id: string;
+  company_name: string;
+  phone_raw: string | null;
+  phone_e164: string | null;
+  phone_is_us: boolean | null;
+  email: string | null;
+  website: string | null;
+  domain: string | null;
+  contact_url: string | null;
+  profile_url: string | null;
+  hq: string | null;
+  state: string | null;
+  timezone: string | null;
+  team_size: string | null;
+  hourly_rate_usd: number | null;
+  services: string | null;
+  works_count: number | null;
+  tier: 'A' | 'B' | 'C' | null;
+  score: number | null;
+  why: string | null;
+  source: string | null;
+  extra: Record<string, string>;
+  contact_name: string | null;
+  contact_title: string | null;
+  status: CallLeadStatus;
+  attempt_count: number;
+  last_called_at: string | null;
+  next_call_at: string | null;
+  assigned_to: string | null;
+  deal_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CallActivity {
+  id: string;
+  lead_id: string;
+  caller_id: string | null;
+  outcome: string;
+  reason_tags: string[];
+  note: string | null;
+  flagged: boolean;
+  created_at: string;
+}
+
+export interface DncEntry {
+  id: string;
+  phone_e164: string | null;
+  domain: string | null;
+  reason: string | null;
+  added_by: string | null;
+  added_at: string;
+}
+
+export interface FollowupItem {
+  id: string;
+  lead_id: string;
+  type: 'email_info' | 'email_proposal' | 'linkedin' | 'admin_call';
+  note: string | null;
+  status: 'queued' | 'sent' | 'done' | 'cancelled';
+  requested_by: string | null;
+  handled_by: string | null;
+  handled_at: string | null;
+  created_at: string;
+}
+
 export interface Deal {
   id: string;
   title: string;
@@ -429,6 +529,45 @@ export type Database = {
         Update: Partial<Omit<TeamMember, 'id' | 'created_at'>>;
         Relationships: [];
       };
+      call_lists: {
+        Row: CallList & Record<string, unknown>;
+        Insert: Pick<CallList, 'name'> & Partial<Omit<CallList, 'id' | 'created_at'>>;
+        Update: Partial<Pick<CallList, 'name' | 'row_count' | 'skipped_count'>>;
+        Relationships: [];
+      };
+      call_leads: {
+        Row: CallLead & Record<string, unknown>;
+        /* Bulk inserts go through import_call_leads(); single inserts are admin-only. */
+        Insert: Pick<CallLead, 'list_id' | 'company_name'> & Partial<Omit<CallLead, 'id' | 'created_at' | 'updated_at'>>;
+        Update: Partial<Omit<CallLead, 'id' | 'list_id' | 'created_at' | 'updated_at'>>;
+        Relationships: [];
+      };
+      call_activities: {
+        Row: CallActivity & Record<string, unknown>;
+        Insert: Pick<CallActivity, 'lead_id' | 'outcome'> & Partial<Omit<CallActivity, 'id' | 'created_at'>>;
+        Update: never;
+        Relationships: [];
+      };
+      dnc_list: {
+        Row: DncEntry & Record<string, unknown>;
+        Insert: Partial<Omit<DncEntry, 'id' | 'added_at'>>;
+        Update: never;
+        Relationships: [];
+      };
+      followup_queue: {
+        Row: FollowupItem & Record<string, unknown>;
+        Insert: Pick<FollowupItem, 'lead_id' | 'type'> & Partial<Omit<FollowupItem, 'id' | 'created_at'>>;
+        Update: Partial<Pick<FollowupItem, 'status' | 'handled_by' | 'handled_at' | 'note'>>;
+        Relationships: [];
+      };
+      profiles: {
+        Row: Profile & Record<string, unknown>;
+        /* Inserts come from the auth.users trigger or the service-role
+           API; the browser only ever updates. */
+        Insert: never;
+        Update: Partial<Pick<Profile, 'full_name' | 'role' | 'timezone' | 'daily_dial_target' | 'active'>>;
+        Relationships: [];
+      };
       notifications: {
         Row: Notification & Record<string, unknown>;
         /* Insert is never used from the client — rows come only from
@@ -675,7 +814,16 @@ export type Database = {
         Relationships: [];
       };
     };
-    Functions: { [_ in never]: never };
+    Functions: {
+      dialer_known_keys: {
+        Args: Record<string, never>;
+        Returns: { phones: string[]; domains: string[]; dnc_phones: string[]; dnc_domains: string[] };
+      };
+      import_call_leads: {
+        Args: { p_list_id: string; p_rows: unknown };
+        Returns: number;
+      };
+    };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };
   };
