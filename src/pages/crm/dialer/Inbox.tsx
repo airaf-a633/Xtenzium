@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../context/AuthContext';
-import type { CallActivity, CallLead, EmailTemplate, FollowupItem, TeamMember } from '../../../types/database';
+import type { CallActivity, CallLead, EmailTemplate, FollowupItem, Meeting, TeamMember } from '../../../types/database';
+import { callGoogle } from '../../../lib/google-api';
 import { formatInZone, formatPhone, gmailCompose, outcomeLabel, renderTemplate, voiceLink } from '../../../lib/dialer-calls';
 import {
   Badge, Button, Card, EmptyState, ErrorState, Input, PageHeader, SegmentedControl,
@@ -28,9 +29,11 @@ interface Data {
   templates: Record<string, EmailTemplate>;
   notes: Record<string, string>;
   members: TeamMember[];
+  /** The scheduled calendar meeting for a lead, when one was booked through Google. */
+  scheduled: Record<string, Meeting>;
 }
 
-const EMPTY: Data = { queue: [], interested: [], meetings: [], flags: [], leads: {}, reps: {}, templates: {}, notes: {}, members: [] };
+const EMPTY: Data = { queue: [], interested: [], meetings: [], flags: [], leads: {}, reps: {}, templates: {}, notes: {}, members: [], scheduled: {} };
 
 const ago = (iso: string) => {
   const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
@@ -176,7 +179,7 @@ const Inbox = () => {
 
   const fetchAll = useCallback(async (): Promise<Data> => {
     const weekAhead = new Date(Date.now() + 7 * 86400000).toISOString();
-    const [q, i, m, f, t, p, tm] = await Promise.all([
+    const [q, i, m, f, t, p, tm, sc] = await Promise.all([
       supabase.from('followup_queue').select('*').eq('status', 'queued').order('created_at'),
       supabase.from('call_leads').select('*').eq('status', 'followup').order('updated_at', { ascending: false }).limit(100),
       supabase.from('call_leads').select('*').eq('status', 'meeting').lte('next_call_at', weekAhead).order('next_call_at'),
@@ -184,8 +187,9 @@ const Inbox = () => {
       supabase.from('email_templates').select('*'),
       supabase.from('profiles').select('id, full_name'),
       supabase.from('team_members').select('*').order('name'),
+      supabase.from('meetings').select('*').eq('status', 'scheduled').order('starts_at'),
     ]);
-    const err = [q, i, m, f, t, p, tm].find(r => r.error)?.error;
+    const err = [q, i, m, f, t, p, tm, sc].find(r => r.error)?.error;
     if (err) throw new Error(err.message);
 
     const queue = (q.data ?? []) as FollowupItem[];
@@ -217,6 +221,7 @@ const Inbox = () => {
     return {
       queue, interested, meetings, flags, leads, notes,
       members: (tm.data ?? []) as TeamMember[],
+      scheduled: Object.fromEntries(((sc.data ?? []) as Meeting[]).map(x => [x.lead_id, x])),
       templates: Object.fromEntries(((t.data ?? []) as EmailTemplate[]).map(x => [x.type, x])),
       reps: Object.fromEntries(((p.data ?? []) as { id: string; full_name: string | null }[]).map(x => [x.id, x.full_name ?? 'Rep'])),
     };
@@ -254,19 +259,29 @@ const Inbox = () => {
     toast(status === 'sent' ? 'Marked sent' : status === 'done' ? 'Done' : 'Cancelled', 'success');
   };
 
-  const meetingHeld = async (lead: CallLead) => {
-    const { error } = await supabase.from('call_leads').update({ next_call_at: null }).eq('id', lead.id);
+  /* A meeting booked through Google has a record; one the rep only
+     logged by hand doesn't. Both are handled — the record just carries
+     the calendar side too. */
+  const setMeeting = async (lead: CallLead, status: 'held' | 'no_show') => {
+    const row = data.scheduled[lead.id];
+    const { error } = row
+      ? await supabase.rpc('meeting_set_status', { p_meeting_id: row.id, p_status: status })
+      : status === 'held'
+        ? await supabase.from('call_leads').update({ next_call_at: null }).eq('id', lead.id)
+        : await supabase.from('call_leads').update({ status: 'callback', next_call_at: new Date().toISOString() }).eq('id', lead.id);
     if (error) return toast('That didn’t save.', 'danger');
     setData(d => ({ ...d, meetings: d.meetings.filter(x => x.id !== lead.id) }));
-    toast('Marked held', 'success');
+    toast(status === 'held' ? 'Marked held' : 'No-show — back in the rep’s queue as a callback', status === 'held' ? 'success' : 'info');
   };
 
-  const meetingNoShow = async (lead: CallLead) => {
-    const { error } = await supabase
-      .from('call_leads').update({ status: 'callback', next_call_at: new Date().toISOString() }).eq('id', lead.id);
-    if (error) return toast('That didn’t save.', 'danger');
+  const cancelMeeting = async (lead: CallLead) => {
+    const row = data.scheduled[lead.id];
+    if (!row) return;
+    if (!confirm(`Cancel the meeting with ${lead.company_name}? It will be removed from your calendar and the invitees are told.`)) return;
+    const r = await callGoogle({ action: 'cancel', meeting_id: row.id });
+    if (r.error) return toast(r.error, 'danger');
     setData(d => ({ ...d, meetings: d.meetings.filter(x => x.id !== lead.id) }));
-    toast('No-show — back in the rep’s queue as a callback', 'info');
+    toast('Meeting cancelled', 'info');
   };
 
   const resolveFlag = async (a: CallActivity) => {
@@ -449,11 +464,37 @@ const Inbox = () => {
                     <p className="m-0 text-[12.5px] text-crm-ink-3">
                       {[l.contact_name, l.email ?? 'no email yet', formatPhone(l.phone_e164, l.phone_raw)].filter(Boolean).join(' · ')}
                     </p>
+                    <p className="m-0 mt-0.5 text-[12px] text-crm-ink-3">
+                      {data.scheduled[l.id]
+                        ? `On your calendar · invite sent to ${data.scheduled[l.id].attendee_email ?? 'the prospect'}${data.scheduled[l.id].rep_email ? ` and ${data.scheduled[l.id].rep_email}` : ''}`
+                        : 'Not on a calendar — send the invite yourself'}
+                    </p>
                     {data.notes[l.id] && <p className="m-0 mt-1 text-[13px] text-crm-ink-2">“{data.notes[l.id]}”</p>}
                   </div>
+                  {data.scheduled[l.id]?.meet_link && (
+                    <a
+                      href={data.scheduled[l.id].meet_link ?? undefined}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex h-8 items-center rounded-crm-md bg-crm-copper px-3 text-[12.5px] font-medium text-crm-copper-ink no-underline"
+                    >
+                      Join Meet
+                    </a>
+                  )}
+                  {data.scheduled[l.id]?.calendar_link && (
+                    <a
+                      href={data.scheduled[l.id].calendar_link ?? undefined}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex h-8 items-center rounded-crm-md border border-crm-line-hi px-3 text-[12.5px] text-crm-ink no-underline hover:bg-crm-ground"
+                    >
+                      Calendar
+                    </a>
+                  )}
                   <Button size="sm" onClick={() => copyInvite(l)}>Copy details</Button>
-                  <Button size="sm" variant="primary" onClick={() => meetingHeld(l)}>Held</Button>
-                  <Button size="sm" onClick={() => meetingNoShow(l)}>No-show</Button>
+                  <Button size="sm" variant="primary" onClick={() => setMeeting(l, 'held')}>Held</Button>
+                  <Button size="sm" onClick={() => setMeeting(l, 'no_show')}>No-show</Button>
+                  {data.scheduled[l.id] && <Button size="sm" variant="ghost" onClick={() => cancelMeeting(l)}>Cancel</Button>}
                 </div>
               );
             })}

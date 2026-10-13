@@ -1,9 +1,11 @@
-import { useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import {
   GENERAL_CHIPS, filterPeople, formatInZone, insertMention, mentionLabel, mentionTrigger, mentionsIn,
   zonedToUtc, type MentionTrigger, type OutcomeDef,
 } from '../../../lib/dialer-calls';
 import { useMentionables } from './useMentionables';
+import { useCalendar } from './useCalendar';
+import MeetingBooker, { type BookerState } from './MeetingBooker';
 import { Button, Input, Textarea } from '../../../components/crm/ui';
 import { cn } from '../../../lib/utils';
 
@@ -13,7 +15,11 @@ export interface OutcomeSubmit {
   flagged: boolean;
   /** ISO instant, set only for callback / meeting outcomes. */
   at: string | null;
+  /** Set when the meeting was picked from the calendar: the caller books it for real. */
+  booking?: { start: string; duration: number; email: string; name: string };
 }
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const Kbd = ({ children }: { children: string }) => (
   <kbd className="rounded border border-crm-line-hi bg-crm-ground px-1.5 py-px font-crm-mono text-[10.5px] text-crm-ink-3">
@@ -27,8 +33,10 @@ const Kbd = ({ children }: { children: string }) => (
    way. Times are typed in the PROSPECT's zone, because that's the
    clock the agreement was made on. */
 const OutcomePanel = ({
-  outcome, leadTz, zoneLabel, myTz, saving, onSubmit, onCancel, onInvalid,
+  outcome, leadTz, zoneLabel, myTz, saving, onSubmit, onCancel, onInvalid, booking,
 }: {
+  /** Present when this lead can be booked on the calendar (the lead's id and what we already know). */
+  booking?: { leadId: string; email: string | null; name: string | null };
   outcome: OutcomeDef;
   leadTz: string;
   zoneLabel: string;
@@ -42,6 +50,17 @@ const OutcomePanel = ({
   const [note, setNote] = useState('');
   const [flagged, setFlagged] = useState(false);
   const [atLocal, setAtLocal] = useState('');
+
+  /* Meetings: pick a real slot when Google Calendar is connected,
+     otherwise (or if it fails mid-call) type the time by hand. Calling
+     must never be blocked by the calendar. */
+  const calendar = useCalendar();
+  const [calendarDown, setCalendarDown] = useState<string | null>(null);
+  const [booker, setBooker] = useState<BookerState>({ slot: null, duration: 30, email: booking?.email ?? '', name: booking?.name ?? '' });
+  const isMeeting = outcome.key === 'meeting_booked' && !!booking;
+  const useBooker = isMeeting && calendar.connected && calendarDown === null;
+  const onUnavailable = useCallback((m: string) => setCalendarDown(m), []);
+  const patchBooker = useCallback((p: Partial<BookerState>) => setBooker(b => ({ ...b, ...p })), []);
 
   /* @mentions: suggestions appear while an "@name" is being typed. */
   const people = useMentionables();
@@ -95,6 +114,21 @@ const OutcomePanel = ({
 
   const submit = () => {
     if (saving) return;
+    if (useBooker) {
+      if (!booker.slot) {
+        onInvalid('Pick a time for the meeting.');
+        return;
+      }
+      if (!EMAIL_RE.test(booker.email.trim())) {
+        onInvalid('Enter their email so they get the invite.');
+        return;
+      }
+      onSubmit({
+        tags, note: note.trim(), flagged, at: booker.slot.start,
+        booking: { start: booker.slot.start, duration: booker.duration, email: booker.email.trim(), name: booker.name.trim() },
+      });
+      return;
+    }
     let at: string | null = null;
     if (wantsTime) {
       if (!atLocal) {
@@ -125,7 +159,16 @@ const OutcomePanel = ({
 
   return (
     <div className="flex flex-col gap-3" onKeyDown={onKeyDown}>
-      {wantsTime && (
+      {useBooker && booking && (
+        <MeetingBooker leadId={booking.leadId} state={booker} onChange={patchBooker} onUnavailable={onUnavailable} ownerLabelTz={myTz} />
+      )}
+      {isMeeting && calendar.loading && <p className="m-0 text-[12.5px] text-crm-ink-3">Checking the calendar…</p>}
+      {isMeeting && calendarDown && (
+        <p className="m-0 text-[12.5px] text-crm-warning">
+          The calendar isn’t available right now ({calendarDown.replace(/\.$/, '')}). Enter the time below — the owner will send the invite.
+        </p>
+      )}
+      {wantsTime && !useBooker && !(isMeeting && calendar.loading) && (
         <div>
           <Input
             label={`${outcome.needs === 'callback_time' ? 'Call back' : 'Meeting'} at — their time (${zoneLabel})`}
@@ -226,7 +269,7 @@ const OutcomePanel = ({
 
       <div className="flex gap-2">
         <Button variant={outcome.key === 'dnc' ? 'danger' : 'primary'} loading={saving} onClick={submit}>
-          Save &amp; next <Kbd>Enter</Kbd>
+          {useBooker ? 'Book & send invite' : 'Save & next'} <Kbd>Enter</Kbd>
         </Button>
         <Button onClick={onCancel} disabled={saving}>
           Cancel <Kbd>Esc</Kbd>

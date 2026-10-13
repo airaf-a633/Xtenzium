@@ -2,10 +2,26 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
 import type { CallScript, DialerSettings as Settings, EmailTemplate } from '../../../types/database';
 import {
-  Button, Card, CardHeader, ErrorState, Input, PageHeader, SkeletonRows, Textarea, useToast,
+  Badge, Button, Card, CardHeader, ErrorState, Input, PageHeader, Select, SkeletonRows, Textarea, useToast,
 } from '../../../components/crm/ui';
+import { startGoogleConnect } from '../../../lib/google-api';
+import { useCalendar } from './useCalendar';
 
-type CadenceKey = Exclude<keyof Settings, 'id' | 'updated_at'>;
+const GOOGLE_RETURN: Record<string, string> = {
+  denied: 'You declined access, so nothing was connected.',
+  state: 'That connection link expired. Try again.',
+  exchange: 'Google rejected the sign-in. Try again.',
+  no_refresh: 'Google didn’t grant lasting access. Remove “Xtenzium” from myaccount.google.com/permissions, then connect again.',
+  save: 'Connected to Google, but saving it failed. Try again.',
+  not_configured: 'Google isn’t set up on the server yet — the Client ID and secret are missing in Vercel.',
+};
+
+const MEETING_MINUTES = [15, 20, 30, 45, 60];
+const OWNER_ZONES = ['Asia/Karachi', 'Asia/Dubai', 'Europe/London', 'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles'];
+
+type CadenceKey =
+  | 'no_answer_days' | 'voicemail_days' | 'gatekeeper_name_days' | 'gatekeeper_blocked_days'
+  | 'nurture_outsources_days' | 'nurture_timing_days' | 'max_attempts';
 
 const CADENCE: { key: CadenceKey; label: string; hint: string }[] = [
   { key: 'no_answer_days', label: 'No answer → retry after', hint: 'business days' },
@@ -123,6 +139,11 @@ const DialerSettings = () => {
   const [saving, setSaving] = useState(false);
   const [reload, setReload] = useState(0);
 
+  const calendar = useCalendar();
+  const [connecting, setConnecting] = useState(false);
+  const [meeting, setMeeting] = useState({ tz: 'Asia/Karachi', from: '18', to: '2', minutes: '30' });
+  const [meetingSaving, setMeetingSaving] = useState(false);
+
   useEffect(() => {
     let cancelled = false;
     Promise.all([
@@ -137,7 +158,15 @@ const DialerSettings = () => {
       } else {
         const row = s.data as Settings | null;
         setSettings(row);
-        if (row) setDraft(Object.fromEntries(CADENCE.map(c2 => [c2.key, String(row[c2.key])])));
+        if (row) {
+          setDraft(Object.fromEntries(CADENCE.map(c2 => [c2.key, String(row[c2.key])])));
+          setMeeting({
+            tz: row.meeting_owner_tz,
+            from: String(row.meeting_hours_from),
+            to: String(row.meeting_hours_to),
+            minutes: String(row.meeting_default_minutes),
+          });
+        }
         setTemplates((t.data ?? []) as EmailTemplate[]);
         setScripts((c.data ?? []) as CallScript[]);
       }
@@ -149,6 +178,63 @@ const DialerSettings = () => {
   }, [reload]);
 
   const refresh = () => setReload(n => n + 1);
+
+  /* Google sends the browser back here with ?google=connected or
+     ?google=error&reason=…; say what happened, then tidy the address. */
+  const { refresh: refreshCalendar } = calendar;
+  /* Read once, into state: the address is cleaned straight away, and
+     React may run the effect twice in development — a second pass must
+     still know what Google said. */
+  const [returned] = useState(() => new URLSearchParams(window.location.search));
+  useEffect(() => {
+    const outcome = returned.get('google');
+    if (!outcome) return;
+    window.history.replaceState(null, '', window.location.pathname);
+    const reason = returned.get('reason') ?? '';
+    const t = setTimeout(() => {
+      if (outcome === 'connected') toast('Google Calendar connected', 'success');
+      else toast(GOOGLE_RETURN[reason] ?? 'Couldn’t connect Google Calendar.', 'danger');
+      refreshCalendar();
+    }, 0);
+    return () => clearTimeout(t);
+  }, [returned, toast, refreshCalendar]);
+
+  const connect = async () => {
+    setConnecting(true);
+    const problem = await startGoogleConnect();
+    // On success the browser is already on its way to Google.
+    if (problem) {
+      setConnecting(false);
+      toast(problem, 'danger');
+    }
+  };
+
+  const disconnect = async () => {
+    if (!confirm('Disconnect Google Calendar? Reps will go back to typing meeting times by hand. Meetings already booked stay on your calendar.')) return;
+    const { error } = await supabase.rpc('google_disconnect');
+    if (error) return toast('Couldn’t disconnect.', 'danger');
+    toast('Disconnected', 'info');
+    refreshCalendar();
+  };
+
+  const saveMeeting = async () => {
+    const from = Number(meeting.from);
+    const to = Number(meeting.to);
+    if (!Number.isInteger(from) || from < 0 || from > 23 || !Number.isInteger(to) || to < 0 || to > 24) {
+      return toast('Hours must be whole numbers: start 0–23, end 0–24.', 'danger');
+    }
+    setMeetingSaving(true);
+    const { error } = await supabase.from('dialer_settings').update({
+      meeting_owner_tz: meeting.tz.trim(),
+      meeting_hours_from: from,
+      meeting_hours_to: to,
+      meeting_default_minutes: Number(meeting.minutes),
+    }).eq('id', true);
+    setMeetingSaving(false);
+    if (error) return toast('That didn’t save — check the timezone name (for example Asia/Karachi).', 'danger');
+    toast('Meeting hours saved', 'success');
+    refresh();
+  };
 
   const saveCadence = async () => {
     const next: Partial<Record<CadenceKey, number>> = {};
@@ -181,6 +267,66 @@ const DialerSettings = () => {
 
       {!loading && !failed && (
         <>
+          <Card>
+            <CardHeader title="Google Calendar" />
+            <div className="flex flex-col gap-3 p-4">
+              <div className="flex flex-wrap items-center gap-3">
+                {calendar.loading ? (
+                  <Badge tone="neutral">Checking…</Badge>
+                ) : calendar.connected ? (
+                  <Badge tone="success" dot>Connected as {calendar.status?.email}</Badge>
+                ) : calendar.status?.status === 'error' ? (
+                  <Badge tone="danger" dot>Connection lost — reconnect</Badge>
+                ) : (
+                  <Badge tone="neutral">Not connected</Badge>
+                )}
+                <span className="flex-1" />
+                <Button variant={calendar.connected ? 'secondary' : 'primary'} loading={connecting} onClick={connect}>
+                  {calendar.connected ? 'Reconnect' : calendar.status?.status === 'error' ? 'Reconnect Google' : 'Connect Google Calendar'}
+                </Button>
+                {(calendar.connected || calendar.status?.status === 'error') && (
+                  <Button variant="ghost" onClick={disconnect}>Disconnect</Button>
+                )}
+              </div>
+              <p className="m-0 text-[12.5px] text-crm-ink-3">
+                When connected, “Meeting agreed” shows your real free times, and booking creates the event on this
+                calendar with a Google Meet link and emails the invite to the prospect and the rep. If it ever
+                isn’t available, the rep just types the time and you send the invite yourself.
+              </p>
+              {calendar.status?.error && <p className="m-0 text-[12.5px] text-crm-danger">{calendar.status.error}</p>}
+            </div>
+          </Card>
+
+          <Card>
+            <CardHeader title="Meeting hours" />
+            <div className="p-4">
+              <p className="m-0 mb-3 text-[12.5px] text-crm-ink-3">
+                When you can take meetings, in your own timezone. Times offered to the rep must also fall inside the
+                prospect’s 9–5, so with US prospects an evening window such as 18 → 2 is normal. Hours can wrap past midnight.
+              </p>
+              <div className="grid gap-3 sm:grid-cols-4">
+                <Select
+                  label="Your timezone"
+                  value={OWNER_ZONES.includes(meeting.tz) ? meeting.tz : ''}
+                  placeholder={OWNER_ZONES.includes(meeting.tz) ? undefined : meeting.tz}
+                  options={OWNER_ZONES.map(z => ({ value: z, label: z.replace('_', ' ') }))}
+                  onChange={e => e.target.value && setMeeting(m => ({ ...m, tz: e.target.value }))}
+                />
+                <Input label="Available from (hour)" type="number" min={0} max={23} value={meeting.from} onChange={e => setMeeting(m => ({ ...m, from: e.target.value }))} />
+                <Input label="Until (hour)" type="number" min={0} max={24} value={meeting.to} onChange={e => setMeeting(m => ({ ...m, to: e.target.value }))} />
+                <Select
+                  label="Default length"
+                  value={meeting.minutes}
+                  options={MEETING_MINUTES.map(m => ({ value: String(m), label: `${m} minutes` }))}
+                  onChange={e => setMeeting(m => ({ ...m, minutes: e.target.value }))}
+                />
+              </div>
+              <div className="mt-4">
+                <Button variant="primary" loading={meetingSaving} onClick={saveMeeting}>Save meeting hours</Button>
+              </div>
+            </div>
+          </Card>
+
           <Card>
             <CardHeader title="Retry rules" />
             <div className="p-4">

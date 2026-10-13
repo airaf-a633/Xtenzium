@@ -14,6 +14,7 @@ import {
 } from '../../../components/crm/ui';
 import { cn } from '../../../lib/utils';
 import OutcomePanel, { type OutcomeSubmit } from './OutcomePanel';
+import { logOutcome } from './logOutcome';
 
 const ET = 'America/New_York';
 const LIST_KEY = 'dialer:list';
@@ -230,27 +231,15 @@ const CallScreen = () => {
 
   const save = async (v: OutcomeSubmit) => {
     if (!lead || !outcome || saving) return;
-
     setSaving(true);
-    const { data, error } = await supabase.rpc('log_call', {
-      p_lead_id: lead.id,
-      p_outcome: outcome.key,
-      p_tags: v.tags,
-      p_note: v.note || null,
-      p_flagged: v.flagged,
-      p_at: v.at,
-      p_contact_name: contactName.trim() || null,
-      p_contact_title: contactTitle.trim() || null,
-      p_contact_email: contactEmail.trim() || null,
-    });
+    const result = await logOutcome(lead, outcome, v, { name: contactName, title: contactTitle, email: contactEmail });
     setSaving(false);
 
-    if (error) {
-      toast(error.message, 'danger');
+    if (!result.ok) {
+      toast(result.error, 'danger');
       return;
     }
-    const next = data?.next_call_at ? ` · next ${formatInZone(new Date(data.next_call_at), leadTz)}` : '';
-    toast(`${lead.company_name}: ${outcome.label}${next}`, 'success');
+    toast(result.message, 'success');
     closePanel();
     advance();
   };
@@ -530,6 +519,7 @@ const CallScreen = () => {
                     onSubmit={save}
                     onCancel={closePanel}
                     onInvalid={m => toast(m, 'danger')}
+                    booking={{ leadId: lead.id, email: contactEmail || null, name: contactName || null }}
                   />
                 </div>
               </Card>

@@ -296,7 +296,37 @@ export interface DialerSettings {
   nurture_outsources_days: number;
   nurture_timing_days: number;
   max_attempts: number;
+  /* When the owner takes meetings — hours in meeting_owner_tz, may wrap midnight. */
+  meeting_owner_tz: string;
+  meeting_hours_from: number;
+  meeting_hours_to: number;
+  meeting_default_minutes: number;
   updated_at: string;
+}
+
+export interface Meeting {
+  id: string;
+  lead_id: string;
+  deal_id: string | null;
+  google_event_id: string | null;
+  meet_link: string | null;
+  calendar_link: string | null;
+  starts_at: string;
+  ends_at: string;
+  attendee_name: string | null;
+  attendee_email: string | null;
+  rep_id: string | null;
+  rep_email: string | null;
+  status: 'scheduled' | 'held' | 'no_show' | 'cancelled';
+  created_at: string;
+}
+
+export interface GoogleStatus {
+  connected: boolean;
+  email?: string;
+  status?: 'ok' | 'error';
+  error?: string | null;
+  connected_at?: string;
 }
 
 export interface DialerListSummary {
@@ -619,6 +649,13 @@ export type Database = {
         Update: Partial<Omit<DialerSettings, 'id' | 'updated_at'>>;
         Relationships: [];
       };
+      meetings: {
+        Row: Meeting & Record<string, unknown>;
+        /* Rows are written by /api/google with the service key; admins may edit. */
+        Insert: never;
+        Update: Partial<Pick<Meeting, 'status'>>;
+        Relationships: [];
+      };
       dnc_list: {
         Row: DncEntry & Record<string, unknown>;
         Insert: Partial<Omit<DncEntry, 'id' | 'added_at'>>;
@@ -889,6 +926,18 @@ export type Database = {
       dialer_known_keys: {
         Args: Record<string, never>;
         Returns: { phones: string[]; domains: string[]; dnc_phones: string[]; dnc_domains: string[] };
+      };
+      google_status: {
+        Args: Record<string, never>;
+        Returns: GoogleStatus;
+      };
+      google_disconnect: {
+        Args: Record<string, never>;
+        Returns: undefined;
+      };
+      meeting_set_status: {
+        Args: { p_meeting_id: string; p_status: 'held' | 'no_show' | 'cancelled' };
+        Returns: undefined;
       };
       dialer_mentionables: {
         Args: Record<string, never>;

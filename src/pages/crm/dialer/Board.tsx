@@ -13,15 +13,16 @@ import { Badge, Button, Dialog, ErrorState, PageHeader, useToast } from '../../.
 import { cn } from '../../../lib/utils';
 import { useAuth } from '../../../context/AuthContext';
 import OutcomePanel, { type OutcomeSubmit } from './OutcomePanel';
+import { logOutcome } from './logOutcome';
 
 const PER_COLUMN = 40;
 const ET = 'America/New_York';
 
 type BoardLead = Pick<
   CallLead,
-  'id' | 'company_name' | 'tier' | 'score' | 'status' | 'next_call_at' | 'contact_name' | 'timezone' | 'attempt_count'
+  'id' | 'company_name' | 'tier' | 'score' | 'status' | 'next_call_at' | 'contact_name' | 'timezone' | 'attempt_count' | 'email'
 >;
-const COLS = 'id, company_name, tier, score, status, next_call_at, contact_name, timezone, attempt_count';
+const COLS = 'id, company_name, tier, score, status, next_call_at, contact_name, timezone, attempt_count, email';
 
 const Card = ({ lead, onOpen, overlay }: { lead: BoardLead; onOpen?: () => void; overlay?: boolean }) => {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: lead.id, data: { lead } });
@@ -168,17 +169,10 @@ const Board = () => {
   const submit = async (v: OutcomeSubmit) => {
     if (!pending || !choice) return;
     setSaving(true);
-    const { error } = await supabase.rpc('log_call', {
-      p_lead_id: pending.lead.id,
-      p_outcome: choice.key,
-      p_tags: v.tags,
-      p_note: v.note || null,
-      p_flagged: v.flagged,
-      p_at: v.at,
-    });
+    const result = await logOutcome(pending.lead, choice, v);
     setSaving(false);
-    if (error) return toast(error.message, 'danger');
-    toast(`${pending.lead.company_name}: ${choice.label}`, 'success');
+    if (!result.ok) return toast(result.error, 'danger');
+    toast(result.message, 'success');
     close();
     fetchBoard().then(b => {
       setCounts(b.counts);
@@ -241,6 +235,7 @@ const Board = () => {
             onSubmit={submit}
             onCancel={pending.options.length > 1 ? () => setChoice(null) : close}
             onInvalid={m => toast(m, 'danger')}
+            booking={{ leadId: pending.lead.id, email: pending.lead.email, name: pending.lead.contact_name }}
           />
         )}
       </Dialog>
