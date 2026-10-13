@@ -132,6 +132,7 @@ const Dialer = () => {
           <>
             <ButtonLink to="/crm/inbox">Inbox</ButtonLink>
             <ButtonLink to="/crm/calls/feed">Live feed</ButtonLink>
+            <ButtonLink to="/crm/calls/summary">Daily summary</ButtonLink>
             <ButtonLink to="/crm/calls/reports">Reports</ButtonLink>
             <ButtonLink to="/crm/calls/settings">Settings</ButtonLink>
           </>

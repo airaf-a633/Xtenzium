@@ -314,6 +314,8 @@ export interface DialerSettings {
   max_attempts: number;
   /* One due retry for every N dials (0 = fresh leads always first). */
   retry_every: number;
+  /* After this many missed calls, email opens as a second channel (0 = never). */
+  email_after_attempts: number;
   /* When the owner takes meetings — hours in meeting_owner_tz, may wrap midnight. */
   meeting_owner_tz: string;
   meeting_hours_from: number;
@@ -983,6 +985,10 @@ export type Database = {
       log_outreach: {
         Args: { p_lead_id: string; p_action: string; p_note?: string | null; p_email?: string | null };
         Returns: { status: string; touches: number; next_touch_at: string | null; sequence_done: boolean };
+      };
+      dialer_summary: {
+        Args: { p_from: string; p_to: string };
+        Returns: import('../lib/daily-summary').SummaryData;
       };
       dialer_tier_counts: {
         Args: { p_list_id?: string | null };

@@ -21,7 +21,7 @@ const OWNER_ZONES = ['Asia/Karachi', 'Asia/Dubai', 'Europe/London', 'America/New
 
 type CadenceKey =
   | 'no_answer_days' | 'voicemail_days' | 'gatekeeper_name_days' | 'gatekeeper_blocked_days'
-  | 'nurture_outsources_days' | 'nurture_timing_days' | 'max_attempts' | 'retry_every';
+  | 'nurture_outsources_days' | 'nurture_timing_days' | 'max_attempts' | 'retry_every' | 'email_after_attempts';
 
 const CADENCE: { key: CadenceKey; label: string; hint: string }[] = [
   { key: 'no_answer_days', label: 'No answer → retry after', hint: 'business days' },
@@ -31,6 +31,7 @@ const CADENCE: { key: CadenceKey; label: string; hint: string }[] = [
   { key: 'nurture_outsources_days', label: 'Already outsources → call again after', hint: 'days' },
   { key: 'nurture_timing_days', label: 'Bad timing / budget → call again after', hint: 'days' },
   { key: 'max_attempts', label: 'Stop calling after', hint: 'attempts with no conversation' },
+  { key: 'email_after_attempts', label: 'Open email as a second channel after … missed calls', hint: 'the lead appears on the Email outreach list · 0 = never' },
   { key: 'retry_every', label: 'Make every … dial a due retry', hint: 'e.g. 3 = one retry in three dials · 0 = fresh leads always first' },
 ];
 
@@ -243,14 +244,14 @@ const DialerSettings = () => {
     const next: Partial<Record<CadenceKey, number>> = {};
     for (const c of CADENCE) {
       const n = Math.round(Number(draft[c.key]));
-      const min = c.key === 'retry_every' ? 0 : 1;
+      const min = c.key === 'retry_every' || c.key === 'email_after_attempts' ? 0 : 1;
       if (!Number.isFinite(n) || n < min) return toast(`${c.label}: enter a number of ${min} or more.`, 'danger');
       next[c.key] = n;
     }
     setSaving(true);
     const { error } = await supabase.from('dialer_settings').update(next).eq('id', true);
     setSaving(false);
-    if (error) return toast('Out of range — check the limits (retries 1–30, nurture 7–730, attempts 2–20, retry mix 0–20).', 'danger');
+    if (error) return toast('Out of range — check the limits (retries 1–30, nurture 7–730, attempts 2–20, retry mix 0–20, email after 0–10).', 'danger');
     toast('Saved — applies to the next call logged', 'success');
     refresh();
   };
@@ -341,7 +342,7 @@ const DialerSettings = () => {
                     label={c.label}
                     hint={c.hint}
                     type="number"
-                    min={c.key === 'retry_every' ? 0 : 1}
+                    min={c.key === 'retry_every' || c.key === 'email_after_attempts' ? 0 : 1}
                     value={draft[c.key] ?? ''}
                     onChange={e => setDraft(d => ({ ...d, [c.key]: e.target.value }))}
                   />

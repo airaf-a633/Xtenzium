@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../context/AuthContext';
-import type { CallLead, EmailTemplate, OutreachActivity } from '../../../types/database';
+import type { CallLead, EmailTemplate } from '../../../types/database';
 import { TIER_CHOICES, formatInZone, gmailCompose, renderTemplate, tiersParam, type TierChoice } from '../../../lib/dialer-calls';
 import {
   ACTION_LABEL, MAILTO_SAFE_LENGTH, OUTREACH_TABS, mailtoCompose, sendActionFor, templateFor, touchLabel,
@@ -11,6 +11,7 @@ import {
   Badge, Button, Card, EmptyState, ErrorState, Input, PageHeader, SegmentedControl, SkeletonRows, Textarea, useToast,
 } from '../../../components/crm/ui';
 import { cn } from '../../../lib/utils';
+import TouchTimeline from './TouchTimeline';
 
 const PAGE = 50;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -40,21 +41,6 @@ const Work = ({
   const [body, setBody] = useState(renderTemplate(tpl?.body ?? '', vars));
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
-  const [history, setHistory] = useState<OutreachActivity[]>([]);
-
-  useEffect(() => {
-    let cancelled = false;
-    supabase
-      .from('outreach_activities').select('*').eq('lead_id', lead.id)
-      .order('created_at', { ascending: false }).limit(5)
-      .then(({ data }) => {
-        if (!cancelled) setHistory((data ?? []) as OutreachActivity[]);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [lead.id]);
-
   const validTo = EMAIL_RE.test(to.trim());
   const mailto = mailtoCompose(to.trim() || null, subject, body);
   const stillPlaceholder = body.includes('[Your business postal address]');
@@ -161,17 +147,7 @@ const Work = ({
         </Button>
       </div>
 
-      {history.length > 0 && (
-        <ul className="m-0 list-none border-t border-crm-line p-0 pt-2">
-          {history.map(h => (
-            <li key={h.id} className="py-1 text-[12.5px] text-crm-ink-3">
-              <span className="text-crm-ink-2">{ACTION_LABEL[h.action]}</span>
-              {h.touch ? ` · touch ${h.touch}` : ''} · {formatInZone(new Date(h.created_at), 'Asia/Karachi')}
-              {h.note ? ` — ${h.note}` : ''}
-            </li>
-          ))}
-        </ul>
-      )}
+      <TouchTimeline lead={lead} />
     </div>
   );
 };

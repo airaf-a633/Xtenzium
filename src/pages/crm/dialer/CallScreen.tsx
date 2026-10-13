@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../context/AuthContext';
-import type { CallActivity, CallLead, CallScript, DialerListSummary } from '../../../types/database';
+import type { CallLead, CallScript, DialerListSummary } from '../../../types/database';
 import {
   INSTANT_HINT, OUTCOMES, SKIP_SHORTCUT, TIER_CHOICES, clockFor, dayStartInZone, dayStats, formatInZone,
   formatPhone, instantOutcome, outcomeByShortcut, parseTiers, renderTemplate, scriptVars, tiersParam, voiceLink,
@@ -14,6 +14,7 @@ import {
 } from '../../../components/crm/ui';
 import { cn } from '../../../lib/utils';
 import OutcomePanel, { type OutcomeSubmit } from './OutcomePanel';
+import TouchTimeline from './TouchTimeline';
 import { logOutcome } from './logOutcome';
 
 const ET = 'America/New_York';
@@ -106,7 +107,6 @@ const CallScreen = () => {
   const [lead, setLead] = useState<CallLead | null>(null);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState<string | null>(null);
-  const [history, setHistory] = useState<CallActivity[]>([]);
   const [ignoreHours, setIgnoreHours] = useState(false);
   const [now, setNow] = useState(() => new Date());
   const [day, setDay] = useState<DayStats>({ dials: 0, conversations: 0, meetings: 0 });
@@ -260,24 +260,6 @@ const CallScreen = () => {
       cancelled = true;
     };
   }, [fetchStats, applyStats]);
-
-  const leadId = lead?.id ?? null;
-  useEffect(() => {
-    if (!leadId) return undefined;
-    let cancelled = false;
-    supabase
-      .from('call_activities')
-      .select('*')
-      .eq('lead_id', leadId)
-      .order('created_at', { ascending: false })
-      .limit(5)
-      .then(({ data }) => {
-        if (!cancelled) setHistory((data ?? []) as CallActivity[]);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [leadId]);
 
   /* The pitch is edited by an admin in Dialer settings. The built-in
      copy stays as the fallback so the screen is never blank. */
@@ -604,6 +586,11 @@ const CallScreen = () => {
                   {lead.score !== null && <Badge tone="neutral">Score {lead.score}</Badge>}
                   {lead.status === 'callback' && <Badge tone="warning" dot>Callback due</Badge>}
                   {lead.status === 'retry' && <Badge tone="info" dot>Attempt {lead.attempt_count + 1}</Badge>}
+                  {lead.outreach_touches > 0 && (
+                    <Badge tone="info" dot>
+                      Emailed{lead.outreach_last_at ? ` ${formatInZone(new Date(lead.outreach_last_at), myTz).split(',').slice(0, 2).join(',')}` : ''}
+                    </Badge>
+                  )}
                 </div>
 
                 <p className="m-0 text-[13px] text-crm-ink-3">
@@ -666,22 +653,7 @@ const CallScreen = () => {
               </div>
             </Card>
 
-            {history.length > 0 && (
-              <Card>
-                <CardHeader title="Previous calls" />
-                <ul className="m-0 list-none p-0">
-                  {history.map(h => (
-                    <li key={h.id} className="border-b border-crm-line px-4 py-2.5 text-[13px] last:border-b-0">
-                      <span className="font-medium text-crm-ink">
-                        {OUTCOMES.find(o => o.key === h.outcome)?.label ?? h.outcome}
-                      </span>
-                      <span className="text-crm-ink-3"> · {formatInZone(new Date(h.created_at), myTz)}</span>
-                      {h.note && <p className="m-0 mt-0.5 text-crm-ink-2">{h.note}</p>}
-                    </li>
-                  ))}
-                </ul>
-              </Card>
-            )}
+            <TouchTimeline key={lead.id} lead={lead} tz={myTz} />
 
             <Card>
               <button

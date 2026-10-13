@@ -6,6 +6,7 @@ import type { CallActivity, CallLead, EmailTemplate, FollowupItem, Meeting, Team
 import { callGoogle } from '../../../lib/google-api';
 import { formatInZone, formatPhone, gmailCompose, outcomeLabel, renderTemplate, voiceLink } from '../../../lib/dialer-calls';
 import { mailtoCompose } from '../../../lib/outreach';
+import { icsFileName, meetingIcs } from '../../../lib/ics';
 import {
   Badge, Button, Card, EmptyState, ErrorState, Input, PageHeader, SegmentedControl,
   Select, SkeletonRows, Textarea, useToast,
@@ -298,6 +299,21 @@ const Inbox = () => {
     setData(d => ({ ...d, flags: d.flags.filter(x => x.id !== a.id) }));
   };
 
+  /* A calendar file any calendar (Zoho included) can import. The
+     meeting runs 30 minutes unless the event says otherwise. */
+  const downloadIcs = (lead: CallLead) => {
+    const ics = meetingIcs(lead, new Date(lead.next_call_at!), 30, data.notes[lead.id] ?? null, `${window.location.origin}/crm/inbox`);
+    const url = URL.createObjectURL(new Blob([ics], { type: 'text/calendar;charset=utf-8' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = icsFileName(lead.company_name);
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    toast('Calendar file downloaded — open it to add it to Zoho Calendar', 'success');
+  };
+
   const copyInvite = async (lead: CallLead) => {
     const tz = lead.timezone ?? ET;
     const when = new Date(lead.next_call_at!);
@@ -498,6 +514,7 @@ const Inbox = () => {
                       Calendar
                     </a>
                   )}
+                  <Button size="sm" onClick={() => downloadIcs(l)}>Add to calendar (.ics)</Button>
                   <Button size="sm" onClick={() => copyInvite(l)}>Copy details</Button>
                   <Button size="sm" variant="primary" onClick={() => setMeeting(l, 'held')}>Held</Button>
                   <Button size="sm" onClick={() => setMeeting(l, 'no_show')}>No-show</Button>
