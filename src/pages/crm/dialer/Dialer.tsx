@@ -108,7 +108,12 @@ const Dialer = () => {
       <PageHeader
         title="Dialer"
         subtitle={`Daily target: ${profile?.daily_dial_target ?? 80} dials`}
-        actions={<ButtonLink to="/crm/dialer/import" variant="primary">Import leads</ButtonLink>}
+        actions={
+          <>
+            <ButtonLink to="/crm/dialer/import">Import leads</ButtonLink>
+            <ButtonLink to="/crm/dialer/call" variant="primary">Start calling</ButtonLink>
+          </>
+        }
       />
 
       {failed && <ErrorState title="The dialer couldn’t load" body={failed} />}

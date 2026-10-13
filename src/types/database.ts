@@ -819,6 +819,30 @@ export type Database = {
         Args: Record<string, never>;
         Returns: { phones: string[]; domains: string[]; dnc_phones: string[]; dnc_domains: string[] };
       };
+      dialer_next_lead: {
+        Args: { p_skip?: string[]; p_ignore_hours?: boolean };
+        Returns: CallLead[];
+      };
+      log_call: {
+        Args: {
+          p_lead_id: string;
+          p_outcome: string;
+          p_tags?: string[];
+          p_note?: string | null;
+          p_flagged?: boolean;
+          p_at?: string | null;
+          p_contact_name?: string | null;
+          p_contact_title?: string | null;
+          p_contact_email?: string | null;
+        };
+        Returns: {
+          status: CallLeadStatus;
+          next_call_at: string | null;
+          followup: string | null;
+          deal_id: string | null;
+          attempts: number;
+        };
+      };
       import_call_leads: {
         Args: { p_list_id: string; p_rows: unknown };
         Returns: number;
