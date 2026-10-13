@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../context/AuthContext';
-import type { CallActivity, CallLead, CallScript } from '../../../types/database';
+import type { CallActivity, CallLead, CallScript, DialerListSummary } from '../../../types/database';
 import {
   OUTCOMES, SKIP_SHORTCUT, clockFor, dayStartInZone, dayStats, formatInZone,
   formatPhone, outcomeByShortcut, voiceLink,
@@ -10,12 +10,31 @@ import {
 import { SCRIPT, type ScriptBlock } from '../../../lib/dialer-script';
 import {
   Badge, Button, ButtonLink, Card, CardHeader, EmptyState, ErrorState, Input, PageHeader,
-  Skeleton, useToast,
+  Select, Skeleton, useToast,
 } from '../../../components/crm/ui';
 import { cn } from '../../../lib/utils';
 import OutcomePanel, { type OutcomeSubmit } from './OutcomePanel';
 
 const ET = 'America/New_York';
+const LIST_KEY = 'dialer:list';
+
+/* The rep's last list choice survives a reload. Storage can be blocked
+   or full, so every touch is guarded and the screen works without it. */
+const savedList = (): string | null => {
+  try {
+    return localStorage.getItem(LIST_KEY) || null;
+  } catch {
+    return null;
+  }
+};
+const saveList = (id: string | null) => {
+  try {
+    if (id) localStorage.setItem(LIST_KEY, id);
+    else localStorage.removeItem(LIST_KEY);
+  } catch {
+    /* not persisted; still applied for this session */
+  }
+};
 const GROUPS: { key: OutcomeGroup; title: string }[] = [
   { key: 'no_contact', title: 'Couldn’t reach them' },
   { key: 'interested', title: 'Interested' },
@@ -53,7 +72,8 @@ const CallScreen = () => {
   const [now, setNow] = useState(() => new Date());
   const [day, setDay] = useState<DayStats>({ dials: 0, conversations: 0, meetings: 0 });
   const [callbacksDue, setCallbacksDue] = useState(0);
-  const [waiting, setWaiting] = useState(0);
+  const [lists, setLists] = useState<DialerListSummary[]>([]);
+  const [listId, setListId] = useState<string | null>(savedList);
   const [showScript, setShowScript] = useState(false);
   const [script, setScript] = useState<ScriptBlock[]>(SCRIPT);
   const skipped = useRef<string[]>([]);
@@ -67,12 +87,13 @@ const CallScreen = () => {
   const [saving, setSaving] = useState(false);
 
   const leadTz = lead?.timezone ?? ET;
+  const waiting = lists.filter(l => !listId || l.id === listId).reduce((n, l) => n + l.in_play, 0);
 
   /* ── data ── */
 
   const fetchNext = useCallback(
-    (ignore: boolean) =>
-      supabase.rpc('dialer_next_lead', { p_skip: skipped.current, p_ignore_hours: ignore }),
+    (ignore: boolean, list: string | null) =>
+      supabase.rpc('dialer_next_lead', { p_skip: skipped.current, p_ignore_hours: ignore, p_list_id: list }),
     [],
   );
 
@@ -94,35 +115,49 @@ const CallScreen = () => {
   const fetchStats = useCallback(async () => {
     if (!user) return null;
     const since = dayStartInZone(new Date(), myTz).toISOString();
-    const [acts, due, queued] = await Promise.all([
+    const dueQuery = supabase
+      .from('call_leads')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'callback')
+      .lte('next_call_at', new Date().toISOString());
+    const [acts, due, summary] = await Promise.all([
       supabase.from('call_activities').select('outcome').eq('caller_id', user.id).gte('created_at', since),
-      supabase.from('call_leads').select('id', { count: 'exact', head: true }).eq('status', 'callback').lte('next_call_at', new Date().toISOString()),
-      supabase.from('call_leads').select('id', { count: 'exact', head: true }).in('status', ['new', 'retry', 'callback']).eq('phone_is_us', true),
+      listId ? dueQuery.eq('list_id', listId) : dueQuery,
+      supabase.rpc('dialer_list_summary'),
     ]);
     return {
       day: dayStats(((acts.data ?? []) as { outcome: string }[]).map(a => a.outcome)),
       due: due.count ?? 0,
-      queued: queued.count ?? 0,
+      lists: (summary.data ?? []) as DialerListSummary[],
     };
-  }, [user, myTz]);
+  }, [user, myTz, listId]);
 
   const applyStats = useCallback((s: Awaited<ReturnType<typeof fetchStats>>) => {
     if (!s) return;
     setDay(s.day);
     setCallbacksDue(s.due);
-    setWaiting(s.queued);
+    setLists(s.lists);
+    /* A remembered list that has since been deleted would leave the rep
+       staring at an empty queue with no way to see why. */
+    setListId(current => {
+      if (current && s.lists.length > 0 && !s.lists.some(l => l.id === current)) {
+        saveList(null);
+        return null;
+      }
+      return current;
+    });
   }, []);
 
   useEffect(() => {
     let cancelled = false;
     skipped.current = [];
-    fetchNext(ignoreHours).then(res => {
+    fetchNext(ignoreHours, listId).then(res => {
       if (!cancelled) applyLead(res);
     });
     return () => {
       cancelled = true;
     };
-  }, [ignoreHours, fetchNext, applyLead]);
+  }, [ignoreHours, listId, fetchNext, applyLead]);
 
   useEffect(() => {
     let cancelled = false;
@@ -183,7 +218,7 @@ const CallScreen = () => {
 
   const advance = () => {
     setLoading(true);
-    fetchNext(ignoreHours).then(applyLead);
+    fetchNext(ignoreHours, listId).then(applyLead);
     fetchStats().then(applyStats);
   };
 
@@ -279,6 +314,25 @@ const CallScreen = () => {
         }
       />
 
+      {lists.length > 0 && (
+        <Select
+          className="max-w-[420px]"
+          label="Calling from"
+          value={listId ?? ''}
+          placeholder={`All lists (${lists.reduce((n, l) => n + l.callable_now, 0).toLocaleString()} ready now)`}
+          options={lists.map(l => ({
+            value: l.id,
+            label: `${l.name} — ${l.callable_now.toLocaleString()} ready now · ${l.in_play.toLocaleString()} in play`,
+          }))}
+          onChange={e => {
+            const next = e.target.value || null;
+            saveList(next);
+            setLoading(true);
+            setListId(next);
+          }}
+        />
+      )}
+
       {/* My day */}
       <Card>
         <div className="flex flex-wrap items-center gap-x-8 gap-y-3 p-4">
@@ -304,7 +358,7 @@ const CallScreen = () => {
           title="Nothing to call right now"
           body={
             waiting > 0
-              ? `${waiting.toLocaleString()} lead${waiting === 1 ? ' is' : 's are'} queued, but outside their business hours or not due for a retry yet. Check back later.`
+              ? `${waiting.toLocaleString()} lead${waiting === 1 ? ' is' : 's are'} ${listId ? 'in this list' : 'queued'}, but outside their business hours or not due for a retry yet. Check back later${listId ? ', or switch to another list' : ''}.`
               : 'Import a CSV to load leads.'
           }
           action={<ButtonLink to="/crm/dialer/import" variant="primary">Import leads</ButtonLink>}

@@ -297,6 +297,16 @@ export interface DialerSettings {
   updated_at: string;
 }
 
+export interface DialerListSummary {
+  id: string;
+  name: string;
+  created_at: string;
+  /** Leads that could still be dialled (US number, not closed out). */
+  in_play: number;
+  /** Of those, how many the queue would offer this minute. */
+  callable_now: number;
+}
+
 export interface DialerReport {
   totals: { dials: number; conversations: number; interested: number; meetings: number };
   by_day: { day: string; dials: number; conversations: number; meetings: number }[];
@@ -878,8 +888,12 @@ export type Database = {
         Args: Record<string, never>;
         Returns: { phones: string[]; domains: string[]; dnc_phones: string[]; dnc_domains: string[] };
       };
+      dialer_list_summary: {
+        Args: Record<string, never>;
+        Returns: DialerListSummary[];
+      };
       dialer_next_lead: {
-        Args: { p_skip?: string[]; p_ignore_hours?: boolean };
+        Args: { p_skip?: string[]; p_ignore_hours?: boolean; p_list_id?: string | null };
         Returns: CallLead[];
       };
       log_call: {
