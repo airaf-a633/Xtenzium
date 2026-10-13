@@ -326,7 +326,7 @@ const Inbox = () => {
     }
   };
 
-  const me = useMemo(() => data.members.find(m => m.user_id === user?.id) ?? null, [data.members, user]);
+  const me = useMemo(() => data.members.find(m => m.user_id === user?.id) ?? null, [data.members, user?.id]);
   const memberName = (id: string | null) => data.members.find(m => m.id === id)?.name.split(' ')[0] ?? null;
 
   const assign = async (item: FollowupItem, memberId: string | null) => {

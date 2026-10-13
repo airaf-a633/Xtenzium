@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
+import { markSessionLost } from '../lib/session-notice';
 import type { Profile, UserRole } from '../types/database';
 
 interface AuthContextType {
@@ -23,6 +24,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [sessionLoading, setSessionLoading] = useState(true);
+  /* True while WE are signing out, so that is not mistaken for a session being lost. */
+  const signingOut = useRef(false);
   const [profile, setProfile] = useState<Profile | null>(null);
   /* Which user the current `profile` belongs to. Compared with user.id
      to derive "role still loading" without a setState-in-effect. */
@@ -35,7 +38,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSessionLoading(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT' && !signingOut.current) markSessionLost();
+      signingOut.current = false;
       setSession(session);
       setUser(session?.user ?? null);
     });
@@ -74,8 +79,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { error: error?.message ?? null };
   };
 
+  /* 'local' = this browser only. The default signs the account out of
+     EVERY device, so one person leaving a tab would end everybody else's
+     session on the same login — mid-call, in the rep's case. */
   const signOut = async () => {
-    await supabase.auth.signOut();
+    signingOut.current = true;
+    await supabase.auth.signOut({ scope: 'local' });
   };
 
   return (

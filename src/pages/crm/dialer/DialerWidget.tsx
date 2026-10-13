@@ -34,15 +34,16 @@ const Tile = ({ label, value, sub, hot }: { label: string; value: number; sub?: 
    the dashboard never grows an error box for a feature that's off. */
 const DialerWidget = () => {
   const { user } = useAuth();
+  const userId = user?.id ?? null;
   const [s, setS] = useState<Summary | null>(null);
 
   useEffect(() => {
-    if (!user) return undefined;
+    if (!userId) return undefined;
     let cancelled = false;
     const weekAhead = new Date(Date.now() + 7 * 86400000).toISOString();
 
     Promise.all([
-      supabase.from('team_members').select('id').eq('user_id', user.id).maybeSingle(),
+      supabase.from('team_members').select('id').eq('user_id', userId).maybeSingle(),
       supabase.from('followup_queue').select('type, assignee_id').eq('status', 'queued'),
       supabase.from('call_activities').select('id', { count: 'exact', head: true }).eq('flagged', true).is('flag_resolved_at', null),
       supabase.from('call_leads').select('id', { count: 'exact', head: true }).eq('status', 'meeting').lte('next_call_at', weekAhead),
@@ -62,7 +63,7 @@ const DialerWidget = () => {
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, [userId]);
 
   if (!s) return null;
 

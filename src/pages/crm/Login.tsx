@@ -5,6 +5,7 @@ import { Helmet } from 'react-helmet-async';
 import { useAuth } from '../../context/AuthContext';
 import { CrmThemeProvider, useCrmTheme } from '../../components/crm/CrmThemeProvider';
 import { Button, ErrorState, Field, Mark } from '../../components/crm/ui';
+import { consumeSessionLost } from '../../lib/session-notice';
 
 const CONTROL =
   'h-10 w-full rounded-crm-md border border-crm-line bg-crm-ground px-3 text-[14px] text-crm-ink ' +
@@ -23,6 +24,8 @@ const LoginForm = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  /* Read once: tells someone whose session ended why they're back here. */
+  const [signedOut] = useState(() => consumeSessionLost());
 
   useEffect(() => {
     if (session) navigate(destination, { replace: true });
@@ -64,6 +67,12 @@ const LoginForm = () => {
             Clients, projects and everything owed.
           </p>
         </div>
+
+        {signedOut && (
+          <p role="status" className="m-0 mb-4 rounded-crm-md border border-crm-warning/30 bg-crm-warning-quiet px-3.5 py-3 text-[13px] text-crm-ink-2">
+            You were signed out — your session ended. Sign in again to carry on; nothing you saved was lost.
+          </p>
+        )}
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <Field label="Email" required>

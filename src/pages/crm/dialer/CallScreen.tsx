@@ -165,8 +165,12 @@ const CallScreen = () => {
     setLoading(false);
   }, []);
 
+  /* Keyed on the id, not the user OBJECT: Supabase hands out a new object on
+     every tab focus, and switching to Google Voice and back is exactly what a
+     rep does all day. */
+  const userId = user?.id ?? null;
   const fetchStats = useCallback(async () => {
-    if (!user) return null;
+    if (!userId) return null;
     const since = dayStartInZone(new Date(), myTz).toISOString();
     const dueQuery = supabase
       .from('call_leads')
@@ -174,7 +178,7 @@ const CallScreen = () => {
       .eq('status', 'callback')
       .lte('next_call_at', new Date().toISOString());
     const [acts, due, summary, tierSummary] = await Promise.all([
-      supabase.from('call_activities').select('outcome').eq('caller_id', user.id).gte('created_at', since),
+      supabase.from('call_activities').select('outcome').eq('caller_id', userId).gte('created_at', since),
       listId ? dueQuery.eq('list_id', listId) : dueQuery,
       supabase.rpc('dialer_list_summary'),
       supabase.rpc('dialer_tier_counts', { p_list_id: listId }),
@@ -185,7 +189,7 @@ const CallScreen = () => {
       lists: (summary.data ?? []) as DialerListSummary[],
       tiers: (tierSummary.data ?? null) as { A: number; B: number; C: number; none: number } | null,
     };
-  }, [user, myTz, listId]);
+  }, [userId, myTz, listId]);
 
   const applyStats = useCallback((s: Awaited<ReturnType<typeof fetchStats>>) => {
     if (!s) return;
