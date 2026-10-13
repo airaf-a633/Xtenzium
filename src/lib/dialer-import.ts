@@ -259,11 +259,63 @@ const toInt = (v: string | null): number | null => {
   return n === null ? null : Math.round(n);
 };
 
-/** "A - call first" → "A". Anything else is left unset rather than guessed. */
-const toTier = (v: string | null): 'A' | 'B' | 'C' | null => {
-  const m = /^\s*([abc])\b/i.exec(v ?? '');
-  return m ? (m[1].toUpperCase() as 'A' | 'B' | 'C') : null;
+/* ─── Tiers ────────────────────────────────────────────────
+
+   Files name their priority in whatever way suits them: "A - call
+   first", "Hot", "1", "Tier B". guessTier understands the common ones;
+   anything it can't read is left for the person importing to decide in
+   the preview, never guessed silently. */
+
+export type TierValue = 'A' | 'B' | 'C' | null;
+/** What to do with each distinct value in the file's tier column. Keyed by the trimmed raw value. */
+export type TierMap = Record<string, TierValue>;
+/** For files with a score but no tier: A at or above `a`, B at or above `b`, otherwise C. */
+export interface ScoreRule {
+  a: number;
+  b: number;
+}
+
+const TIER_WORDS: Record<string, TierValue> = {
+  hot: 'A', high: 'A', top: 'A', best: 'A', priority: 'A', gold: 'A', platinum: 'A', one: 'A', first: 'A', '1': 'A',
+  warm: 'B', medium: 'B', med: 'B', mid: 'B', silver: 'B', two: 'B', second: 'B', '2': 'B',
+  cold: 'C', low: 'C', bronze: 'C', three: 'C', third: 'C', '3': 'C',
 };
+
+export function guessTier(raw: string | null | undefined): TierValue {
+  const v = (raw ?? '').trim().toLowerCase().replace(/^tier[\s:_-]*/, '');
+  if (!v) return null;
+  const letter = /^([abc])\b/.exec(v);
+  if (letter) return letter[1].toUpperCase() as 'A' | 'B' | 'C';
+  const first = v.replace(/[^a-z0-9 ]/g, ' ').split(' ').filter(Boolean)[0] ?? '';
+  return TIER_WORDS[v] ?? TIER_WORDS[first] ?? null;
+}
+
+/** The distinct non-empty values in one column, most common first. */
+export function distinctValues(rows: string[][], col: number): { value: string; count: number }[] {
+  const counts = new Map<string, number>();
+  for (const r of rows) {
+    const v = (r[col] ?? '').trim();
+    if (v) counts.set(v, (counts.get(v) ?? 0) + 1);
+  }
+  return [...counts.entries()].map(([value, count]) => ({ value, count })).sort((a, b) => b.count - a.count || a.value.localeCompare(b.value));
+}
+
+export interface TierOptions {
+  tierMap?: TierMap;
+  scoreRule?: ScoreRule | null;
+}
+
+/** The tier for one row: the person's mapping, else the guess; the score rule only fills in rows with NO tier value at all. */
+export function tierFor(rawTier: string | null, score: number | null, opts: TierOptions): TierValue {
+  if (rawTier) {
+    const mapped = opts.tierMap?.[rawTier];
+    return mapped !== undefined ? mapped : guessTier(rawTier);
+  }
+  if (opts.scoreRule && score !== null) {
+    return score >= opts.scoreRule.a ? 'A' : score >= opts.scoreRule.b ? 'B' : 'C';
+  }
+  return null;
+}
 
 /** Turn parsed CSV rows (header excluded) into verdicts + records. */
 export function prepareRows(
@@ -273,6 +325,7 @@ export function prepareRows(
   known: KnownKeys,
   /** Which column carries the file's own "is this a US number" flag, if any. */
   usFlagColumn: number | null = null,
+  tierOptions: TierOptions = {},
 ): PreparedRow[] {
   const col = {} as Partial<Record<FieldKey, number>>;
   Object.entries(mapping).forEach(([i, key]) => {
@@ -312,6 +365,7 @@ export function prepareRows(
 
     /* Only an unreadable number with nothing else to fall back on is
        "bad data". A lead with no number at all is simply not callable. */
+    const score = toInt(get(r, 'score'));
     const status: LeadStatus = phone.e164 ? 'new' : phoneRaw && !email ? 'bad_data' : 'no_phone';
 
     const record: LeadRecord = {
@@ -331,8 +385,8 @@ export function prepareRows(
       hourly_rate_usd: toNumber(get(r, 'hourly_rate_usd')),
       services: get(r, 'services'),
       works_count: toInt(get(r, 'works_count')),
-      tier: toTier(get(r, 'tier')),
-      score: toInt(get(r, 'score')),
+      tier: tierFor(get(r, 'tier'), score, tierOptions),
+      score,
       why: get(r, 'why'),
       source: get(r, 'source'),
       extra,

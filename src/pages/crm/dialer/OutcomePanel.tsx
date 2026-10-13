@@ -50,6 +50,8 @@ const OutcomePanel = ({
   const [note, setNote] = useState('');
   const [flagged, setFlagged] = useState(false);
   const [atLocal, setAtLocal] = useState('');
+  /* Do-not-call blocks a number and a website for good; the first press only asks. */
+  const [confirmDnc, setConfirmDnc] = useState(false);
 
   /* Meetings: pick a real slot when Google Calendar is connected,
      otherwise (or if it fails mid-call) type the time by hand. Calling
@@ -114,6 +116,10 @@ const OutcomePanel = ({
 
   const submit = () => {
     if (saving) return;
+    if (outcome.key === 'dnc' && !confirmDnc) {
+      setConfirmDnc(true);
+      return;
+    }
     if (useBooker) {
       if (!booker.slot) {
         onInvalid('Pick a time for the meeting.');
@@ -264,12 +270,14 @@ const OutcomePanel = ({
       </label>
 
       {outcome.key === 'dnc' && (
-        <p className="m-0 text-[12.5px] text-crm-danger">This blocks the number and the website for good.</p>
+        <p className="m-0 text-[12.5px] text-crm-danger">
+          {confirmDnc ? 'Press Enter again to confirm — you can still undo it for 30 minutes.' : 'This blocks the number and the website for good.'}
+        </p>
       )}
 
       <div className="flex gap-2">
         <Button variant={outcome.key === 'dnc' ? 'danger' : 'primary'} loading={saving} onClick={submit}>
-          {useBooker ? 'Book & send invite' : 'Save & next'} <Kbd>Enter</Kbd>
+          {useBooker ? 'Book & send invite' : confirmDnc ? 'Yes, block permanently' : 'Save & next'} <Kbd>Enter</Kbd>
         </Button>
         <Button onClick={onCancel} disabled={saving}>
           Cancel <Kbd>Esc</Kbd>

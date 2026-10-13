@@ -21,7 +21,7 @@ const OWNER_ZONES = ['Asia/Karachi', 'Asia/Dubai', 'Europe/London', 'America/New
 
 type CadenceKey =
   | 'no_answer_days' | 'voicemail_days' | 'gatekeeper_name_days' | 'gatekeeper_blocked_days'
-  | 'nurture_outsources_days' | 'nurture_timing_days' | 'max_attempts';
+  | 'nurture_outsources_days' | 'nurture_timing_days' | 'max_attempts' | 'retry_every';
 
 const CADENCE: { key: CadenceKey; label: string; hint: string }[] = [
   { key: 'no_answer_days', label: 'No answer → retry after', hint: 'business days' },
@@ -31,6 +31,7 @@ const CADENCE: { key: CadenceKey; label: string; hint: string }[] = [
   { key: 'nurture_outsources_days', label: 'Already outsources → call again after', hint: 'days' },
   { key: 'nurture_timing_days', label: 'Bad timing / budget → call again after', hint: 'days' },
   { key: 'max_attempts', label: 'Stop calling after', hint: 'attempts with no conversation' },
+  { key: 'retry_every', label: 'Make every … dial a due retry', hint: 'e.g. 3 = one retry in three dials · 0 = fresh leads always first' },
 ];
 
 const TEMPLATE_TITLE: Record<string, string> = {
@@ -240,13 +241,14 @@ const DialerSettings = () => {
     const next: Partial<Record<CadenceKey, number>> = {};
     for (const c of CADENCE) {
       const n = Math.round(Number(draft[c.key]));
-      if (!Number.isFinite(n) || n < 1) return toast(`${c.label}: enter a number of 1 or more.`, 'danger');
+      const min = c.key === 'retry_every' ? 0 : 1;
+      if (!Number.isFinite(n) || n < min) return toast(`${c.label}: enter a number of ${min} or more.`, 'danger');
       next[c.key] = n;
     }
     setSaving(true);
     const { error } = await supabase.from('dialer_settings').update(next).eq('id', true);
     setSaving(false);
-    if (error) return toast('Out of range — check the limits (e.g. retries 1–30, nurture 7–730, attempts 2–20).', 'danger');
+    if (error) return toast('Out of range — check the limits (retries 1–30, nurture 7–730, attempts 2–20, retry mix 0–20).', 'danger');
     toast('Saved — applies to the next call logged', 'success');
     refresh();
   };
@@ -337,7 +339,7 @@ const DialerSettings = () => {
                     label={c.label}
                     hint={c.hint}
                     type="number"
-                    min={1}
+                    min={c.key === 'retry_every' ? 0 : 1}
                     value={draft[c.key] ?? ''}
                     onChange={e => setDraft(d => ({ ...d, [c.key]: e.target.value }))}
                   />
@@ -363,6 +365,11 @@ const DialerSettings = () => {
 
           <Card>
             <CardHeader title="Call script (shown to the rep)" />
+            <p className="m-0 border-b border-crm-line px-4 py-3 text-[12.5px] text-crm-ink-3">
+              These placeholders are filled in on the call screen: <code>{'{{who}}'}</code> (the contact’s name at the
+              company, or “a representative at” the company), <code>{'{{company}}'}</code> and <code>{'{{rep}}'}</code>{' '}
+              (the rep’s first name). One line per row; keep each line short enough to say in one breath.
+            </p>
             {scripts.map((s, i) => (
               <ScriptEditor
                 key={s.id + s.updated_at + s.sort_order}

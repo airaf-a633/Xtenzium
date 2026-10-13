@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../context/AuthContext';
 import type { CallLeadStatus, CallList } from '../../../types/database';
+import RetierTool from './RetierTool';
 import {
   Button, ButtonLink, Card, CardHeader, EmptyState, ErrorState, Input, PageHeader,
   Stat, TableShell, Td, Th, Tr, useToast,
@@ -176,6 +177,8 @@ const Dialer = () => {
           )}
         </div>
       </Card>
+
+      {role === 'admin' && <RetierTool lists={lists} />}
 
       <ChangePassword />
     </div>

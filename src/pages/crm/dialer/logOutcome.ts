@@ -10,7 +10,7 @@ export interface Contact {
 }
 
 export type LogResult =
-  | { ok: true; message: string }
+  | { ok: true; message: string; /** The log row, for Undo. Null for calendar bookings. */ activityId: string | null }
   | { ok: false; error: string; code: string | null };
 
 /* One way to record a call, used by the call screen and the board.
@@ -40,7 +40,7 @@ export async function logOutcome(
       contact_title: contact.title ?? '',
     });
     if (r.error || !r.data) return { ok: false, error: r.error ?? 'Couldn’t book that.', code: r.code };
-    return { ok: true, message: `${lead.company_name}: meeting booked · invite sent to ${v.booking.email}` };
+    return { ok: true, message: `${lead.company_name}: meeting booked · invite sent to ${v.booking.email}`, activityId: null };
   }
 
   const { data, error } = await supabase.rpc('log_call', {
@@ -56,5 +56,5 @@ export async function logOutcome(
   });
   if (error) return { ok: false, error: error.message, code: null };
   const next = data?.next_call_at ? ` · next ${formatInZone(new Date(data.next_call_at), lead.timezone ?? 'America/New_York')}` : '';
-  return { ok: true, message: `${lead.company_name}: ${outcome.label}${next}` };
+  return { ok: true, message: `${lead.company_name}: ${outcome.label}${next}`, activityId: data?.activity_id ?? null };
 }

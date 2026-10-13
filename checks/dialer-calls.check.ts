@@ -5,7 +5,7 @@ import {
   OUTCOMES, clockFor, dayStartInZone, dayStats, formatInZone, formatPhone,
   isConversation, outcomeByShortcut, voiceLink, zonedToUtc,
   BOARD_COLUMNS, columnForStatus, filterPeople, gmailCompose, insertMention, mentionLabel,
-  mentionsIn, mentionTrigger, outcomeLabel, renderTemplate,
+  instantOutcome, mentionsIn, mentionTrigger, outcomeLabel, parseTiers, renderTemplate, scriptVars, tiersParam,
 } from '../src/lib/dialer-calls';
 
 let failures = 0;
@@ -109,6 +109,28 @@ eq('boundary: @Airafx is nobody', mentionsIn('@Airafx', team), []);
 eq('punctuation ends a mention', mentionsIn('thanks @Airaf, @Sharab.', team).map(p => p.id), ['1', '2']);
 eq('email address is not a mention', mentionsIn('reach me at ai@airaf.com', team), []);
 eq('mentioned once even if named twice', mentionsIn('@Airaf and @Airaf Adil', team).length, 1);
+
+/* Instant-log keys */
+eq('Shift+1 is no answer', instantOutcome('Digit1', true)?.key, 'no_answer');
+eq('Shift+2 is voicemail', instantOutcome('Digit2', true)?.key, 'voicemail');
+eq('plain 1 is NOT instant (it opens the note step)', instantOutcome('Digit1', false), undefined);
+eq('other digits are not instant', [instantOutcome('Digit3', true), instantOutcome('KeyA', true)], [undefined, undefined]);
+
+/* Tier filter */
+eq('nothing picked = no filter', tiersParam([]), null);
+eq('everything picked = no filter', tiersParam(['A', 'B', 'C', '-']), null);
+eq('some picked', tiersParam(['A', 'B']), ['A', 'B']);
+eq('parse saved tiers', parseTiers('A,-,C'), ['A', '-', 'C']);
+eq('parse drops junk', parseTiers('A,Z,,x'), ['A']);
+eq('parse empty / null', [parseTiers(''), parseTiers(null)], [[], []]);
+
+/* Script placeholders */
+eq('who, contact known', scriptVars({ company_name: 'Acme', contact_name: 'Dana' }, 'Ryan Lee').who, 'Dana at Acme');
+eq('who, contact unknown', scriptVars({ company_name: 'Acme', contact_name: null }, 'Ryan Lee').who, 'a representative at Acme');
+eq('who, blank contact', scriptVars({ company_name: 'Acme', contact_name: '   ' }, null).who, 'a representative at Acme');
+eq('rep is the first name', scriptVars(null, 'Ryan Lee').rep, 'Ryan');
+eq('rep fallback', scriptVars(null, null).rep, 'me');
+eq('opener reads naturally', renderTemplate('Am I speaking with {{who}}? I’m {{rep}}.', scriptVars({ company_name: 'Acme', contact_name: null }, 'Ryan')), 'Am I speaking with a representative at Acme? I’m Ryan.');
 
 if (failures) {
   console.error(`${failures} dialer-calls check(s) failed`);

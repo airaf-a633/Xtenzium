@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- fixtures read loosely-typed JSON from a fake server */
 /* Google Calendar flow, end to end, against a fake Google and a fake
    Supabase. Nothing here touches the network, so it can't send a real
    invite — which is also why it can try the failure cases (revoked

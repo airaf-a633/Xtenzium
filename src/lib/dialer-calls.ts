@@ -284,3 +284,52 @@ export function mentionsIn(text: string, people: Person[]): Person[] {
   }
   return found;
 }
+
+/* ─── Instant logging ──────────────────────────────────────
+
+   "No answer" and "voicemail" are most of a rep's day, and neither
+   needs a note. Shift+1 / Shift+2 log them and move on in one
+   keystroke. (Matched on the physical key, so it works on any
+   keyboard layout.) */
+
+const INSTANT: Record<string, OutcomeKey> = { Digit1: 'no_answer', Digit2: 'voicemail' };
+
+export const instantOutcome = (code: string, shiftKey: boolean): OutcomeDef | undefined => {
+  const key = shiftKey ? INSTANT[code] : undefined;
+  return key ? OUTCOMES.find(o => o.key === key) : undefined;
+};
+
+export const INSTANT_HINT: Partial<Record<OutcomeKey, string>> = { no_answer: '⇧1', voicemail: '⇧2' };
+
+/* ─── Tier filter ──────────────────────────────────────────── */
+
+export type TierChoice = 'A' | 'B' | 'C' | '-';
+
+export const TIER_CHOICES: { value: TierChoice; label: string }[] = [
+  { value: 'A', label: 'Tier A' },
+  { value: 'B', label: 'Tier B' },
+  { value: 'C', label: 'Tier C' },
+  { value: '-', label: 'No tier' },
+];
+
+/** What to send the database: nothing picked, or everything picked, means "no filter". */
+export const tiersParam = (picked: TierChoice[]): TierChoice[] | null =>
+  picked.length === 0 || picked.length === TIER_CHOICES.length ? null : picked;
+
+export const parseTiers = (raw: string | null): TierChoice[] =>
+  (raw ?? '').split(',').filter((t): t is TierChoice => TIER_CHOICES.some(c => c.value === t));
+
+/* ─── Script placeholders ──────────────────────────────────── */
+
+export function scriptVars(
+  lead: { company_name: string; contact_name: string | null } | null,
+  repName: string | null,
+): Record<string, string> {
+  const company = lead?.company_name ?? 'the company';
+  const contact = lead?.contact_name?.trim();
+  return {
+    company,
+    who: contact ? `${contact} at ${company}` : `a representative at ${company}`,
+    rep: (repName ?? '').trim().split(' ')[0] || 'me',
+  };
+}

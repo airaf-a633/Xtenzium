@@ -296,6 +296,8 @@ export interface DialerSettings {
   nurture_outsources_days: number;
   nurture_timing_days: number;
   max_attempts: number;
+  /* One due retry for every N dials (0 = fresh leads always first). */
+  retry_every: number;
   /* When the owner takes meetings — hours in meeting_owner_tz, may wrap midnight. */
   meeting_owner_tz: string;
   meeting_hours_from: number;
@@ -947,12 +949,36 @@ export type Database = {
         Args: { p_id: string; p_member: string | null };
         Returns: undefined;
       };
+      dialer_tier_counts: {
+        Args: { p_list_id?: string | null };
+        Returns: { A: number; B: number; C: number; none: number };
+      };
+      retier_leads: {
+        Args: { p_list_id: string; p_from: string; p_to: string };
+        Returns: number;
+      };
+      retier_by_score: {
+        Args: { p_list_id: string; p_a: number; p_b: number };
+        Returns: number;
+      };
+      undo_last_call: {
+        Args: { p_activity_id: string };
+        Returns: { lead_id: string; status: CallLeadStatus };
+      };
       dialer_list_summary: {
         Args: Record<string, never>;
         Returns: DialerListSummary[];
       };
       dialer_next_lead: {
-        Args: { p_skip?: string[]; p_ignore_hours?: boolean; p_list_id?: string | null };
+        Args: {
+          p_skip?: string[];
+          p_ignore_hours?: boolean;
+          p_list_id?: string | null;
+          /* 'A' 'B' 'C' and '-' for untiered; null = any. */
+          p_tiers?: string[] | null;
+          /* Pretend this many more calls were logged (pre-loading the next lead). */
+          p_assume_dials?: number;
+        };
         Returns: CallLead[];
       };
       log_call: {
@@ -974,6 +1000,7 @@ export type Database = {
           deal_id: string | null;
           attempts: number;
           mentioned: number;
+          activity_id: string;
         };
       };
       dialer_report: {

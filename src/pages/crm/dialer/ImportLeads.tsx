@@ -2,8 +2,8 @@ import { useMemo, useRef, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { parseCsv } from '../../../lib/csv';
 import {
-  FIELDS, autoMap, prepareRows, summarize,
-  type FieldKey, type KnownKeys, type Mapping,
+  FIELDS, autoMap, distinctValues, guessTier, prepareRows, summarize,
+  type FieldKey, type KnownKeys, type Mapping, type ScoreRule, type TierMap, type TierValue,
 } from '../../../lib/dialer-import';
 import {
   Button, ButtonLink, Card, CardHeader, ErrorState, Input, PageHeader, Select,
@@ -12,6 +12,17 @@ import {
 import { cn } from '../../../lib/utils';
 
 const CHUNK = 500;
+const TIER_OPTIONS = [
+  { value: 'A', label: 'Tier A' },
+  { value: 'B', label: 'Tier B' },
+  { value: 'C', label: 'Tier C' },
+  { value: '-', label: 'No tier' },
+];
+const MAX_TIER_VALUES = 30;
+
+/** A score at roughly the given share of the way up the sorted list. */
+const percentile = (sorted: number[], p: number) => (sorted.length ? sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * p))] : 0);
+
 const FIELD_OPTIONS = FIELDS.map(f => ({ value: f.key, label: f.label + (f.required ? ' *' : '') }));
 
 interface Parsed {
@@ -53,15 +64,51 @@ const ImportLeads = () => {
   const [dragging, setDragging] = useState(false);
   const [progress, setProgress] = useState({ done: 0, total: 0 });
   const [result, setResult] = useState<{ imported: number; skipped: number; listId: string } | null>(null);
+  /* Tier handling for files that don't use A / B / C: the person's
+     per-value choices (over the guesses), and an optional rule that
+     turns a score into a tier for rows with no tier at all. */
+  const [tierChoices, setTierChoices] = useState<TierMap>({});
+  const [useRule, setUseRule] = useState(false);
+  const [ruleA, setRuleA] = useState('');
+  const [ruleB, setRuleB] = useState('');
 
   const usFlagColumn = useMemo(() => {
     const i = parsed?.headers.findIndex(h => h.toLowerCase().replace(/[^a-z]/g, '') === 'phoneisus') ?? -1;
     return i >= 0 ? i : null;
   }, [parsed]);
 
+  const colOf = (key: FieldKey) => {
+    const hit = Object.entries(mapping).find(([, k]) => k === key);
+    return hit ? Number(hit[0]) : null;
+  };
+  const tierCol = colOf('tier');
+  const scoreCol = colOf('score');
+
+  const tierValues = useMemo(
+    () => (parsed && tierCol !== null ? distinctValues(parsed.rows, tierCol) : []),
+    [parsed, tierCol],
+  );
+  const effectiveTierMap = useMemo<TierMap>(
+    () => ({ ...Object.fromEntries(tierValues.map(v => [v.value, guessTier(v.value)])), ...tierChoices }),
+    [tierValues, tierChoices],
+  );
+
+  const scores = useMemo(
+    () => (parsed && scoreCol !== null
+      ? parsed.rows.map(r => Number((r[scoreCol] ?? '').replace(/[^0-9.]/g, ''))).filter(n => Number.isFinite(n) && n > 0).sort((a, b) => a - b)
+      : []),
+    [parsed, scoreCol],
+  );
+  const scoreRule: ScoreRule | null = useMemo(() => {
+    if (!useRule || scores.length === 0) return null;
+    const a = Number(ruleA || percentile(scores, 0.8));
+    const b = Number(ruleB || percentile(scores, 0.4));
+    return Number.isFinite(a) && Number.isFinite(b) && a >= b ? { a, b } : null;
+  }, [useRule, ruleA, ruleB, scores]);
+
   const prepared = useMemo(
-    () => (parsed ? prepareRows(parsed.headers, parsed.rows, mapping, known, usFlagColumn) : []),
-    [parsed, mapping, known, usFlagColumn],
+    () => (parsed ? prepareRows(parsed.headers, parsed.rows, mapping, known, usFlagColumn, { tierMap: effectiveTierMap, scoreRule }) : []),
+    [parsed, mapping, known, usFlagColumn, effectiveTierMap, scoreRule],
   );
   const summary = useMemo(() => summarize(prepared), [prepared]);
   const nameMapped = Object.values(mapping).includes('company_name');
@@ -155,6 +202,10 @@ const ImportLeads = () => {
 
   const reset = () => {
     setParsed(null);
+    setTierChoices({});
+    setUseRule(false);
+    setRuleA('');
+    setRuleB('');
     setError(null);
     setResult(null);
     setPhase('pick');
@@ -256,6 +307,86 @@ const ImportLeads = () => {
               </TableShell>
             </div>
           </Card>
+
+          {(tierCol !== null || scoreCol !== null) && (
+            <Card>
+              <CardHeader title="Tiers" />
+              <div className="flex flex-col gap-4 p-4">
+                <p className="m-0 text-[12.5px] text-crm-ink-3">
+                  Tiers decide who gets called first and let the rep call one group at a time. Your file may name them
+                  differently — set what each value should become. You can also change tiers after importing.
+                </p>
+
+                {tierCol !== null && tierValues.length > 0 && tierValues.length <= MAX_TIER_VALUES && (
+                  <div>
+                    <p className="m-0 mb-2 text-[13px] font-medium text-crm-ink">Values in “{parsed.headers[tierCol]}”</p>
+                    <TableShell>
+                      <thead><tr><Th>Value in your file</Th><Th align="right">Rows</Th><Th>Becomes</Th></tr></thead>
+                      <tbody>
+                        {tierValues.map(v => {
+                          const now: TierValue = effectiveTierMap[v.value] ?? null;
+                          return (
+                            <Tr key={v.value}>
+                              <Td className="font-medium text-crm-ink">{v.value}</Td>
+                              <Td align="right">{v.count.toLocaleString()}</Td>
+                              <Td>
+                                <Select
+                                  label={`Tier for ${v.value}`}
+                                  className="w-[160px] [&>label]:sr-only"
+                                  options={TIER_OPTIONS}
+                                  value={now ?? '-'}
+                                  onChange={e => setTierChoices(c => ({ ...c, [v.value]: e.target.value === '-' ? null : (e.target.value as TierValue) }))}
+                                />
+                              </Td>
+                            </Tr>
+                          );
+                        })}
+                      </tbody>
+                    </TableShell>
+                  </div>
+                )}
+                {tierCol !== null && tierValues.length > MAX_TIER_VALUES && (
+                  <p className="m-0 text-[13px] text-crm-warning">
+                    That column has {tierValues.length} different values, which looks more like a score than a tier.
+                    Map it to “Score” instead and use the score rule below.
+                  </p>
+                )}
+
+                {scoreCol !== null && (
+                  <div>
+                    <label className="flex cursor-pointer items-center gap-2 text-[13px] text-crm-ink">
+                      <input type="checkbox" checked={useRule} onChange={e => setUseRule(e.target.checked)} />
+                      {tierCol !== null ? 'Fill rows with no tier from their score' : 'Set tiers from the score'}
+                    </label>
+                    {useRule && (
+                      <div className="mt-2 flex flex-wrap items-end gap-3">
+                        <Input
+                          className="w-[150px]"
+                          label="Tier A at or above"
+                          type="number"
+                          value={ruleA}
+                          placeholder={String(percentile(scores, 0.8))}
+                          onChange={e => setRuleA(e.target.value)}
+                        />
+                        <Input
+                          className="w-[150px]"
+                          label="Tier B at or above"
+                          type="number"
+                          value={ruleB}
+                          placeholder={String(percentile(scores, 0.4))}
+                          onChange={e => setRuleB(e.target.value)}
+                        />
+                        <p className="m-0 pb-2 text-[12.5px] text-crm-ink-3">
+                          Below B is Tier C. Defaults put the top 20% in A and the next 40% in B.
+                          {!scoreRule && ' (A must be at least B.)'}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </Card>
+          )}
 
           <Card>
             <div className="flex flex-wrap items-end gap-3 p-4">

@@ -7,7 +7,7 @@
 import { readFileSync } from 'node:fs';
 import { parseCsv } from '../src/lib/csv';
 import {
-  autoMap, domainOf, normalizePhone, prepareRows, stateFromHq, summarize,
+  autoMap, distinctValues, domainOf, guessTier, normalizePhone, prepareRows, stateFromHq, summarize, tierFor,
   type KnownKeys,
 } from '../src/lib/dialer-import';
 
@@ -104,6 +104,44 @@ eq('foreign flagged non-US', out[8].record!.phone_is_us, false);
 const s = summarize(out);
 eq('summary', [s.callable, s.noPhone, s.badPhone, s.dupFile, s.dupExisting, s.dnc, s.noName, s.toImport, s.nonUs],
   [2, 1, 1, 2, 1, 1, 1, 4, 1]);
+
+/* Tiers: files write priority in many ways. */
+eq('letter', guessTier('A'), 'A');
+eq('lower-case letter', guessTier('b'), 'B');
+eq('the real file\'s wording', guessTier('A - call first'), 'A');
+eq('"B - worth a call"', guessTier('B - worth a call'), 'B');
+eq('"C - email only"', guessTier('C - email only'), 'C');
+eq('Tier B', guessTier('Tier B'), 'B');
+eq('tier: a', guessTier('tier: a'), 'A');
+eq('hot / warm / cold', [guessTier('Hot'), guessTier('Warm'), guessTier('COLD')], ['A', 'B', 'C']);
+eq('high / medium / low', [guessTier('High'), guessTier('Medium'), guessTier('low priority')], ['A', 'B', 'C']);
+eq('1 / 2 / 3', [guessTier('1'), guessTier('2'), guessTier('3')], ['A', 'B', 'C']);
+eq('"Tier 1"', guessTier('Tier 1'), 'A');
+eq('unreadable is left for the person to decide', [guessTier('maybe'), guessTier('7'), guessTier(''), guessTier(null)], [null, null, null, null]);
+eq('a word that merely starts with a letter is not a tier', guessTier('banana'), null);
+
+const rows = [['x', 'Hot'], ['y', 'Hot'], ['z', 'Cold'], ['w', ''], ['v', ' Hot ']];
+eq('distinct values, most common first, blanks skipped', distinctValues(rows, 1), [{ value: 'Hot', count: 3 }, { value: 'Cold', count: 1 }]);
+
+eq('mapping beats the guess', tierFor('Hot', 99, { tierMap: { Hot: 'C' } }), 'C');
+eq('mapping to "no tier" is respected, and not overridden by a score', tierFor('Hot', 99, { tierMap: { Hot: null }, scoreRule: { a: 90, b: 70 } }), null);
+eq('unmapped values fall back to the guess', tierFor('Hot', null, { tierMap: { Cold: 'C' } }), 'A');
+eq('score rule: A', tierFor(null, 95, { scoreRule: { a: 90, b: 70 } }), 'A');
+eq('score rule: B (at the threshold)', tierFor(null, 70, { scoreRule: { a: 90, b: 70 } }), 'B');
+eq('score rule: C', tierFor(null, 12, { scoreRule: { a: 90, b: 70 } }), 'C');
+eq('score rule needs a score', tierFor(null, null, { scoreRule: { a: 90, b: 70 } }), null);
+eq('a stated tier beats the score rule', tierFor('B', 99, { scoreRule: { a: 90, b: 70 } }), 'B');
+eq('no tier and no rule', tierFor(null, 99, {}), null);
+
+{
+  const h = ['name', 'phone', 'priority', 'rating'];
+  const data = [['Acme', '(212) 380-1761', 'Hot', '5'], ['Beta', '(305) 777-0471', 'maybe', '3'], ['Gamma', '(702) 330-4931', '', '88']];
+  const mapped = prepareRows(h, data, autoMap(h), none, null, { tierMap: { Hot: 'A', maybe: 'C' }, scoreRule: { a: 90, b: 70 } });
+  eq('priority and rating columns are recognised', [autoMap(h)[2], autoMap(h)[3]], ['tier', 'score']);
+  eq('end to end: mapped values, and the score rule only for the blank', mapped.map(r => r.record!.tier), ['A', 'C', 'B']);
+  const unmapped = prepareRows(h, data, autoMap(h), none, null, {});
+  eq('without choices: guess where it can, else none', unmapped.map(r => r.record!.tier), ['A', null, null]);
+}
 
 /* The real file, when pointed at it. */
 const file = process.env.CALL_LIST_CSV;
