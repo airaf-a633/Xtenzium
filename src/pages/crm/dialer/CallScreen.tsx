@@ -63,6 +63,10 @@ const savedAutoCopy = (): boolean => {
   }
 };
 
+/* Didn't reach them but we have their address: an email can land where the call didn't. */
+const emailHint = (message: string, email: string | null, group: OutcomeGroup) =>
+  group === 'no_contact' && email ? `${message} · has an email — it’s on your Email outreach list` : message;
+
 interface LastCall {
   activityId: string;
   company: string;
@@ -338,7 +342,7 @@ const CallScreen = () => {
       toast(result.error, 'danger');
       return;
     }
-    toast(result.message, 'success');
+    toast(emailHint(result.message, lead.email || contactEmail, outcome.group), 'success');
     remember(lead.company_name, outcome.label, result.activityId);
     closePanel();
     advance(true);
@@ -354,7 +358,7 @@ const CallScreen = () => {
       toast(result.error, 'danger');
       return;
     }
-    toast(result.message, 'success');
+    toast(emailHint(result.message, lead.email || contactEmail, def.group), 'success');
     remember(lead.company_name, def.label, result.activityId);
     advance(true);
   };

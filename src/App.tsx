@@ -39,6 +39,7 @@ const CallFeed        = lazy(() => import('./pages/crm/dialer/Feed'));
 const CallReports     = lazy(() => import('./pages/crm/dialer/Reports'));
 const DialerSettings  = lazy(() => import('./pages/crm/dialer/DialerSettings'));
 const DialerBoard     = lazy(() => import('./pages/crm/dialer/Board'));
+const Outreach        = lazy(() => import('./pages/crm/dialer/Outreach'));
 const ImportLeads     = lazy(() => import('./pages/crm/dialer/ImportLeads'));
 
 // ─── Minimal fallback shown while chunks load ──────────────────────────────
@@ -108,6 +109,7 @@ const AppRoutes = () => {
             <Route path="call" element={<CallScreen />} />
             <Route path="board" element={<DialerBoard />} />
             <Route path="import" element={<ImportLeads />} />
+            <Route path="outreach" element={<Outreach />} />
           </Route>
           <Route
             path="/crm"

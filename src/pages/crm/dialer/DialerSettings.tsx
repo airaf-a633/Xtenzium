@@ -39,6 +39,8 @@ const TEMPLATE_TITLE: Record<string, string> = {
   email_proposal: 'Email — proposal',
   linkedin: 'LinkedIn message',
   admin_call: 'Owner call script',
+  outreach_first: 'Cold email — first touch',
+  outreach_followup: 'Cold email — follow-up',
 };
 
 const TemplateEditor = ({ template, onSaved }: { template: EmailTemplate; onSaved: () => void }) => {
@@ -356,7 +358,9 @@ const DialerSettings = () => {
             <p className="m-0 border-b border-crm-line px-4 py-3 text-[12.5px] text-crm-ink-3">
               Merge fields: <code>{'{{company_name}}'}</code> <code>{'{{contact_name}}'}</code>{' '}
               <code>{'{{website}}'}</code> <code>{'{{rep_note}}'}</code> (what the rep wrote). They’re filled in
-              when you open an email in the inbox, and you can edit the result before sending.
+              when you open an email in the inbox, and you can edit the result before sending. The cold emails also use
+              <code>{'{{sender_name}}'}</code>. <strong>Replace “[Your business postal address]” in both cold emails with your real
+              address</strong> — cold email must carry a postal address and an opt-out line.
             </p>
             {templates.map(t => (
               <TemplateEditor key={t.type + t.updated_at} template={t} onSaved={refresh} />

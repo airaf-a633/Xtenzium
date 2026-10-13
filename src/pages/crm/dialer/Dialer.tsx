@@ -122,11 +122,12 @@ const Dialer = () => {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <Stat label="Total leads" value={totals.all.toLocaleString()} />
         <Stat label="Ready to call" value={totals.ready.toLocaleString()} tone="success" />
-        <Stat label="No phone" value={totals.noPhone.toLocaleString()} sub="outreach only" />
+        <Stat label="No phone" value={totals.noPhone.toLocaleString()} sub="worked by email → Email outreach" />
       </div>
 
       <div className="flex flex-wrap gap-2">
         <ButtonLink to="/crm/dialer/board">Board</ButtonLink>
+        <ButtonLink to="/crm/dialer/outreach">Email outreach</ButtonLink>
         {role === 'admin' && (
           <>
             <ButtonLink to="/crm/inbox">Inbox</ButtonLink>

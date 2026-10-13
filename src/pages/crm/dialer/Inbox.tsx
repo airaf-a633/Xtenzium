@@ -5,6 +5,7 @@ import { useAuth } from '../../../context/AuthContext';
 import type { CallActivity, CallLead, EmailTemplate, FollowupItem, Meeting, TeamMember } from '../../../types/database';
 import { callGoogle } from '../../../lib/google-api';
 import { formatInZone, formatPhone, gmailCompose, outcomeLabel, renderTemplate, voiceLink } from '../../../lib/dialer-calls';
+import { mailtoCompose } from '../../../lib/outreach';
 import {
   Badge, Button, Card, EmptyState, ErrorState, Input, PageHeader, SegmentedControl,
   Select, SkeletonRows, Textarea, useToast,
@@ -93,14 +94,20 @@ const Composer = ({
       <Textarea label="Message" rows={11} value={body} onChange={e => setBody(e.target.value)} />
       <div className="flex flex-wrap gap-2">
         <a
+          href={mailtoCompose(to.trim() || null, subject, body)}
+          className="inline-flex h-9 items-center rounded-crm-md bg-crm-copper px-3 text-[13px] font-medium text-crm-copper-ink no-underline"
+        >
+          Open in mail app
+        </a>
+        <a
           href={gmailCompose(to.trim() || null, subject, body)}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex h-9 items-center rounded-crm-md bg-crm-copper px-3 text-[13px] font-medium text-crm-copper-ink no-underline"
+          className="inline-flex h-9 items-center rounded-crm-md border border-crm-line-hi px-3 text-[13px] text-crm-ink no-underline hover:bg-crm-surface"
         >
-          Open in Gmail
+          Gmail
         </a>
-        <Button onClick={copy}>Copy email</Button>
+        <Button onClick={copy}>Copy for Zoho</Button>
         <span className="flex-1" />
         <Button variant="primary" onClick={() => onDone('sent')}>Mark sent</Button>
         <Button onClick={() => onDone('done')}>Done</Button>

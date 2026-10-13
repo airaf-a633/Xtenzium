@@ -231,8 +231,24 @@ export interface CallLead {
   next_call_at: string | null;
   assigned_to: string | null;
   deal_id: string | null;
+  /* Email outreach (migration 024), independent of the call status. */
+  outreach_touches: number;
+  outreach_due: string | null;
+  outreach_last_at: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface OutreachActivity {
+  id: string;
+  lead_id: string;
+  actor_id: string | null;
+  action:
+    | 'emailed' | 'followed_up' | 'form_sent' | 'email_found'
+    | 'replied' | 'not_interested' | 'bad_contact' | 'opted_out' | 'note';
+  note: string | null;
+  touch: number | null;
+  created_at: string;
 }
 
 export interface CallActivity {
@@ -272,7 +288,7 @@ export interface FollowupItem {
 }
 
 export interface EmailTemplate {
-  type: FollowupItem['type'];
+  type: FollowupItem['type'] | 'outreach_first' | 'outreach_followup';
   subject: string;
   body: string;
   updated_by: string | null;
@@ -633,6 +649,13 @@ export type Database = {
         Update: Partial<Pick<CallActivity, 'flag_resolved_at' | 'flag_resolved_by'>>;
         Relationships: [];
       };
+      outreach_activities: {
+        Row: OutreachActivity & Record<string, unknown>;
+        /* Written only by log_outreach(); there is no client insert. */
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
       email_templates: {
         Row: EmailTemplate & Record<string, unknown>;
         Insert: Pick<EmailTemplate, 'type'> & Partial<Pick<EmailTemplate, 'subject' | 'body'>>;
@@ -948,6 +971,18 @@ export type Database = {
       dialer_assign_followup: {
         Args: { p_id: string; p_member: string | null };
         Returns: undefined;
+      };
+      outreach_list: {
+        Args: { p_tab: string; p_limit?: number; p_offset?: number; p_tiers?: string[] | null; p_search?: string | null };
+        Returns: CallLead[];
+      };
+      outreach_counts: {
+        Args: { p_tiers?: string[] | null };
+        Returns: { to_email: number; find_email: number; due: number; waiting: number; after_call: number; sent_today: number };
+      };
+      log_outreach: {
+        Args: { p_lead_id: string; p_action: string; p_note?: string | null; p_email?: string | null };
+        Returns: { status: string; touches: number; next_touch_at: string | null; sequence_done: boolean };
       };
       dialer_tier_counts: {
         Args: { p_list_id?: string | null };
