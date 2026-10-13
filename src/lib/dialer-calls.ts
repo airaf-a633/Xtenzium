@@ -9,7 +9,7 @@ import type { CallLeadStatus } from '../types/database';
 
 export type OutcomeKey =
   | 'no_answer' | 'voicemail' | 'gatekeeper_name' | 'gatekeeper_blocked'
-  | 'callback' | 'interested_info' | 'interested_proposal' | 'meeting_booked'
+  | 'callback' | 'interested_info' | 'interested_proposal' | 'interested_call' | 'meeting_booked'
   | 'not_interested_inhouse' | 'not_interested_outsources' | 'not_interested_timing'
   | 'not_fit' | 'wrong_number' | 'dnc';
 
@@ -45,8 +45,9 @@ export const OUTCOMES: OutcomeDef[] = [
   { key: 'gatekeeper_name', label: 'Gatekeeper — got a name', shortcut: '3', group: 'no_contact', needs: 'contact', effect: 'Retry tomorrow', chips: ['Receptionist', 'Gave direct extension', 'Said best time to call'] },
   { key: 'gatekeeper_blocked', label: 'Gatekeeper — blocked', shortcut: '4', group: 'no_contact', effect: 'Retry in 3 days', chips: ['Receptionist', 'Told to email', 'No solicitation'] },
   { key: 'callback', label: 'Callback requested', shortcut: '5', group: 'interested', needs: 'callback_time', effect: 'Reminder at the time you set', chips: GENERAL_CHIPS },
-  { key: 'interested_info', label: 'Interested — send info', shortcut: '6', group: 'interested', needs: 'contact', effect: 'Email task for the owner + deal', chips: GENERAL_CHIPS },
-  { key: 'interested_proposal', label: 'Wants proposal / pricing', shortcut: '7', group: 'interested', needs: 'contact', effect: 'Hot — email task + deal', chips: GENERAL_CHIPS },
+  { key: 'interested_info', label: 'Interested — send info', shortcut: '6', group: 'interested', needs: 'contact', effect: 'Email task for the team + deal', chips: ['Company profile', 'Case studies', 'Portfolio', 'Pricing', ...GENERAL_CHIPS] },
+  { key: 'interested_proposal', label: 'Wants proposal / pricing', shortcut: '7', group: 'interested', needs: 'contact', effect: 'Hot — email task for the team + deal', chips: GENERAL_CHIPS },
+  { key: 'interested_call', label: 'Wants a call with us', shortcut: 'c', group: 'interested', needs: 'contact', effect: 'Call task for the team + deal', chips: ['Intro call', 'Technical call', 'Decision maker joining', ...GENERAL_CHIPS] },
   { key: 'meeting_booked', label: 'Meeting agreed', shortcut: '8', group: 'interested', needs: 'meeting_time', effect: 'Owner is told + deal', chips: GENERAL_CHIPS },
   { key: 'not_interested_inhouse', label: 'No — has in-house devs', shortcut: '9', group: 'not_interested', effect: 'Closed as lost', chips: ['Has in-house team', 'Just hired'] },
   { key: 'not_interested_outsources', label: 'No — already outsources', shortcut: '0', group: 'not_interested', effect: 'Call again in 90 days', chips: ['Happy with current vendor', 'Contract running'] },
@@ -182,7 +183,7 @@ export const BOARD_COLUMNS: BoardColumn[] = [
   { key: 'new', title: 'New', statuses: ['new'], outcomes: [] },
   { key: 'retry', title: 'Retry', statuses: ['retry'], outcomes: ['no_answer', 'voicemail', 'gatekeeper_name', 'gatekeeper_blocked'] },
   { key: 'callback', title: 'Callback', statuses: ['callback'], outcomes: ['callback'] },
-  { key: 'followup', title: 'Follow-up', statuses: ['followup'], outcomes: ['interested_info', 'interested_proposal'] },
+  { key: 'followup', title: 'Follow-up', statuses: ['followup'], outcomes: ['interested_info', 'interested_proposal', 'interested_call'] },
   { key: 'meeting', title: 'Meeting', statuses: ['meeting'], outcomes: ['meeting_booked'] },
   { key: 'nurture', title: 'Nurture', statuses: ['nurture'], outcomes: ['not_interested_outsources', 'not_interested_timing'] },
   { key: 'closed', title: 'Closed', statuses: ['lost', 'disqualified', 'bad_data', 'dnc', 'exhausted'], outcomes: ['not_interested_inhouse', 'not_fit', 'wrong_number', 'dnc'] },
@@ -205,3 +206,81 @@ export function renderTemplate(text: string, vars: Record<string, string | null 
 /** Opens Gmail's compose window with everything filled in. */
 export const gmailCompose = (to: string | null, subject: string, body: string) =>
   `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to ?? '')}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
+/* ─── @mentions in notes ───────────────────────────────────
+
+   The rep types "@Ai…" in a note and picks a teammate; on save the
+   database (log_call, migration 021) finds the names, notifies those
+   people and gives the first one the follow-up. This file is the
+   typing half: spotting the "@" being typed, filtering the list, and a
+   mirror of the database's matching rule so the screen can say who
+   will be notified BEFORE the call is saved. */
+
+export interface Person {
+  id: string;
+  name: string;
+}
+
+export interface MentionTrigger {
+  /** Index of the "@". */
+  start: number;
+  /** What has been typed after it so far. */
+  query: string;
+}
+
+const NAME_CHAR = /[A-Za-z0-9._-]/;
+const LETTER = /[A-Za-z]/;
+const WORD_CHAR = /[A-Za-z0-9_]/;
+
+/** Is the caret just after "@abc"? "a@b.com" is an email, not a mention. */
+export function mentionTrigger(text: string, caret: number): MentionTrigger | null {
+  let i = caret;
+  while (i > 0 && LETTER.test(text[i - 1])) i--;
+  if (i === 0 || text[i - 1] !== '@') return null;
+  const before = i >= 2 ? text[i - 2] : '';
+  if (before && NAME_CHAR.test(before)) return null;
+  return { start: i - 1, query: text.slice(i, caret) };
+}
+
+/** People whose first or last name starts with what's been typed. */
+export const filterPeople = (people: Person[], query: string): Person[] => {
+  const q = query.toLowerCase();
+  return people.filter(p => p.name.toLowerCase().split(' ').some(w => w.startsWith(q)));
+};
+
+/** "Airaf" — or the full name when two people share a first name. */
+export function mentionLabel(person: Person, all: Person[]): string {
+  const first = person.name.split(' ')[0];
+  const clash = all.some(p => p.id !== person.id && p.name.split(' ')[0].toLowerCase() === first.toLowerCase());
+  return clash ? person.name : first;
+}
+
+export function insertMention(text: string, trigger: MentionTrigger, caret: number, label: string) {
+  const inserted = `@${label} `;
+  return { text: text.slice(0, trigger.start) + inserted + text.slice(caret), caret: trigger.start + inserted.length };
+}
+
+/** Same rule as the database: "@First" (while unique) or "@Full Name", case-insensitive, not inside an email address. */
+export function mentionsIn(text: string, people: Person[]): Person[] {
+  const lower = text.toLowerCase();
+  const found: Person[] = [];
+  for (const p of people) {
+    const first = p.name.split(' ')[0];
+    /* A first name shared with a teammate can't identify anyone on its own. */
+    const shared = people.some(o => o.id !== p.id && o.name.split(' ')[0].toLowerCase() === first.toLowerCase());
+    const candidates = (shared ? [p.name] : [p.name, first]).map(c => `@${c.toLowerCase()}`);
+    const hit = candidates.some(c => {
+      let from = 0;
+      for (;;) {
+        const at = lower.indexOf(c, from);
+        if (at === -1) return false;
+        const before = at > 0 ? text[at - 1] : '';
+        const after = text[at + c.length] ?? '';
+        if ((!before || !NAME_CHAR.test(before)) && !WORD_CHAR.test(after)) return true;
+        from = at + 1;
+      }
+    });
+    if (hit) found.push(p);
+  }
+  return found;
+}

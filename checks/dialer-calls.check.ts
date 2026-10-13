@@ -4,7 +4,8 @@
 import {
   OUTCOMES, clockFor, dayStartInZone, dayStats, formatInZone, formatPhone,
   isConversation, outcomeByShortcut, voiceLink, zonedToUtc,
-  BOARD_COLUMNS, columnForStatus, gmailCompose, outcomeLabel, renderTemplate,
+  BOARD_COLUMNS, columnForStatus, filterPeople, gmailCompose, insertMention, mentionLabel,
+  mentionsIn, mentionTrigger, outcomeLabel, renderTemplate,
 } from '../src/lib/dialer-calls';
 
 let failures = 0;
@@ -18,7 +19,7 @@ const eq = (name: string, got: unknown, want: unknown) => {
 /* The outcome keys must match the database's CASE list (018_dialer_calls.sql). */
 const DB_OUTCOMES = [
   'no_answer', 'voicemail', 'gatekeeper_name', 'gatekeeper_blocked', 'callback',
-  'interested_info', 'interested_proposal', 'meeting_booked', 'not_interested_inhouse',
+  'interested_info', 'interested_proposal', 'interested_call', 'meeting_booked', 'not_interested_inhouse',
   'not_interested_outsources', 'not_interested_timing', 'not_fit', 'wrong_number', 'dnc',
 ];
 eq('outcome keys match the database', OUTCOMES.map(o => o.key), DB_OUTCOMES);
@@ -82,6 +83,32 @@ eq('empty note closes the gap', renderTemplate('Line\n\n{{rep_note}}\n\nNext', {
 eq('script placeholders with spaces are untouched', renderTemplate('{{contact or the owner}}', {}), '{{contact or the owner}}');
 eq('gmail link', gmailCompose('a@b.co', 'Hi & bye', 'x\ny'), 'https://mail.google.com/mail/?view=cm&fs=1&to=a%40b.co&su=Hi%20%26%20bye&body=x%0Ay');
 eq('gmail link with no address', gmailCompose(null, 's', 'b').includes('&to=&'), true);
+
+/* @mentions */
+const team = [{ id: '1', name: 'Airaf Adil' }, { id: '2', name: 'Sharab Khan' }, { id: '3', name: 'Umar Siddiqui' }, { id: '4', name: 'Umar Farooq' }];
+eq('typing @ai', mentionTrigger('call @ai', 8), { start: 5, query: 'ai' });
+eq('bare @', mentionTrigger('hi @', 4), { start: 3, query: '' });
+eq('start of note', mentionTrigger('@sh', 3), { start: 0, query: 'sh' });
+eq('email address is not a mention', mentionTrigger('mail x@ai', 9), null);
+eq('no @ nearby', mentionTrigger('hello', 5), null);
+eq('a finished word after a space is not a trigger', mentionTrigger('@airaf hello', 12), null);
+eq('filter by first name', filterPeople(team, 'sh').map(p => p.name), ['Sharab Khan']);
+eq('filter by last name', filterPeople(team, 'kh').map(p => p.name), ['Sharab Khan']);
+eq('empty query lists everyone', filterPeople(team, '').length, 4);
+eq('label is the first name', mentionLabel(team[0], team), 'Airaf');
+eq('shared first name uses the full name', mentionLabel(team[2], team), 'Umar Siddiqui');
+const ins = insertMention('call @ai now', { start: 5, query: 'ai' }, 8, 'Airaf');
+eq('insert replaces the typed fragment', ins.text, 'call @Airaf  now');
+eq('caret lands after the inserted name', ins.caret, 12);
+eq('first name', mentionsIn('@Airaf please call', team).map(p => p.id), ['1']);
+eq('case-insensitive', mentionsIn('cc @SHARAB', team).map(p => p.id), ['2']);
+eq('full name picks one of two Umars', mentionsIn('@Umar Siddiqui to call', team).map(p => p.id), ['3']);
+eq('a bare shared first name tags nobody', mentionsIn('@Umar to call', team), []);
+eq('the other Umar by full name', mentionsIn('@Umar Farooq', team).map(p => p.id), ['4']);
+eq('boundary: @Airafx is nobody', mentionsIn('@Airafx', team), []);
+eq('punctuation ends a mention', mentionsIn('thanks @Airaf, @Sharab.', team).map(p => p.id), ['1', '2']);
+eq('email address is not a mention', mentionsIn('reach me at ai@airaf.com', team), []);
+eq('mentioned once even if named twice', mentionsIn('@Airaf and @Airaf Adil', team).length, 1);
 
 if (failures) {
   console.error(`${failures} dialer-calls check(s) failed`);

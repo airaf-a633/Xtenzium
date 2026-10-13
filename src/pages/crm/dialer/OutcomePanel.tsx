@@ -1,5 +1,9 @@
-import { useState } from 'react';
-import { GENERAL_CHIPS, formatInZone, zonedToUtc, type OutcomeDef } from '../../../lib/dialer-calls';
+import { useRef, useState } from 'react';
+import {
+  GENERAL_CHIPS, filterPeople, formatInZone, insertMention, mentionLabel, mentionTrigger, mentionsIn,
+  zonedToUtc, type MentionTrigger, type OutcomeDef,
+} from '../../../lib/dialer-calls';
+import { useMentionables } from './useMentionables';
 import { Button, Input, Textarea } from '../../../components/crm/ui';
 import { cn } from '../../../lib/utils';
 
@@ -38,6 +42,52 @@ const OutcomePanel = ({
   const [note, setNote] = useState('');
   const [flagged, setFlagged] = useState(false);
   const [atLocal, setAtLocal] = useState('');
+
+  /* @mentions: suggestions appear while an "@name" is being typed. */
+  const people = useMentionables();
+  const noteBox = useRef<HTMLDivElement>(null);
+  const [trigger, setTrigger] = useState<MentionTrigger | null>(null);
+  const [pick, setPick] = useState(0);
+  const suggestions = trigger ? filterPeople(people, trigger.query).slice(0, 5) : [];
+  const tagged = mentionsIn(note, people);
+
+  const watchCaret = (el: HTMLTextAreaElement) => {
+    setTrigger(mentionTrigger(el.value, el.selectionStart));
+    setPick(0);
+  };
+
+  const choose = (index: number) => {
+    const person = suggestions[index];
+    const el = noteBox.current?.querySelector('textarea');
+    if (!person || !trigger || !el) return;
+    const next = insertMention(note, trigger, el.selectionStart, mentionLabel(person, people));
+    setNote(next.text);
+    setTrigger(null);
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(next.caret, next.caret);
+    });
+  };
+
+  /* Runs before the panel's own Enter/Escape handling, and stops it
+     while the suggestion list is open — otherwise picking a name with
+     Enter would also save the call. */
+  const onNoteKeyDown = (e: React.KeyboardEvent) => {
+    if (suggestions.length === 0) return;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      e.stopPropagation();
+      setPick(i => (i + (e.key === 'ArrowDown' ? 1 : suggestions.length - 1)) % suggestions.length);
+    } else if (e.key === 'Enter' || e.key === 'Tab') {
+      e.preventDefault();
+      e.stopPropagation();
+      choose(pick);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation();
+      setTrigger(null);
+    }
+  };
 
   const wantsTime = outcome.needs === 'callback_time' || outcome.needs === 'meeting_time';
   const preview = wantsTime && atLocal ? zonedToUtc(atLocal, leadTz) : null;
@@ -113,14 +163,57 @@ const OutcomePanel = ({
         })}
       </div>
 
-      <Textarea
-        label="Note (optional)"
-        rows={3}
-        value={note}
-        onChange={e => setNote(e.target.value)}
-        autoFocus={!wantsTime}
-        hint="Enter saves · Shift+Enter for a new line"
-      />
+      <div ref={noteBox} className="relative" onKeyDown={onNoteKeyDown}>
+        <Textarea
+          label="Note (optional)"
+          rows={3}
+          value={note}
+          onChange={e => {
+            setNote(e.target.value);
+            watchCaret(e.target);
+          }}
+          onKeyUp={e => {
+            if (e.key.startsWith('Arrow') && suggestions.length > 0) return;
+            watchCaret(e.currentTarget);
+          }}
+          onClick={e => watchCaret(e.currentTarget)}
+          autoFocus={!wantsTime}
+          hint={
+            people.length > 0
+              ? 'Enter saves · Shift+Enter for a new line · type @ to tag a teammate'
+              : 'Enter saves · Shift+Enter for a new line'
+          }
+        />
+        {suggestions.length > 0 && (
+          <ul
+            role="listbox"
+            aria-label="Teammates"
+            className="absolute left-0 z-20 m-0 mt-1 w-[260px] list-none overflow-hidden rounded-crm-md border border-crm-line-hi bg-crm-surface p-0 shadow-lg"
+          >
+            {suggestions.map((p, i) => (
+              <li key={p.id} role="option" aria-selected={i === pick}>
+                <button
+                  type="button"
+                  onMouseDown={e => e.preventDefault()}
+                  onClick={() => choose(i)}
+                  className={cn(
+                    'flex w-full cursor-pointer items-center gap-2 border-0 px-3 py-2 text-left text-[13px] text-crm-ink',
+                    i === pick ? 'bg-crm-raised' : 'bg-transparent hover:bg-crm-raised',
+                  )}
+                >
+                  @{mentionLabel(p, people)}
+                  <span className="text-crm-ink-3">{p.name}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+      {tagged.length > 0 && (
+        <p className="m-0 -mt-1 text-[12.5px] text-crm-copper">
+          Will notify {tagged.map(p => p.name.split(' ')[0]).join(', ')} — {tagged[0].name.split(' ')[0]} takes the follow-up.
+        </p>
+      )}
 
       <label className="flex cursor-pointer items-center gap-2 text-[13px] text-crm-ink-2">
         <input type="checkbox" checked={flagged} onChange={e => setFlagged(e.target.checked)} />

@@ -264,6 +264,8 @@ export interface FollowupItem {
   note: string | null;
   status: 'queued' | 'sent' | 'done' | 'cancelled';
   requested_by: string | null;
+  /* The team member who has taken this on (a @mention or an admin sets it). */
+  assignee_id: string | null;
   handled_by: string | null;
   handled_at: string | null;
   created_at: string;
@@ -360,7 +362,7 @@ export interface UserPreference {
   updated_at: string;
 }
 
-export type NotificationType = 'mention' | 'assignment' | 'deal_stage' | 'deal_owner' | 'comment';
+export type NotificationType = 'mention' | 'assignment' | 'deal_stage' | 'deal_owner' | 'comment' | 'followup';
 
 export interface Notification {
   id: string;
@@ -369,7 +371,7 @@ export interface Notification {
   type: NotificationType;
   /* No foreign key on purpose — a notification about a deleted task is
      still a true record of what happened. */
-  entity_type: 'task' | 'deal' | 'project';
+  entity_type: 'task' | 'deal' | 'project' | 'lead';
   entity_id: string;
   title: string;
   body: string | null;
@@ -626,7 +628,7 @@ export type Database = {
       followup_queue: {
         Row: FollowupItem & Record<string, unknown>;
         Insert: Pick<FollowupItem, 'lead_id' | 'type'> & Partial<Omit<FollowupItem, 'id' | 'created_at'>>;
-        Update: Partial<Pick<FollowupItem, 'status' | 'handled_by' | 'handled_at' | 'note'>>;
+        Update: Partial<Pick<FollowupItem, 'status' | 'handled_by' | 'handled_at' | 'note' | 'assignee_id'>>;
         Relationships: [];
       };
       profiles: {
@@ -888,6 +890,14 @@ export type Database = {
         Args: Record<string, never>;
         Returns: { phones: string[]; domains: string[]; dnc_phones: string[]; dnc_domains: string[] };
       };
+      dialer_mentionables: {
+        Args: Record<string, never>;
+        Returns: { id: string; name: string }[];
+      };
+      dialer_assign_followup: {
+        Args: { p_id: string; p_member: string | null };
+        Returns: undefined;
+      };
       dialer_list_summary: {
         Args: Record<string, never>;
         Returns: DialerListSummary[];
@@ -914,6 +924,7 @@ export type Database = {
           followup: string | null;
           deal_id: string | null;
           attempts: number;
+          mentioned: number;
         };
       };
       dialer_report: {

@@ -2,11 +2,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../context/AuthContext';
-import type { CallActivity, CallLead, EmailTemplate, FollowupItem } from '../../../types/database';
-import { formatInZone, formatPhone, gmailCompose, outcomeLabel, renderTemplate } from '../../../lib/dialer-calls';
+import type { CallActivity, CallLead, EmailTemplate, FollowupItem, TeamMember } from '../../../types/database';
+import { formatInZone, formatPhone, gmailCompose, outcomeLabel, renderTemplate, voiceLink } from '../../../lib/dialer-calls';
 import {
   Badge, Button, Card, EmptyState, ErrorState, Input, PageHeader, SegmentedControl,
-  SkeletonRows, Textarea, useToast,
+  Select, SkeletonRows, Textarea, useToast,
 } from '../../../components/crm/ui';
 
 type Tab = 'email' | 'interested' | 'meetings' | 'flags';
@@ -15,7 +15,7 @@ const FOLLOWUP_LABEL: Record<FollowupItem['type'], string> = {
   email_info: 'Send info',
   email_proposal: 'Send proposal',
   linkedin: 'LinkedIn',
-  admin_call: 'Owner call',
+  admin_call: 'Call them',
 };
 
 interface Data {
@@ -27,9 +27,10 @@ interface Data {
   reps: Record<string, string>;
   templates: Record<string, EmailTemplate>;
   notes: Record<string, string>;
+  members: TeamMember[];
 }
 
-const EMPTY: Data = { queue: [], interested: [], meetings: [], flags: [], leads: {}, reps: {}, templates: {}, notes: {} };
+const EMPTY: Data = { queue: [], interested: [], meetings: [], flags: [], leads: {}, reps: {}, templates: {}, notes: {}, members: [] };
 
 const ago = (iso: string) => {
   const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
@@ -106,6 +107,62 @@ const Composer = ({
   );
 };
 
+/* A request for a call isn't an email to write — it's a person to ring.
+   Everything needed to do it is on one card. */
+const CallPlan = ({ item, lead, onDone }: { item: FollowupItem; lead: CallLead; onDone: (s: 'done' | 'cancelled') => void }) => {
+  const { toast } = useToast();
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(lead.phone_e164 ?? lead.phone_raw ?? '');
+      toast('Number copied', 'success');
+    } catch {
+      toast('Couldn’t copy.', 'danger');
+    }
+  };
+  const zone = lead.timezone ? `their zone: ${(lead.timezone.split('/')[1] ?? lead.timezone).replace('_', ' ')}` : null;
+  return (
+    <div className="flex flex-col gap-3 border-t border-crm-line bg-crm-ground p-4">
+      <p className="m-0 font-crm-mono text-[26px] font-semibold tracking-tight text-crm-ink">
+        {formatPhone(lead.phone_e164, lead.phone_raw) || 'No phone on file'}
+      </p>
+      <p className="m-0 text-[13px] text-crm-ink-2">
+        {[lead.contact_name, lead.contact_title, lead.email, zone].filter(Boolean).join(' · ') || 'No contact details yet'}
+      </p>
+      {item.note && (
+        <p className="m-0 whitespace-pre-line rounded-crm-md border border-crm-line bg-crm-surface px-3 py-2 text-[13px] text-crm-ink-2">
+          {item.note}
+        </p>
+      )}
+      <div className="flex flex-wrap gap-2">
+        <Button variant="primary" onClick={copy}>Copy number</Button>
+        {lead.phone_e164 && (
+          <a
+            href={voiceLink(lead.phone_e164)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex h-9 items-center rounded-crm-md border border-crm-line-hi px-3 text-[13px] text-crm-ink no-underline hover:bg-crm-surface"
+          >
+            Open in Google Voice
+          </a>
+        )}
+        {lead.website && (
+          <a
+            href={lead.website}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex h-9 items-center rounded-crm-md border border-crm-line-hi px-3 text-[13px] text-crm-ink no-underline hover:bg-crm-surface"
+          >
+            Website
+          </a>
+        )}
+        <span className="flex-1" />
+        <Button variant="primary" onClick={() => onDone('done')}>Called — done</Button>
+        <Button variant="ghost" onClick={() => onDone('cancelled')}>Cancel</Button>
+      </div>
+    </div>
+  );
+};
+
 const Inbox = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -114,19 +171,21 @@ const Inbox = () => {
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState<string | null>(null);
   const [open, setOpen] = useState<string | null>(null);
+  const [mineOnly, setMineOnly] = useState(false);
   const [nowMs] = useState(() => Date.now());
 
   const fetchAll = useCallback(async (): Promise<Data> => {
     const weekAhead = new Date(Date.now() + 7 * 86400000).toISOString();
-    const [q, i, m, f, t, p] = await Promise.all([
+    const [q, i, m, f, t, p, tm] = await Promise.all([
       supabase.from('followup_queue').select('*').eq('status', 'queued').order('created_at'),
       supabase.from('call_leads').select('*').eq('status', 'followup').order('updated_at', { ascending: false }).limit(100),
       supabase.from('call_leads').select('*').eq('status', 'meeting').lte('next_call_at', weekAhead).order('next_call_at'),
       supabase.from('call_activities').select('*').eq('flagged', true).is('flag_resolved_at', null).order('created_at', { ascending: false }).limit(100),
       supabase.from('email_templates').select('*'),
       supabase.from('profiles').select('id, full_name'),
+      supabase.from('team_members').select('*').order('name'),
     ]);
-    const err = [q, i, m, f, t, p].find(r => r.error)?.error;
+    const err = [q, i, m, f, t, p, tm].find(r => r.error)?.error;
     if (err) throw new Error(err.message);
 
     const queue = (q.data ?? []) as FollowupItem[];
@@ -157,6 +216,7 @@ const Inbox = () => {
 
     return {
       queue, interested, meetings, flags, leads, notes,
+      members: (tm.data ?? []) as TeamMember[],
       templates: Object.fromEntries(((t.data ?? []) as EmailTemplate[]).map(x => [x.type, x])),
       reps: Object.fromEntries(((p.data ?? []) as { id: string; full_name: string | null }[]).map(x => [x.id, x.full_name ?? 'Rep'])),
     };
@@ -228,6 +288,19 @@ const Inbox = () => {
     }
   };
 
+  const me = useMemo(() => data.members.find(m => m.user_id === user?.id) ?? null, [data.members, user]);
+  const memberName = (id: string | null) => data.members.find(m => m.id === id)?.name.split(' ')[0] ?? null;
+
+  const assign = async (item: FollowupItem, memberId: string | null) => {
+    const { error } = await supabase.rpc('dialer_assign_followup', { p_id: item.id, p_member: memberId });
+    if (error) return toast('Couldn’t assign that.', 'danger');
+    setData(d => ({ ...d, queue: d.queue.map(x => (x.id === item.id ? { ...x, assignee_id: memberId } : x)) }));
+    toast(memberId ? `Assigned to ${memberName(memberId)}` : 'Unassigned', 'success');
+  };
+
+  const queue = mineOnly && me ? data.queue.filter(x => x.assignee_id === me.id) : data.queue;
+  const mineCount = me ? data.queue.filter(x => x.assignee_id === me.id).length : 0;
+
   const counts = useMemo(
     () => ({ email: data.queue.length, interested: data.interested.length, meetings: data.meetings.length, flags: data.flags.length }),
     [data],
@@ -242,22 +315,42 @@ const Inbox = () => {
         value={tab}
         onChange={setTab}
         options={[
-          { value: 'email', label: `Emails (${counts.email})` },
+          { value: 'email', label: `Follow-ups (${counts.email})` },
           { value: 'interested', label: `Interested (${counts.interested})` },
           { value: 'meetings', label: `Meetings (${counts.meetings})` },
           { value: 'flags', label: `Flagged (${counts.flags})` },
         ]}
       />
 
+      {tab === 'email' && me && (
+        <SegmentedControl
+          label="Whose follow-ups"
+          value={mineOnly ? 'mine' : 'all'}
+          onChange={v => setMineOnly(v === 'mine')}
+          options={[
+            { value: 'all', label: `Everyone (${data.queue.length})` },
+            { value: 'mine', label: `Mine (${mineCount})` },
+          ]}
+        />
+      )}
+      {tab === 'email' && !me && !loading && data.members.length > 0 && (
+        <p className="m-0 text-[12.5px] text-crm-ink-3">
+          Link your account on the Team page to see tasks assigned to you and get notified when the rep tags you.
+        </p>
+      )}
+
       {failed && <ErrorState title="The inbox couldn’t load" body={failed} />}
       {loading && <SkeletonRows rows={4} />}
 
       {!loading && !failed && tab === 'email' && (
-        data.queue.length === 0 ? (
-          <EmptyState title="No emails waiting" body="When the rep logs “send info” or “wants proposal”, the email lands here." />
+        queue.length === 0 ? (
+          <EmptyState
+            title={mineOnly ? 'Nothing assigned to you' : 'Nothing waiting'}
+            body={mineOnly ? 'Tasks the rep tags you on, or that someone assigns to you, show up here.' : 'When the rep logs “send info”, “wants proposal” or “wants a call”, the task lands here.'}
+          />
         ) : (
           <Card>
-            {data.queue.map(item => {
+            {queue.map(item => {
               const lead = data.leads[item.lead_id];
               if (!lead) return null;
               const isOpen = open === item.id;
@@ -275,17 +368,38 @@ const Inbox = () => {
                       </span>
                     </span>
                     <Badge tone={item.type === 'email_proposal' ? 'copper' : 'neutral'}>{FOLLOWUP_LABEL[item.type]}</Badge>
-                    {!lead.email && <Badge tone="warning">No email</Badge>}
+                    {item.type !== 'admin_call' && !lead.email && <Badge tone="warning">No email</Badge>}
+                    {item.assignee_id ? (
+                      <Badge tone="info" dot>{memberName(item.assignee_id) ?? 'Assigned'}</Badge>
+                    ) : (
+                      <Badge tone="neutral">Unassigned</Badge>
+                    )}
                     <span className="shrink-0 text-[12px] text-crm-ink-3">{ago(item.created_at)}</span>
                   </button>
                   {isOpen && (
-                    <Composer
-                      key={item.id}
-                      item={item}
-                      lead={lead}
-                      template={data.templates[item.type]}
-                      onDone={s => finish(item, s)}
-                    />
+                    <>
+                      <div className="flex items-end gap-2 border-t border-crm-line bg-crm-ground px-4 pt-3">
+                        <Select
+                          className="w-[220px]"
+                          label="Handled by"
+                          value={item.assignee_id ?? ''}
+                          placeholder="Unassigned"
+                          options={data.members.map(m => ({ value: m.id, label: m.name }))}
+                          onChange={e => assign(item, e.target.value || null)}
+                        />
+                      </div>
+                      {item.type === 'admin_call' ? (
+                        <CallPlan key={item.id} item={item} lead={lead} onDone={s => finish(item, s)} />
+                      ) : (
+                        <Composer
+                          key={item.id}
+                          item={item}
+                          lead={lead}
+                          template={data.templates[item.type]}
+                          onDone={s => finish(item, s)}
+                        />
+                      )}
+                    </>
                   )}
                 </div>
               );
