@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import { CrmThemeProvider } from '../../../components/crm/CrmThemeProvider';
+import ClockWarning from '../../../components/crm/ClockWarning';
 import { ToastProvider, Avatar, Button, Mark } from '../../../components/crm/ui';
 
 /* The caller's whole world: a header and a workspace. No sidebar, no
@@ -44,6 +45,7 @@ const Shell = () => {
           </Button>
         </span>
       </header>
+      <ClockWarning />
       <main className="mx-auto max-w-[960px] px-4 py-6">
         <Outlet />
       </main>

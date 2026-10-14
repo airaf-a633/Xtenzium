@@ -6,6 +6,7 @@ import { CrmThemeProvider, useCrmTheme } from '../../components/crm/CrmThemeProv
 import { ToastProvider, Avatar, IconButton, Mark, Menu } from '../../components/crm/ui';
 import { CommandProvider, useCommands } from '../../components/crm/CommandProvider';
 import NotificationBell from '../../components/crm/NotificationBell';
+import ClockWarning from '../../components/crm/ClockWarning';
 import { usePresence } from '../../components/crm/useRealtimeRows';
 import { supabase } from '../../lib/supabase';
 import type { TeamMember } from '../../types/database';
@@ -347,6 +348,9 @@ const Shell = () => {
         <span className="font-crm-display text-[14px] font-bold tracking-[-0.01em] text-crm-ink">Xtenzium CRM</span>
       </div>
 
+      <div className="lg:ml-[212px]">
+        <ClockWarning />
+      </div>
       <main className="min-h-screen p-4 sm:p-6 lg:ml-[212px] lg:p-8">
         <div className="mx-auto max-w-[1440px]">
           <Outlet />
