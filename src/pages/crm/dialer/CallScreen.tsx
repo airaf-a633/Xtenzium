@@ -8,6 +8,7 @@ import {
   type DayStats, type OutcomeDef, type OutcomeGroup, type TierChoice,
 } from '../../../lib/dialer-calls';
 import { SCRIPT, type ScriptBlock } from '../../../lib/dialer-script';
+import { normalizePhone } from '../../../lib/dialer-import';
 import {
   Badge, Button, ButtonLink, Card, CardHeader, EmptyState, ErrorState, Input, PageHeader,
   Select, Skeleton, useToast,
@@ -15,6 +16,8 @@ import {
 import { cn } from '../../../lib/utils';
 import OutcomePanel, { type OutcomeSubmit } from './OutcomePanel';
 import TouchTimeline from './TouchTimeline';
+import CallHistory from './CallHistory';
+import LeadFinder from './LeadFinder';
 import { logOutcome } from './logOutcome';
 
 const ET = 'America/New_York';
@@ -121,8 +124,14 @@ const CallScreen = () => {
   const [lastCall, setLastCall] = useState<LastCall | null>(null);
   const [script, setScript] = useState<ScriptBlock[]>(SCRIPT);
   const skipped = useRef<string[]>([]);
+  /* True from the moment a log starts until it finishes: React state is a render
+     behind, and a held-down key fires faster than that. */
+  const busy = useRef(false);
+  const [statsFailed, setStatsFailed] = useState(false);
+  const [snoozedCount, setSnoozedCount] = useState(0);
+  const [editingPhone, setEditingPhone] = useState<string | null>(null);
   /* The next lead, fetched while the rep is still on this one. */
-  const preloaded = useRef<{ key: string; result: Awaited<ReturnType<typeof supabase.rpc<'dialer_next_lead'>>> | null } | null>(null);
+  const preloaded = useRef<{ key: string; at: number; result: Awaited<ReturnType<typeof supabase.rpc<'dialer_next_lead'>>> | null } | null>(null);
   const tiersKey = tiers.join(',');
 
   // Contact details live on the card, because the rep learns them mid-call.
@@ -153,6 +162,7 @@ const CallScreen = () => {
   const applyLead = useCallback(({ data, error }: Awaited<ReturnType<typeof fetchNext>>) => {
     if (error) {
       setFailed(error.message);
+      setLead(null);
       setLoading(false);
       return;
     }
@@ -177,13 +187,20 @@ const CallScreen = () => {
       .select('id', { count: 'exact', head: true })
       .eq('status', 'callback')
       .lte('next_call_at', new Date().toISOString());
-    const [acts, due, summary, tierSummary] = await Promise.all([
+    const snoozeQuery = supabase
+      .from('call_leads')
+      .select('id', { count: 'exact', head: true })
+      .gt('snoozed_until', new Date().toISOString());
+    const [acts, due, summary, tierSummary, snoozed] = await Promise.all([
       supabase.from('call_activities').select('outcome').eq('caller_id', userId).gte('created_at', since),
       listId ? dueQuery.eq('list_id', listId) : dueQuery,
       supabase.rpc('dialer_list_summary'),
       supabase.rpc('dialer_tier_counts', { p_list_id: listId }),
+      listId ? snoozeQuery.eq('list_id', listId) : snoozeQuery,
     ]);
     return {
+      failed: !!(acts.error || summary.error),
+      snoozed: snoozed.count ?? 0,
       day: dayStats(((acts.data ?? []) as { outcome: string }[]).map(a => a.outcome)),
       due: due.count ?? 0,
       lists: (summary.data ?? []) as DialerListSummary[],
@@ -193,6 +210,10 @@ const CallScreen = () => {
 
   const applyStats = useCallback((s: Awaited<ReturnType<typeof fetchStats>>) => {
     if (!s) return;
+    setSnoozedCount(s.snoozed);
+    /* A failed read must not look like "0 dials today" or "nothing queued". */
+    setStatsFailed(s.failed);
+    if (s.failed) return;
     setDay(s.day);
     setCallbacksDue(s.due);
     setLists(s.lists);
@@ -232,10 +253,10 @@ const CallScreen = () => {
       return undefined;
     }
     const key = `${leadIdNow}|${ignoreHours}|${listId}|${tiersKey}`;
-    preloaded.current = { key, result: null };
+    preloaded.current = { key, at: Date.now(), result: null };
     let cancelled = false;
     fetchNext(ignoreHours, listId, tiers, 1, [...skipped.current, leadIdNow]).then(result => {
-      if (!cancelled && preloaded.current?.key === key) preloaded.current = { key, result };
+      if (!cancelled && preloaded.current?.key === key) preloaded.current = { key, at: Date.now(), result };
     });
     return () => {
       cancelled = true;
@@ -300,7 +321,7 @@ const CallScreen = () => {
   const advance = (afterLoggedCall = false) => {
     const pre = preloaded.current;
     const key = `${lead?.id}|${ignoreHours}|${listId}|${tiersKey}`;
-    if (afterLoggedCall && pre && pre.key === key && pre.result) {
+    if (afterLoggedCall && pre && pre.key === key && pre.result && Date.now() - pre.at < 10 * 60_000) {
       applyLead(pre.result);
     } else {
       setLoading(true);
@@ -311,18 +332,29 @@ const CallScreen = () => {
 
   const skip = () => {
     if (!lead) return;
-    skipped.current = [...skipped.current, lead.id];
+    const typed = (contactName.trim() && contactName !== (lead.contact_name ?? '')) ||
+      (contactTitle.trim() && contactTitle !== (lead.contact_title ?? '')) ||
+      (contactEmail.trim() && contactEmail !== (lead.email ?? ''));
+    if (typed && !window.confirm('You typed contact details for this lead. Skip anyway and lose them?')) return;
+    const skippedId = lead.id;
+    skipped.current = [...skipped.current, skippedId];
     advance(false);
+    /* Remembered on the server, so a reload or a new filter doesn't serve it again today. */
+    supabase.rpc('dialer_skip_lead', { p_lead_id: skippedId }).then(({ error }) => {
+      if (error) toast(`Skipped here, but it may come back after a reload: ${error.message}`, 'danger');
+    });
   };
 
   const remember = (company: string, label: string, activityId: string | null) =>
     setLastCall(activityId ? { activityId, company, label, at: Date.now() } : null);
 
   const save = async (v: OutcomeSubmit) => {
-    if (!lead || !outcome || saving) return;
+    if (!lead || !outcome || saving || busy.current) return;
+    busy.current = true;
     setSaving(true);
     const result = await logOutcome(lead, outcome, v, { name: contactName, title: contactTitle, email: contactEmail });
     setSaving(false);
+    busy.current = false;
 
     if (!result.ok) {
       toast(result.error, 'danger');
@@ -336,10 +368,12 @@ const CallScreen = () => {
 
   /* One keystroke for the two commonest outcomes — no note step. */
   const quickLog = async (def: OutcomeDef) => {
-    if (!lead || saving) return;
+    if (!lead || saving || busy.current) return;
+    busy.current = true;
     setSaving(true);
     const result = await logOutcome(lead, def, { tags: [], note: '', flagged: false, at: null }, { name: contactName, title: contactTitle, email: contactEmail });
     setSaving(false);
+    busy.current = false;
     if (!result.ok) {
       toast(result.error, 'danger');
       return;
@@ -351,17 +385,20 @@ const CallScreen = () => {
 
   /* Put the last call back as it was, and bring that lead back up. */
   const undo = async () => {
-    if (!lastCall || saving) return;
+    if (!lastCall || saving || busy.current) return;
+    busy.current = true;
     setSaving(true);
     const { data, error } = await supabase.rpc('undo_last_call', { p_activity_id: lastCall.activityId });
     if (error || !data) {
       setSaving(false);
+      busy.current = false;
       toast(error?.message ?? 'Couldn’t undo that.', 'danger');
       if (error && /already undone|Too late|called again/.test(error.message)) setLastCall(null);
       return;
     }
     const { data: row } = await supabase.from('call_leads').select('*').eq('id', data.lead_id).maybeSingle();
     setSaving(false);
+    busy.current = false;
     toast(`Undid ${lastCall.company}: ${lastCall.label}`, 'info');
     setLastCall(null);
     skipped.current = skipped.current.filter(id => id !== data.lead_id);
@@ -386,9 +423,9 @@ const CallScreen = () => {
   const keyHandler = useRef<(e: KeyboardEvent) => void>(() => {});
   useEffect(() => {
     keyHandler.current = (e: KeyboardEvent) => {
-      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
       if (outcome) {
-        if (e.key === 'Escape') closePanel();
+        if (e.key === 'Escape' && !['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement).tagName)) closePanel();
         return;
       }
       const el = e.target as HTMLElement;
@@ -421,6 +458,45 @@ const CallScreen = () => {
     window.addEventListener('keydown', h);
     return () => window.removeEventListener('keydown', h);
   }, []);
+
+  const pickLead = (picked: CallLead) => {
+    skipped.current = skipped.current.filter(id => id !== picked.id);
+    setOutcome(null);
+    applyLead({ data: [picked], error: null } as Awaited<ReturnType<typeof fetchNext>>);
+  };
+
+  const savePhone = async () => {
+    if (!lead || editingPhone === null) return;
+    const parsed = normalizePhone(editingPhone, true);
+    if (!parsed.e164) {
+      toast('That doesn’t look like a phone number.', 'danger');
+      return;
+    }
+    const { data, error } = await supabase.rpc('dialer_fix_phone', {
+      p_lead_id: lead.id,
+      p_raw: editingPhone.trim(),
+      p_e164: parsed.e164,
+      p_is_us: parsed.isUs,
+    });
+    if (error) {
+      toast(error.message, 'danger');
+      return;
+    }
+    setLead({ ...lead, phone_raw: editingPhone.trim(), phone_e164: parsed.e164, phone_is_us: parsed.isUs, status: (data as unknown as CallLead['status']) ?? lead.status });
+    setEditingPhone(null);
+    toast(parsed.isUs ? 'Number updated' : 'Number updated — it isn’t a US number, so this lead will leave the queue', 'success');
+  };
+
+  const retryLoad = () => {
+    setFailed(null);
+    setLoading(true);
+    fetchNext(ignoreHours, listId, tiers).then(applyLead);
+    fetchStats().then(applyStats);
+  };
+
+  const blurOnEnter = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === 'Escape') (e.target as HTMLElement).blur();
+  };
 
   const copyPhone = async () => {
     if (!lead?.phone_e164) return;
@@ -546,7 +622,7 @@ const CallScreen = () => {
         </div>
       </Card>
 
-      {failed && <ErrorState title="Couldn’t load the next lead" body={failed} />}
+      {failed && <ErrorState title="Couldn’t load the next lead" body={failed} action={<Button variant="primary" onClick={retryLoad}>Try again</Button>} />}
 
       {loading && !lead && <Skeleton className="h-[320px] w-full" />}
 
@@ -554,11 +630,20 @@ const CallScreen = () => {
         <EmptyState
           title="Nothing to call right now"
           body={
-            waiting > 0
-              ? `${waiting.toLocaleString()} lead${waiting === 1 ? ' is' : 's are'} ${listId ? 'in this list' : 'queued'}, but ${tiers.length ? 'none matching the ticked tiers is ready — they may be outside their business hours, not due for a retry, or in another tier. ' : 'outside their business hours or not due for a retry yet. '}Check back later${listId ? ', or switch to another list' : ''}${tiers.length ? ', or tick more tiers' : ''}.`
+            statsFailed
+              ? 'The queue couldn’t be checked just now (a connection problem, not an empty list). Try again.'
+              : waiting > 0
+              ? `${waiting.toLocaleString()} lead${waiting === 1 ? ' is' : 's are'} ${listId ? 'in this list' : 'queued'}, but ${tiers.length ? 'none matching the ticked tiers is ready — they may be outside their business hours, not due for a retry, or in another tier. ' : 'outside their business hours or not due for a retry yet. '}Check back later${listId ? ', or switch to another list' : ''}${tiers.length ? ', or tick more tiers' : ''}.${snoozedCount ? ` ${snoozedCount} you skipped will return tomorrow.` : ''}`
+              : snoozedCount
+              ? `Everything left is a lead you skipped (${snoozedCount}). They return tomorrow.`
               : 'Import a CSV to load leads.'
           }
-          action={<ButtonLink to="/crm/dialer/import" variant="primary">Import leads</ButtonLink>}
+          action={
+            <div className="flex gap-2">
+              <Button onClick={retryLoad}>Refresh</Button>
+              <ButtonLink to="/crm/dialer/import" variant="primary">Import leads</ButtonLink>
+            </div>
+          }
         />
       )}
 
@@ -603,9 +688,22 @@ const CallScreen = () => {
                     .join(' · ')}
                 </p>
 
-                <p className="m-0 select-all font-crm-mono text-[30px] font-semibold tracking-tight text-crm-ink">
-                  {formatPhone(lead.phone_e164, lead.phone_raw)}
-                </p>
+                {editingPhone === null ? (
+                  <div className="flex flex-wrap items-baseline gap-3">
+                    <p className="m-0 select-all font-crm-mono text-[30px] font-semibold tracking-tight text-crm-ink">
+                      {formatPhone(lead.phone_e164, lead.phone_raw)}
+                    </p>
+                    <button type="button" className="cursor-pointer border-0 bg-transparent p-0 text-[12px] text-crm-copper underline" onClick={() => setEditingPhone(lead.phone_raw ?? lead.phone_e164 ?? '')}>
+                      Wrong number? Edit
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap items-end gap-2">
+                    <Input label="Correct number" value={editingPhone} onChange={e => setEditingPhone(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') void savePhone(); if (e.key === 'Escape') setEditingPhone(null); }} />
+                    <Button variant="primary" onClick={savePhone}>Save</Button>
+                    <Button onClick={() => setEditingPhone(null)}>Cancel</Button>
+                  </div>
+                )}
 
                 <div className="flex flex-wrap items-center gap-2">
                   <Button variant="primary" onClick={copyPhone}>{copiedFor === lead.id ? 'Copied ✓' : 'Copy number'}</Button>
@@ -648,12 +746,14 @@ const CallScreen = () => {
               </div>
             </Card>
 
+            <CallHistory key={`h-${lead.id}`} lead={lead} tz={myTz} />
+
             <Card>
               <CardHeader title="Who you spoke to" />
               <div className="grid grid-cols-1 gap-2 p-4 sm:grid-cols-3">
-                <Input label="Name" value={contactName} onChange={e => setContactName(e.target.value)} />
-                <Input label="Title" value={contactTitle} onChange={e => setContactTitle(e.target.value)} />
-                <Input label="Email" type="email" value={contactEmail} onChange={e => setContactEmail(e.target.value)} />
+                <Input label="Name" value={contactName} onChange={e => setContactName(e.target.value)} onKeyDown={blurOnEnter} />
+                <Input label="Title" value={contactTitle} onChange={e => setContactTitle(e.target.value)} onKeyDown={blurOnEnter} />
+                <Input label="Email" type="email" value={contactEmail} onChange={e => setContactEmail(e.target.value)} onKeyDown={blurOnEnter} />
               </div>
             </Card>
 
@@ -748,6 +848,8 @@ const CallScreen = () => {
           </div>
         </div>
       )}
+
+      <LeadFinder tz={myTz} refreshKey={callbacksDue} onPick={pickLead} />
     </div>
   );
 };

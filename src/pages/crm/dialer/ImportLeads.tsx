@@ -61,6 +61,7 @@ const ImportLeads = () => {
   const [mapping, setMapping] = useState<Mapping>({});
   const [known, setKnown] = useState<KnownKeys>({ phones: [], domains: [], dnc_phones: [], dnc_domains: [] });
   const [listName, setListName] = useState('');
+  const [skipLookalikes, setSkipLookalikes] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [progress, setProgress] = useState({ done: 0, total: 0 });
   const [result, setResult] = useState<{ imported: number; skipped: number; listId: string } | null>(null);
@@ -111,6 +112,7 @@ const ImportLeads = () => {
     [parsed, mapping, known, usFlagColumn, effectiveTierMap, scoreRule],
   );
   const summary = useMemo(() => summarize(prepared), [prepared]);
+  const willImport = summary.toImport - (skipLookalikes ? summary.possibleDup : 0);
   const nameMapped = Object.values(mapping).includes('company_name');
 
   const readFile = async (file: File) => {
@@ -160,7 +162,7 @@ const ImportLeads = () => {
 
   const runImport = async () => {
     if (!parsed) return;
-    const toWrite = prepared.filter(p => p.record).map(p => p.record!);
+    const toWrite = prepared.filter(p => p.record && !(skipLookalikes && p.possibleDup)).map(p => p.record!);
     setPhase('importing');
     setProgress({ done: 0, total: toWrite.length });
 
@@ -262,9 +264,19 @@ const ImportLeads = () => {
               <Count label="Already in CRM" value={summary.dupExisting} tone="warn" />
               <Count label="Do not call" value={summary.dnc} tone="warn" />
               <Count label="Missing name" value={summary.noName} tone="warn" />
+              <Count label="Look like an existing company" value={summary.possibleDup} tone="warn" />
             </div>
+            {summary.possibleDup > 0 && (
+              <label className="m-0 flex cursor-pointer items-start gap-2 border-t border-crm-line px-4 py-3 text-[12.5px] text-crm-ink-2">
+                <input type="checkbox" className="mt-0.5" checked={skipLookalikes} onChange={e => setSkipLookalikes(e.target.checked)} />
+                <span>
+                  Skip the {summary.possibleDup.toLocaleString()} that share a company name and state with a lead already in the CRM
+                  (or earlier in this file) but have a different phone and website. They would be called twice. Left unticked, they are imported.
+                </span>
+              </label>
+            )}
             <p className="m-0 border-t border-crm-line px-4 py-3 text-[12.5px] text-crm-ink-3">
-              <strong className="text-crm-ink">{summary.toImport.toLocaleString()}</strong> will be imported ·
+              <strong className="text-crm-ink">{willImport.toLocaleString()}</strong> will be imported ·
               Tier A {summary.byTier.A} · B {summary.byTier.B} · C {summary.byTier.C}
               {summary.byTier.none ? ` · untiered ${summary.byTier.none}` : ''}
             </p>
@@ -400,12 +412,12 @@ const ImportLeads = () => {
               <Button
                 variant="primary"
                 loading={phase === 'importing'}
-                disabled={!nameMapped || summary.toImport === 0}
+                disabled={!nameMapped || willImport === 0}
                 onClick={runImport}
               >
                 {phase === 'importing'
                   ? `Importing ${progress.done.toLocaleString()} / ${progress.total.toLocaleString()}`
-                  : `Import ${summary.toImport.toLocaleString()} leads`}
+                  : `Import ${willImport.toLocaleString()} leads`}
               </Button>
             </div>
           </Card>

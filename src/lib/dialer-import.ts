@@ -234,6 +234,8 @@ export interface PreparedRow {
   rowNumber: number;
   verdict: Verdict;
   record: LeadRecord | null;
+  /** Set when a different phone/domain hides what looks like the same company. It is still imported. */
+  possibleDup?: 'existing' | 'file';
 }
 
 export interface KnownKeys {
@@ -241,6 +243,19 @@ export interface KnownKeys {
   domains: string[];
   dnc_phones: string[];
   dnc_domains: string[];
+  /** Existing leads, for the "same company, different phone" warning (migration 026). */
+  companies?: { n: string; s: string | null }[];
+}
+
+const COMPANY_NOISE = new Set(['llc', 'inc', 'incorporated', 'ltd', 'limited', 'co', 'corp', 'corporation', 'company', 'the', 'and', 'group', 'agency', 'studio', 'studios', 'digital', 'marketing', 'media']);
+
+/** "Acme Digital, LLC" and "ACME" compare equal. A name that is only noise keeps its words. */
+export function companyKey(name: string, state: string | null): string | null {
+  const words = name.toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, ' ').trim().split(' ').filter(Boolean);
+  const core = words.filter(w => !COMPANY_NOISE.has(w));
+  const key = (core.length ? core : words).join('');
+  if (key.length < 3) return null;
+  return `${key}|${(state ?? '').toLowerCase()}`;
 }
 
 const clean = (v: string | undefined): string | null => {
@@ -339,6 +354,8 @@ export function prepareRows(
   const dncDomains = new Set(known.dnc_domains);
   const seenPhones = new Set<string>();
   const seenDomains = new Set<string>();
+  const knownCompanies = new Set((known.companies ?? []).map(c => companyKey(c.n, c.s)).filter((k): k is string => !!k));
+  const seenCompanies = new Set<string>();
 
   const mappedCols = new Set(Object.entries(mapping).filter(([, k]) => k).map(([i]) => Number(i)));
   /* The file's own US flag is consumed by the phone cleaner; it isn't "extra". */
@@ -405,8 +422,16 @@ export function prepareRows(
     if (phone.e164) seenPhones.add(phone.e164);
     if (domain) seenDomains.add(domain);
 
+    const ck = companyKey(name, geo.state);
+    let possibleDup: PreparedRow['possibleDup'];
+    if (ck) {
+      if (knownCompanies.has(ck)) possibleDup = 'existing';
+      else if (seenCompanies.has(ck)) possibleDup = 'file';
+      seenCompanies.add(ck);
+    }
+
     const verdict: Verdict = status === 'new' ? 'ok' : status === 'no_phone' ? 'no_phone' : 'bad_phone';
-    return { rowNumber, verdict, record };
+    return { rowNumber, verdict, record, ...(possibleDup ? { possibleDup } : {}) };
   });
 }
 
@@ -422,13 +447,15 @@ export interface Summary {
   /** Rows that will actually be written. */
   toImport: number;
   nonUs: number;
+  /** Rows that will be imported but look like a company already in the CRM or earlier in the file. */
+  possibleDup: number;
   byTier: { A: number; B: number; C: number; none: number };
 }
 
 export function summarize(prepared: PreparedRow[]): Summary {
   const s: Summary = {
     total: prepared.length, callable: 0, noPhone: 0, badPhone: 0, dupFile: 0,
-    dupExisting: 0, dnc: 0, noName: 0, toImport: 0, nonUs: 0,
+    dupExisting: 0, dnc: 0, noName: 0, toImport: 0, nonUs: 0, possibleDup: 0,
     byTier: { A: 0, B: 0, C: 0, none: 0 },
   };
   for (const p of prepared) {
@@ -445,6 +472,7 @@ export function summarize(prepared: PreparedRow[]): Summary {
       s.toImport++;
       if (p.record.phone_is_us === false) s.nonUs++;
       s.byTier[p.record.tier ?? 'none']++;
+      if (p.possibleDup) s.possibleDup++;
     }
   }
   return s;

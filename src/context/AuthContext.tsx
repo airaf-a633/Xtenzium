@@ -54,18 +54,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     if (!userId) return;
     let cancelled = false;
-    supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (cancelled) return;
-        setProfile((data as Profile | null) ?? null);
-        setProfileFor(userId);
-      });
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    /* A failed read (flaky wifi on reload) is not "no role": that would show
+       "No access yet" to someone who has access. Keep trying until it answers. */
+    const load = (attempt: number) => {
+      supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle()
+        .then(({ data, error }) => {
+          if (cancelled) return;
+          if (error) {
+            timer = setTimeout(() => load(attempt + 1), Math.min(5000, 800 * 2 ** attempt));
+            return;
+          }
+          setProfile((data as Profile | null) ?? null);
+          setProfileFor(userId);
+        });
+    };
+    load(0);
     return () => {
       cancelled = true;
+      if (timer) clearTimeout(timer);
     };
   }, [userId]);
 

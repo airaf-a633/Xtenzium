@@ -235,6 +235,8 @@ export interface CallLead {
   outreach_touches: number;
   outreach_due: string | null;
   outreach_last_at: string | null;
+  /* Skip snoozes a lead until the rep’s next morning (migration 026). */
+  snoozed_until: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -952,7 +954,7 @@ export type Database = {
     Functions: {
       dialer_known_keys: {
         Args: Record<string, never>;
-        Returns: { phones: string[]; domains: string[]; dnc_phones: string[]; dnc_domains: string[] };
+        Returns: { phones: string[]; domains: string[]; dnc_phones: string[]; dnc_domains: string[]; companies: { n: string; s: string | null }[] };
       };
       google_status: {
         Args: Record<string, never>;
@@ -1051,6 +1053,18 @@ export type Database = {
       dialer_board_counts: {
         Args: Record<string, never>;
         Returns: Record<string, number>;
+      };
+      dialer_skip_lead: {
+        Args: { p_lead_id: string };
+        Returns: string;
+      };
+      dialer_fix_phone: {
+        Args: { p_lead_id: string; p_raw: string; p_e164: string; p_is_us: boolean };
+        Returns: string;
+      };
+      dialer_unskip_lead: {
+        Args: { p_lead_id: string };
+        Returns: undefined;
       };
       import_call_leads: {
         Args: { p_list_id: string; p_rows: unknown };

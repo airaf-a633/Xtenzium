@@ -146,6 +146,7 @@ const OutcomePanel = ({
         onInvalid('That time has already passed.');
         return;
       }
+      if (when.getTime() > Date.now() + 45 * 86_400_000 && !window.confirm('That is more than 6 weeks away. Is the date right?')) return;
       at = when.toISOString();
     }
     onSubmit({ tags, note: note.trim(), flagged, at });
@@ -154,6 +155,7 @@ const OutcomePanel = ({
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
       e.stopPropagation();
+      if (note.trim() && !window.confirm('Discard what you typed?')) return;
       onCancel();
       return;
     }

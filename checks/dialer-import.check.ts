@@ -7,7 +7,7 @@
 import { readFileSync } from 'node:fs';
 import { parseCsv } from '../src/lib/csv';
 import {
-  autoMap, distinctValues, domainOf, guessTier, normalizePhone, prepareRows, stateFromHq, summarize, tierFor,
+  autoMap, companyKey, distinctValues, domainOf, guessTier, normalizePhone, prepareRows, stateFromHq, summarize, tierFor,
   type KnownKeys,
 } from '../src/lib/dialer-import';
 
@@ -141,6 +141,30 @@ eq('no tier and no rule', tierFor(null, 99, {}), null);
   eq('end to end: mapped values, and the score rule only for the blank', mapped.map(r => r.record!.tier), ['A', 'C', 'B']);
   const unmapped = prepareRows(h, data, autoMap(h), none, null, {});
   eq('without choices: guess where it can, else none', unmapped.map(r => r.record!.tier), ['A', null, null]);
+}
+
+
+/* Same company, different phone and website: flagged, never silently dropped. */
+eq('suffixes and case do not matter', companyKey('ACME Digital, LLC', 'NY'), companyKey('acme', 'NY'));
+eq('"&" and "and" match', companyKey('Smith & Co', 'TX'), companyKey('Smith and Company', 'TX'));
+eq('different state is a different company', companyKey('Acme', 'NY') === companyKey('Acme', 'CA'), false);
+eq('a name made only of filler keeps its words', companyKey('Digital Media Group', null) !== null, true);
+eq('too short to compare', companyKey('AB', 'NY'), null);
+{
+  const stateOf = (hq: string) => stateFromHq(hq).state;
+  const k: KnownKeys = { ...none, companies: [{ n: 'Acme Inc.', s: stateOf('New York City, New York') }] };
+  const r = run([
+    row({ name: 'ACME LLC', phone: '(212) 380-1761', phone_is_us: 'yes', website: 'https://acme-other.com', hq: 'New York City, New York' }),
+    row({ name: 'Other Co', phone: '(212) 380-1762', phone_is_us: 'yes', website: 'https://other.com', hq: 'New York City, New York' }),
+    row({ name: 'Other Co.', phone: '(212) 380-1763', phone_is_us: 'yes', website: 'https://other-two.com', hq: 'New York City, New York' }),
+  ], k);
+  eq('state fixture resolves', !!stateOf('New York City, New York'), true);
+  eq('looks like a company already in the CRM', r[0].possibleDup, 'existing');
+  eq('it is still imported (the rep decides)', r[0].verdict, 'ok');
+  eq('a new company is not flagged', r[1].possibleDup, undefined);
+  eq('a repeat inside the file is flagged', r[2].possibleDup, 'file');
+  eq('the summary counts them', summarize(r).possibleDup, 2);
+  eq('no companies supplied (older server) → nothing flagged', run([row({ name: 'ACME LLC', phone: '(212) 380-1761', phone_is_us: 'yes', hq: 'New York City, New York' })])[0].possibleDup, undefined);
 }
 
 /* The real file, when pointed at it. */
