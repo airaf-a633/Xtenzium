@@ -6,6 +6,7 @@ import Navbar from '../components/Navbar.astro';
 import Footer from '../components/Footer.astro';
 import Faq from '../components/Faq.astro';
 import { services } from '../data/services';
+import { org, organizationLd, contactPointLd } from '../data/org';
 
 const sorted = [...services].sort((a, b) => a.order - b.order);
 
@@ -41,25 +42,7 @@ const faqs = [
             name: 'Contact Xtenzium',
             url: 'https://www.xtenzium.com/contact',
           },
-          {
-            '@type': 'Organization',
-            name: 'Xtenzium',
-            url: 'https://www.xtenzium.com',
-            email: 'contact@xtenzium.com',
-            address: {
-              '@type': 'PostalAddress',
-              addressLocality: 'Karachi',
-              addressRegion: 'Sindh',
-              addressCountry: 'PK',
-            },
-            contactPoint: {
-              '@type': 'ContactPoint',
-              email: 'contact@xtenzium.com',
-              contactType: 'sales',
-              areaServed: 'Worldwide',
-              availableLanguage: 'English',
-            },
-          },
+          { ...organizationLd, contactPoint: contactPointLd },
           {
             '@type': 'FAQPage',
             mainEntity: faqs.map((f) => ({
@@ -109,11 +92,24 @@ const faqs = [
               <div>
                 <p class="eyebrow !text-white/40">Email</p>
                 <a
-                  href="mailto:contact@xtenzium.com"
+                  href={`mailto:${org.email}`}
                   class="mt-2 inline-block font-display text-lg font-bold tracking-[-0.02em] text-copper-hi transition-colors duration-300 hover:text-white"
                 >
-                  contact@xtenzium.com
+                  {org.email}
                 </a>
+              </div>
+              <div>
+                <p class="eyebrow !text-white/40">Phone</p>
+                <a
+                  href={`tel:${org.phone}`}
+                  class="mt-2 inline-block font-display text-lg font-bold tracking-[-0.02em] text-copper-hi transition-colors duration-300 hover:text-white"
+                >
+                  {org.phoneDisplay}
+                </a>
+                <p class="mt-1.5 text-[0.82rem] text-white/40">
+                  A US line, answered from Karachi — so dialling it costs
+                  you nothing, and the studio hours below still apply.
+                </p>
               </div>
               <div>
                 <p class="eyebrow !text-white/40">Studio</p>

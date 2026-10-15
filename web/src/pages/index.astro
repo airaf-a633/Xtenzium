@@ -18,6 +18,7 @@ import { credits } from '../data/credits';
 import { services as servicesData } from '../data/services';
 import { imagery } from '../data/imagery';
 import { serviceImage } from '../data/imagery';
+import { org } from '../data/org';
 
 const heroLines = ['We architect', 'long-term', 'success.'];
 
@@ -150,7 +151,8 @@ const stats = [
             '@id': 'https://www.xtenzium.com/#organization',
             name: 'Xtenzium',
             url: 'https://www.xtenzium.com',
-            email: 'contact@xtenzium.com',
+            email: org.email,
+            telephone: org.phone,
             slogan: 'We Architect Long-Term Success.',
             description:
               'Karachi-based digital agency building web products and the custom hardware underneath them.',
