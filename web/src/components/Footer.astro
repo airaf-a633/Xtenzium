@@ -1,5 +1,6 @@
 ---
 import Logo from './Logo.astro';
+import { org } from '../data/org';
 
 const columns = [
   {
@@ -58,10 +59,20 @@ const year = new Date().getFullYear();
         </div>
 
         <a
-          href="mailto:contact@xtenzium.com"
+          href={`mailto:${org.email}`}
           class="mt-6 inline-block font-display text-lg font-bold tracking-[-0.02em] text-copper-hi transition-colors duration-300 hover:text-white"
         >
-          contact@xtenzium.com
+          {org.email}
+        </a>
+
+        <!-- Quieter than the email on purpose. The email is how most of
+             this work starts; the number is for the people who would
+             rather talk, and it should be findable without competing. -->
+        <a
+          href={`tel:${org.phone}`}
+          class="mt-2 block font-mono text-[0.8rem] tracking-[0.02em] text-white/55 transition-colors duration-300 hover:text-copper-hi"
+        >
+          {org.phoneDisplay}
         </a>
       </div>
 
