@@ -19,6 +19,7 @@ import {
 import type { Deal, Project, Task, TeamMember } from '../../types/database';
 import { ErrorState, PageHeader, SkeletonTiles, Stat } from '../../components/crm/ui';
 import { BarRows, ChartCard, Funnel, LineChart } from '../../components/crm/charts/Charts';
+import DialerWidget from './dialer/DialerWidget';
 
 const Dashboard = () => {
   const [deals, setDeals] = useState<Deal[]>([]);
@@ -120,6 +121,8 @@ const Dashboard = () => {
 
       {!failed && (
         <>
+          <DialerWidget />
+
           {/* Five numbers in the order a business reads them: what's
               coming, what's owed, how often we win, how big, what's late. */}
           <section className="mb-5" aria-label="Headline">

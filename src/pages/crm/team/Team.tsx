@@ -3,6 +3,7 @@ import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../context/AuthContext';
 import { DEFAULT_USD_TO_PKR } from '../../../lib/settings';
 import type { TeamMember } from '../../../types/database';
+import Logins from './Logins';
 import {
   Avatar,
   Badge,
@@ -321,6 +322,8 @@ const Team = () => {
               )}
             </div>
           </Card>
+
+          <Logins />
 
           {/* ── Exchange rate ─────────────────────────────────── */}
           <Card>

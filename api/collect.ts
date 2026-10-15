@@ -27,8 +27,17 @@ export const config = { runtime: 'edge' };
    than node types leaking into a browser-only tsconfig. */
 declare const process: { env: Record<string, string | undefined> };
 
-const URL_ = process.env.PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL;
-const KEY = process.env.PUBLIC_SUPABASE_ANON_KEY ?? process.env.SUPABASE_ANON_KEY;
+/* Three names for the same two values. The CRM is Vite (VITE_), the
+   marketing site is Astro (PUBLIC_), and both share one Vercel project.
+   Vercel had only the VITE_ pair, so this function had no credentials
+   and dropped every event with a 204 — which the browser correctly
+   treats as success. Accept whichever pair exists. */
+const URL_ =
+  process.env.PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL;
+const KEY =
+  process.env.PUBLIC_SUPABASE_ANON_KEY ??
+  process.env.SUPABASE_ANON_KEY ??
+  process.env.VITE_SUPABASE_ANON_KEY;
 
 /** Only the event names the table's check constraint accepts. */
 const NAMES = new Set([

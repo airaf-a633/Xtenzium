@@ -130,7 +130,7 @@ const NotificationBell = ({ me, membersById }: NotificationBellProps) => {
       await supabase.from('notifications').update({ read_at: now }).eq('id', n.id);
     }
     setOpen(false);
-    navigate(n.entity_type === 'deal' ? '/crm/pipeline' : '/crm/tasks');
+    navigate(n.entity_type === 'deal' ? '/crm/pipeline' : n.entity_type === 'lead' ? '/crm/inbox' : '/crm/tasks');
   };
 
   if (!me || !available) return null;

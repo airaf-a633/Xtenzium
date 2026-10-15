@@ -167,6 +167,210 @@ export interface TeamMember {
   created_at: string;
 }
 
+export type UserRole = 'admin' | 'caller';
+
+/* One row per login. `role` decides what the database lets them touch —
+   see migration 016. A login with no profile row has no access at all. */
+export interface Profile {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  role: UserRole;
+  timezone: string;
+  daily_dial_target: number;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+/* ─── Dialer (migration 017) ─────────────────────────────── */
+
+export type CallLeadStatus =
+  | 'new' | 'retry' | 'callback' | 'followup' | 'meeting' | 'nurture' | 'lost'
+  | 'disqualified' | 'bad_data' | 'dnc' | 'exhausted' | 'no_phone';
+
+export interface CallList {
+  id: string;
+  name: string;
+  source_filename: string | null;
+  row_count: number;
+  skipped_count: number;
+  uploaded_by: string | null;
+  created_at: string;
+}
+
+export interface CallLead {
+  id: string;
+  list_id: string;
+  company_name: string;
+  phone_raw: string | null;
+  phone_e164: string | null;
+  phone_is_us: boolean | null;
+  email: string | null;
+  website: string | null;
+  domain: string | null;
+  contact_url: string | null;
+  profile_url: string | null;
+  hq: string | null;
+  state: string | null;
+  timezone: string | null;
+  team_size: string | null;
+  hourly_rate_usd: number | null;
+  services: string | null;
+  works_count: number | null;
+  tier: 'A' | 'B' | 'C' | null;
+  score: number | null;
+  why: string | null;
+  source: string | null;
+  extra: Record<string, string>;
+  contact_name: string | null;
+  contact_title: string | null;
+  status: CallLeadStatus;
+  attempt_count: number;
+  last_called_at: string | null;
+  next_call_at: string | null;
+  assigned_to: string | null;
+  deal_id: string | null;
+  /* Email outreach (migration 024), independent of the call status. */
+  outreach_touches: number;
+  outreach_due: string | null;
+  outreach_last_at: string | null;
+  /* Skip snoozes a lead until the rep’s next morning (migration 026). */
+  snoozed_until: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OutreachActivity {
+  id: string;
+  lead_id: string;
+  actor_id: string | null;
+  action:
+    | 'emailed' | 'followed_up' | 'form_sent' | 'email_found'
+    | 'replied' | 'not_interested' | 'bad_contact' | 'opted_out' | 'note';
+  note: string | null;
+  touch: number | null;
+  created_at: string;
+}
+
+export interface CallActivity {
+  id: string;
+  lead_id: string;
+  caller_id: string | null;
+  outcome: string;
+  reason_tags: string[];
+  note: string | null;
+  flagged: boolean;
+  flag_resolved_at: string | null;
+  flag_resolved_by: string | null;
+  created_at: string;
+}
+
+export interface DncEntry {
+  id: string;
+  phone_e164: string | null;
+  domain: string | null;
+  reason: string | null;
+  added_by: string | null;
+  added_at: string;
+}
+
+export interface FollowupItem {
+  id: string;
+  lead_id: string;
+  type: 'email_info' | 'email_proposal' | 'linkedin' | 'admin_call';
+  note: string | null;
+  status: 'queued' | 'sent' | 'done' | 'cancelled';
+  requested_by: string | null;
+  /* The team member who has taken this on (a @mention or an admin sets it). */
+  assignee_id: string | null;
+  handled_by: string | null;
+  handled_at: string | null;
+  created_at: string;
+}
+
+export interface EmailTemplate {
+  type: FollowupItem['type'] | 'outreach_first' | 'outreach_followup';
+  subject: string;
+  body: string;
+  updated_by: string | null;
+  updated_at: string;
+}
+
+export interface CallScript {
+  id: string;
+  title: string;
+  body: string;
+  sort_order: number;
+  updated_at: string;
+}
+
+export interface DialerSettings {
+  id: boolean;
+  no_answer_days: number;
+  voicemail_days: number;
+  gatekeeper_name_days: number;
+  gatekeeper_blocked_days: number;
+  nurture_outsources_days: number;
+  nurture_timing_days: number;
+  max_attempts: number;
+  /* One due retry for every N dials (0 = fresh leads always first). */
+  retry_every: number;
+  /* After this many missed calls, email opens as a second channel (0 = never). */
+  email_after_attempts: number;
+  /* When the owner takes meetings — hours in meeting_owner_tz, may wrap midnight. */
+  meeting_owner_tz: string;
+  meeting_hours_from: number;
+  meeting_hours_to: number;
+  meeting_default_minutes: number;
+  updated_at: string;
+}
+
+export interface Meeting {
+  id: string;
+  lead_id: string;
+  deal_id: string | null;
+  google_event_id: string | null;
+  meet_link: string | null;
+  calendar_link: string | null;
+  starts_at: string;
+  ends_at: string;
+  attendee_name: string | null;
+  attendee_email: string | null;
+  rep_id: string | null;
+  rep_email: string | null;
+  status: 'scheduled' | 'held' | 'no_show' | 'cancelled';
+  created_at: string;
+}
+
+export interface GoogleStatus {
+  connected: boolean;
+  email?: string;
+  status?: 'ok' | 'error';
+  error?: string | null;
+  connected_at?: string;
+}
+
+export interface DialerListSummary {
+  id: string;
+  name: string;
+  created_at: string;
+  /** Leads that could still be dialled (US number, not closed out). */
+  in_play: number;
+  /** Of those, how many the queue would offer this minute. */
+  callable_now: number;
+}
+
+export interface DialerReport {
+  totals: { dials: number; conversations: number; interested: number; meetings: number };
+  by_day: { day: string; dials: number; conversations: number; meetings: number }[];
+  by_outcome: { outcome: string; n: number }[];
+  by_tier: { tier: string; dials: number; conversations: number; meetings: number }[];
+  by_list: { list: string; dials: number; conversations: number; meetings: number }[];
+  by_hour: { hour: number; dials: number; conversations: number }[];
+  funnel: { leads_called: number; conversations: number; interested: number; meetings: number; deals: number; won: number };
+}
+
 export interface Deal {
   id: string;
   title: string;
@@ -210,7 +414,7 @@ export interface UserPreference {
   updated_at: string;
 }
 
-export type NotificationType = 'mention' | 'assignment' | 'deal_stage' | 'deal_owner' | 'comment';
+export type NotificationType = 'mention' | 'assignment' | 'deal_stage' | 'deal_owner' | 'comment' | 'followup';
 
 export interface Notification {
   id: string;
@@ -219,7 +423,7 @@ export interface Notification {
   type: NotificationType;
   /* No foreign key on purpose — a notification about a deleted task is
      still a true record of what happened. */
-  entity_type: 'task' | 'deal' | 'project';
+  entity_type: 'task' | 'deal' | 'project' | 'lead';
   entity_id: string;
   title: string;
   body: string | null;
@@ -427,6 +631,78 @@ export type Database = {
           user_id?: string | null;
         };
         Update: Partial<Omit<TeamMember, 'id' | 'created_at'>>;
+        Relationships: [];
+      };
+      call_lists: {
+        Row: CallList & Record<string, unknown>;
+        Insert: Pick<CallList, 'name'> & Partial<Omit<CallList, 'id' | 'created_at'>>;
+        Update: Partial<Pick<CallList, 'name' | 'row_count' | 'skipped_count'>>;
+        Relationships: [];
+      };
+      call_leads: {
+        Row: CallLead & Record<string, unknown>;
+        /* Bulk inserts go through import_call_leads(); single inserts are admin-only. */
+        Insert: Pick<CallLead, 'list_id' | 'company_name'> & Partial<Omit<CallLead, 'id' | 'created_at' | 'updated_at'>>;
+        Update: Partial<Omit<CallLead, 'id' | 'list_id' | 'created_at' | 'updated_at'>>;
+        Relationships: [];
+      };
+      call_activities: {
+        Row: CallActivity & Record<string, unknown>;
+        Insert: Pick<CallActivity, 'lead_id' | 'outcome'> & Partial<Omit<CallActivity, 'id' | 'created_at'>>;
+        /* Only the owner resolving a flag ever updates a row. */
+        Update: Partial<Pick<CallActivity, 'flag_resolved_at' | 'flag_resolved_by'>>;
+        Relationships: [];
+      };
+      outreach_activities: {
+        Row: OutreachActivity & Record<string, unknown>;
+        /* Written only by log_outreach(); there is no client insert. */
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      email_templates: {
+        Row: EmailTemplate & Record<string, unknown>;
+        Insert: Pick<EmailTemplate, 'type'> & Partial<Pick<EmailTemplate, 'subject' | 'body'>>;
+        Update: Partial<Pick<EmailTemplate, 'subject' | 'body'>>;
+        Relationships: [];
+      };
+      call_scripts: {
+        Row: CallScript & Record<string, unknown>;
+        Insert: Pick<CallScript, 'title'> & Partial<Pick<CallScript, 'body' | 'sort_order'>>;
+        Update: Partial<Pick<CallScript, 'title' | 'body' | 'sort_order'>>;
+        Relationships: [];
+      };
+      dialer_settings: {
+        Row: DialerSettings & Record<string, unknown>;
+        Insert: never;
+        Update: Partial<Omit<DialerSettings, 'id' | 'updated_at'>>;
+        Relationships: [];
+      };
+      meetings: {
+        Row: Meeting & Record<string, unknown>;
+        /* Rows are written by /api/google with the service key; admins may edit. */
+        Insert: never;
+        Update: Partial<Pick<Meeting, 'status'>>;
+        Relationships: [];
+      };
+      dnc_list: {
+        Row: DncEntry & Record<string, unknown>;
+        Insert: Partial<Omit<DncEntry, 'id' | 'added_at'>>;
+        Update: never;
+        Relationships: [];
+      };
+      followup_queue: {
+        Row: FollowupItem & Record<string, unknown>;
+        Insert: Pick<FollowupItem, 'lead_id' | 'type'> & Partial<Omit<FollowupItem, 'id' | 'created_at'>>;
+        Update: Partial<Pick<FollowupItem, 'status' | 'handled_by' | 'handled_at' | 'note' | 'assignee_id'>>;
+        Relationships: [];
+      };
+      profiles: {
+        Row: Profile & Record<string, unknown>;
+        /* Inserts come from the auth.users trigger or the service-role
+           API; the browser only ever updates. */
+        Insert: never;
+        Update: Partial<Pick<Profile, 'full_name' | 'role' | 'timezone' | 'daily_dial_target' | 'active'>>;
         Relationships: [];
       };
       notifications: {
@@ -675,7 +951,126 @@ export type Database = {
         Relationships: [];
       };
     };
-    Functions: { [_ in never]: never };
+    Functions: {
+      dialer_known_keys: {
+        Args: Record<string, never>;
+        Returns: { phones: string[]; domains: string[]; dnc_phones: string[]; dnc_domains: string[]; companies: { n: string; s: string | null }[] };
+      };
+      google_status: {
+        Args: Record<string, never>;
+        Returns: GoogleStatus;
+      };
+      google_disconnect: {
+        Args: Record<string, never>;
+        Returns: undefined;
+      };
+      meeting_set_status: {
+        Args: { p_meeting_id: string; p_status: 'held' | 'no_show' | 'cancelled' };
+        Returns: undefined;
+      };
+      dialer_mentionables: {
+        Args: Record<string, never>;
+        Returns: { id: string; name: string }[];
+      };
+      dialer_assign_followup: {
+        Args: { p_id: string; p_member: string | null };
+        Returns: undefined;
+      };
+      outreach_list: {
+        Args: { p_tab: string; p_limit?: number; p_offset?: number; p_tiers?: string[] | null; p_search?: string | null };
+        Returns: CallLead[];
+      };
+      outreach_counts: {
+        Args: { p_tiers?: string[] | null };
+        Returns: { to_email: number; find_email: number; due: number; waiting: number; after_call: number; sent_today: number };
+      };
+      log_outreach: {
+        Args: { p_lead_id: string; p_action: string; p_note?: string | null; p_email?: string | null };
+        Returns: { status: string; touches: number; next_touch_at: string | null; sequence_done: boolean };
+      };
+      dialer_summary: {
+        Args: { p_from: string; p_to: string };
+        Returns: import('../lib/daily-summary').SummaryData;
+      };
+      dialer_tier_counts: {
+        Args: { p_list_id?: string | null };
+        Returns: { A: number; B: number; C: number; none: number };
+      };
+      retier_leads: {
+        Args: { p_list_id: string; p_from: string; p_to: string };
+        Returns: number;
+      };
+      retier_by_score: {
+        Args: { p_list_id: string; p_a: number; p_b: number };
+        Returns: number;
+      };
+      undo_last_call: {
+        Args: { p_activity_id: string };
+        Returns: { lead_id: string; status: CallLeadStatus };
+      };
+      dialer_list_summary: {
+        Args: Record<string, never>;
+        Returns: DialerListSummary[];
+      };
+      dialer_next_lead: {
+        Args: {
+          p_skip?: string[];
+          p_ignore_hours?: boolean;
+          p_list_id?: string | null;
+          /* 'A' 'B' 'C' and '-' for untiered; null = any. */
+          p_tiers?: string[] | null;
+          /* Pretend this many more calls were logged (pre-loading the next lead). */
+          p_assume_dials?: number;
+        };
+        Returns: CallLead[];
+      };
+      log_call: {
+        Args: {
+          p_lead_id: string;
+          p_outcome: string;
+          p_tags?: string[];
+          p_note?: string | null;
+          p_flagged?: boolean;
+          p_at?: string | null;
+          p_contact_name?: string | null;
+          p_contact_title?: string | null;
+          p_contact_email?: string | null;
+        };
+        Returns: {
+          status: CallLeadStatus;
+          next_call_at: string | null;
+          followup: string | null;
+          deal_id: string | null;
+          attempts: number;
+          mentioned: number;
+          activity_id: string;
+        };
+      };
+      dialer_report: {
+        Args: { p_from: string; p_to: string; p_tz?: string };
+        Returns: DialerReport;
+      };
+      dialer_board_counts: {
+        Args: Record<string, never>;
+        Returns: Record<string, number>;
+      };
+      dialer_skip_lead: {
+        Args: { p_lead_id: string };
+        Returns: string;
+      };
+      dialer_fix_phone: {
+        Args: { p_lead_id: string; p_raw: string; p_e164: string; p_is_us: boolean };
+        Returns: string;
+      };
+      dialer_unskip_lead: {
+        Args: { p_lead_id: string };
+        Returns: undefined;
+      };
+      import_call_leads: {
+        Args: { p_list_id: string; p_rows: unknown };
+        Returns: number;
+      };
+    };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };
   };

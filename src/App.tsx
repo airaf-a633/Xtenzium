@@ -1,39 +1,10 @@
 import { lazy, Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
-import { AnimatePresence } from 'framer-motion';
-import { ReactLenis } from 'lenis/react';
-import { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 
-// Always-on shell components (needed on first paint)
-import Navbar from './components/Navbar';
-import Footer from './components/Footer';
-import CustomCursor from './components/CustomCursor';
-import PageTransition from './components/PageTransition';
-import ScrollToTop from './components/ScrollToTop';
-import SplashScreen from './components/SplashScreen';
 
 // Context
-import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/admin/ProtectedRoute';
-
-// ─── Lazy public pages ─────────────────────────────────────────────────────
-const Home        = lazy(() => import('./pages/Home'));
-const About       = lazy(() => import('./pages/About'));
-const Services    = lazy(() => import('./pages/Services'));
-const Strategy    = lazy(() => import('./pages/Strategy'));
-const Electronics = lazy(() => import('./pages/Electronics'));
-const Blogs       = lazy(() => import('./pages/Blogs'));
-const BlogPost    = lazy(() => import('./pages/BlogPost'));
-const Contact     = lazy(() => import('./pages/Contact'));
-
-// ─── Lazy service sub-pages ────────────────────────────────────────────────
-const Consultancy = lazy(() => import('./pages/services/Consultancy'));
-const Marketing   = lazy(() => import('./pages/services/Marketing'));
-const Design      = lazy(() => import('./pages/services/Design'));
-const Technical   = lazy(() => import('./pages/services/Technical'));
-const Development = lazy(() => import('./pages/services/Development'));
-const IoT         = lazy(() => import('./pages/services/IoT'));
 
 // ─── Lazy admin pages ──────────────────────────────────────────────────────
 const Login       = lazy(() => import('./pages/admin/Login'));
@@ -60,6 +31,17 @@ const ProjectDetail   = lazy(() => import('./pages/crm/projects/ProjectDetail'))
 const ImportCsv       = lazy(() => import('./pages/crm/projects/ImportCsv'));
 const Tasks           = lazy(() => import('./pages/crm/tasks/Tasks'));
 const Team            = lazy(() => import('./pages/crm/team/Team'));
+const CallerLayout    = lazy(() => import('./pages/crm/dialer/CallerLayout'));
+const Dialer          = lazy(() => import('./pages/crm/dialer/Dialer'));
+const CallScreen      = lazy(() => import('./pages/crm/dialer/CallScreen'));
+const Inbox           = lazy(() => import('./pages/crm/dialer/Inbox'));
+const CallFeed        = lazy(() => import('./pages/crm/dialer/Feed'));
+const CallReports     = lazy(() => import('./pages/crm/dialer/Reports'));
+const DialerSettings  = lazy(() => import('./pages/crm/dialer/DialerSettings'));
+const DialerBoard     = lazy(() => import('./pages/crm/dialer/Board'));
+const Outreach        = lazy(() => import('./pages/crm/dialer/Outreach'));
+const DailySummary     = lazy(() => import('./pages/crm/dialer/Summary'));
+const ImportLeads     = lazy(() => import('./pages/crm/dialer/ImportLeads'));
 
 // ─── Minimal fallback shown while chunks load ──────────────────────────────
 const PageLoader = () => (
@@ -69,57 +51,13 @@ const PageLoader = () => (
   </div>
 );
 
-// ─── Public animated routes ────────────────────────────────────────────────
-const AnimatedRoutes = () => {
-  const location = useLocation();
-  return (
-    <AnimatePresence mode="wait">
-      <Routes location={location} key={location.pathname}>
-        <Route path="/"                       element={<PageTransition><Home /></PageTransition>} />
-        <Route path="/about"                  element={<PageTransition><About /></PageTransition>} />
-        <Route path="/services"               element={<PageTransition><Services /></PageTransition>} />
-        <Route path="/services/consultancy"   element={<PageTransition><Consultancy /></PageTransition>} />
-        <Route path="/services/marketing"     element={<PageTransition><Marketing /></PageTransition>} />
-        <Route path="/services/design"        element={<PageTransition><Design /></PageTransition>} />
-        <Route path="/services/technical"     element={<PageTransition><Technical /></PageTransition>} />
-        <Route path="/services/development"   element={<PageTransition><Development /></PageTransition>} />
-        <Route path="/services/iot"           element={<PageTransition><IoT /></PageTransition>} />
-        <Route path="/strategy"               element={<PageTransition><Strategy /></PageTransition>} />
-        <Route path="/electronics"            element={<PageTransition><Electronics /></PageTransition>} />
-        <Route path="/blogs"                  element={<PageTransition><Blogs /></PageTransition>} />
-        <Route path="/blog/:slug"             element={<PageTransition><BlogPost /></PageTransition>} />
-        <Route path="/contact"                element={<PageTransition><Contact /></PageTransition>} />
-      </Routes>
-    </AnimatePresence>
-  );
-};
-
-// ─── Public app shell ──────────────────────────────────────────────────────
-const PublicApp = () => {
-  const [showSplash, setShowSplash] = useState(false);
-
-  useEffect(() => {
-    const splashPlayed = sessionStorage.getItem('splashPlayed');
-    if (!splashPlayed) setShowSplash(true);
-  }, []);
-
-  return (
-    <ReactLenis root options={{ lerp: 0.1, duration: 0.8, smoothWheel: true, wheelMultiplier: 1.0 }}>
-      {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
-      <div style={{ visibility: showSplash ? 'hidden' : 'visible' }}>
-        <ScrollToTop />
-        <CustomCursor />
-        <Navbar />
-        <main>
-          <Suspense fallback={<PageLoader />}>
-            <AnimatedRoutes />
-          </Suspense>
-        </main>
-        <Footer />
-      </div>
-    </ReactLenis>
-  );
-};
+/*
+ * There is no public app here any more. The marketing site is the Astro
+ * app in web/, served from /; this bundle is built with base /crm/ and
+ * only ever sees /crm and /admin paths. The React marketing pages that
+ * used to live alongside were unreachable dead weight — 900 kB of it in
+ * the Home chunk alone — and are gone.
+ */
 
 // ─── Route splitter — decides admin vs crm vs public ───────────────────────
 const AppRoutes = () => {
@@ -157,6 +95,23 @@ const AppRoutes = () => {
       <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/crm/login" element={<CrmLogin />} />
+          {/* The caller's workspace sits OUTSIDE the admin shell: it is the
+              only route a caller may open. Declared first so /crm/dialer
+              never falls into the admin layout's catch-all. */}
+          <Route
+            path="/crm/dialer"
+            element={
+              <ProtectedRoute redirectTo="/crm/login" allow={['admin', 'caller']}>
+                <CallerLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Dialer />} />
+            <Route path="call" element={<CallScreen />} />
+            <Route path="board" element={<DialerBoard />} />
+            <Route path="import" element={<ImportLeads />} />
+            <Route path="outreach" element={<Outreach />} />
+          </Route>
           <Route
             path="/crm"
             element={
@@ -180,25 +135,28 @@ const AppRoutes = () => {
             <Route path="projects/:id"    element={<ProjectDetail />} />
             <Route path="tasks"         element={<Tasks />} />
             <Route path="team"          element={<Team />} />
+            <Route path="inbox"          element={<Inbox />} />
+            <Route path="calls/feed"     element={<CallFeed />} />
+            <Route path="calls/reports"  element={<CallReports />} />
+            <Route path="calls/settings" element={<DialerSettings />} />
+            <Route path="calls/summary"  element={<DailySummary />} />
           </Route>
         </Routes>
       </Suspense>
     );
   }
 
-  return <PublicApp />;
+  return <Navigate to="/crm" replace />;
 };
 
 // ─── Root ──────────────────────────────────────────────────────────────────
 function App() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <Router>
-          <AppRoutes />
-        </Router>
-      </AuthProvider>
-    </ThemeProvider>
+    <AuthProvider>
+      <Router>
+        <AppRoutes />
+      </Router>
+    </AuthProvider>
   );
 }
 

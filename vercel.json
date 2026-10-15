@@ -21,6 +21,25 @@
     {
       "path": "/api/gsc-sync",
       "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/daily-summary",
+      "schedule": "0 3 * * *"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/c/(.*).vcf",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "text/vcard; charset=utf-8"
+        },
+        {
+          "key": "Content-Disposition",
+          "value": "inline"
+        }
+      ]
     }
   ],
   "headers": [

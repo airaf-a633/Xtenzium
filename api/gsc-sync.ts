@@ -52,7 +52,8 @@ const {
   CRON_SECRET,
 } = process.env;
 
-const SUPABASE_URL = process.env.PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL;
+const SUPABASE_URL =
+  process.env.PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL;
 
 const SCOPE = 'https://www.googleapis.com/auth/webmasters.readonly';
 /** Google's own reporting lag, plus a margin. */

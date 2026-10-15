@@ -28,6 +28,7 @@ export const NOTIFICATION_LABEL: Record<Notification['type'], string> = {
   deal_stage: 'moved a deal',
   deal_owner: 'handed you a deal',
   comment: 'commented',
+  followup: 'handed you a follow-up',
 };
 
 export const NOTIFICATION_TONE: Record<Notification['type'], Tone> = {
@@ -36,6 +37,7 @@ export const NOTIFICATION_TONE: Record<Notification['type'], Tone> = {
   deal_stage: 'violet',
   deal_owner: 'violet',
   comment: 'neutral',
+  followup: 'info',
 };
 
 export const unreadCount = (list: Notification[]): number =>

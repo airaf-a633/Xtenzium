@@ -38,9 +38,10 @@ interface DealPanelProps {
   onClose: () => void;
   onSaved: (deal: Deal) => void;
   onRequestClose: (deal: Deal, outcome: 'won' | 'lost') => void;
+  onDeleted: (dealId: string) => void;
 }
 
-const DealPanel = ({ deal, members, usdRate, onClose, onSaved, onRequestClose }: DealPanelProps) => {
+const DealPanel = ({ deal, members, usdRate, onClose, onSaved, onRequestClose, onDeleted }: DealPanelProps) => {
   const { toast } = useToast();
   const [draft, setDraft] = useState<Deal | null>(deal);
   const [activities, setActivities] = useState<DealActivity[]>([]);
@@ -136,6 +137,23 @@ const DealPanel = ({ deal, members, usdRate, onClose, onSaved, onRequestClose }:
     setNote('');
   };
 
+  /* Distinct from Lost. Lost is an outcome and stays in the history and
+     the win rate; delete is for the record that should never have
+     existed — a test submission, a duplicate. A won deal keeps its
+     project and is not deletable from here, so the project can't be
+     orphaned by accident. */
+  const remove = async () => {
+    if (!confirm(`Delete "${draft.title}"? This removes it from the pipeline and every report. Use Mark lost if it was a real deal.`)) return;
+    const { error } = await supabase.from('deals').delete().eq('id', draft.id);
+    if (error) {
+      toast('Couldn’t delete that deal.', 'danger');
+      return;
+    }
+    onDeleted(draft.id);
+    toast('Deal deleted', 'info');
+    onClose();
+  };
+
   const pkr = toPkr(Number(draft.value), draft.currency, usdRate);
   const weighted = pkr * (draft.probability / 100);
   const open = isOpen(draft.stage);
@@ -168,6 +186,9 @@ const DealPanel = ({ deal, members, usdRate, onClose, onSaved, onRequestClose }:
               <Button variant="ghost" onClick={() => onRequestClose(draft, 'lost')}>
                 Mark lost
               </Button>
+              <Button variant="ghost" onClick={remove}>
+                Delete
+              </Button>
             </div>
           ) : draft.project_id ? (
             <Link
@@ -177,9 +198,14 @@ const DealPanel = ({ deal, members, usdRate, onClose, onSaved, onRequestClose }:
               Open the project →
             </Link>
           ) : (
-            <span className="text-[12.5px] text-crm-ink-3">
-              Closed {relative(draft.closed_at ?? draft.updated_at)}
-            </span>
+            <div className="flex items-center gap-3">
+              <span className="text-[12.5px] text-crm-ink-3">
+                Closed {relative(draft.closed_at ?? draft.updated_at)}
+              </span>
+              <Button variant="ghost" size="sm" onClick={remove}>
+                Delete
+              </Button>
+            </div>
           )}
           <Button variant="primary" loading={saving} onClick={save}>
             Save

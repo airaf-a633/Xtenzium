@@ -36,6 +36,42 @@ const run = (cmd, cwd = root) => {
 rmSync(dist, { recursive: true, force: true });
 mkdirSync(dist, { recursive: true });
 
+/* ── 0. One Supabase project, two naming conventions ─────────────────
+ *
+ * The CRM is Vite and reads VITE_SUPABASE_*. The marketing site is Astro
+ * and reads PUBLIC_SUPABASE_* — Astro only inlines PUBLIC_-prefixed vars
+ * into the browser bundle. Same project, same anon key, two names.
+ *
+ * Vercel had the VITE_ pair and not the PUBLIC_ pair. The result was a
+ * marketing site whose forms told every visitor "this form is not
+ * connected yet", and an analytics table with zero rows — and nothing
+ * failed, because every step on that path swallows errors by design so
+ * a broken tracker can never break a lead form.
+ *
+ * So: derive one from the other, and refuse to build a site whose forms
+ * cannot send. A loud build failure is the correct outcome for a
+ * misconfigured deploy; two silent weeks of lost leads is not.
+ */
+const derive = (publicName, viteName) => {
+  if (process.env[publicName]) return;
+  if (process.env[viteName]) {
+    process.env[publicName] = process.env[viteName];
+    console.log(`  ${publicName} derived from ${viteName}`);
+  }
+};
+derive('PUBLIC_SUPABASE_URL', 'VITE_SUPABASE_URL');
+derive('PUBLIC_SUPABASE_ANON_KEY', 'VITE_SUPABASE_ANON_KEY');
+
+if (!process.env.PUBLIC_SUPABASE_URL || !process.env.PUBLIC_SUPABASE_ANON_KEY) {
+  throw new Error(
+    'Refusing to build: PUBLIC_SUPABASE_URL / PUBLIC_SUPABASE_ANON_KEY are not set ' +
+      '(nor VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY to derive them from). ' +
+      'Without them the contact form and estimator tell every visitor the form is ' +
+      'not connected, and analytics records nothing. Set them in Vercel → Settings → ' +
+      'Environment Variables and redeploy.',
+  );
+}
+
 /* ── 1. The marketing site ───────────────────────────────────────── */
 if (!existsSync(path.join(root, 'web', 'node_modules'))) {
   run('npm ci --prefix web --no-audit --no-fund');
