@@ -16,6 +16,7 @@ Run against the local backend (see README). Times assume it is currently busines
 | 8 | Hold or triple-press `Shift+1` | Exactly one call logged |
 | 9 | Two tabs on the same lead, log in both | One call recorded |
 | 10 | *Incoming call*: type a known number (any format) | The company opens **by itself** (no click): "Incoming call — X is calling you back", a plain-English status ("we emailed them on …, waiting for a reply"), the emails sent/owed, then the usual card with contact, links, earlier calls and the touch plan |
+| 10a | Same, for a company that has a deal | The card says "Deal: <stage> · the team's next step: …" and the lead card carries a "Deal: <stage>" badge. No value, probability or owner anywhere |
 | 10b | *Incoming call*: a do-not-call number / an unknown number | DNC: a warning, nothing opens. Unknown: "No match — add them below", no guess |
 | 11 | *Incoming call*: unknown number + company + contact | Lead created ("Inbound" badge), contact details carried; logging it returns the queue to the lead the rep was on |
 | 12 | *Wrong number? Edit* with another lead's number, then a free one | Refused with a clear message; then saved |

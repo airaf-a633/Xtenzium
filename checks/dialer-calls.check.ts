@@ -5,7 +5,7 @@ import {
   OUTCOMES, clockFor, dayStartInZone, dayStats, formatInZone, formatPhone,
   isConversation, outcomeByShortcut, voiceLink, zonedToUtc,
   BOARD_COLUMNS, columnForStatus, filterPeople, gmailCompose, insertMention, mentionLabel,
-  emailHtml, emailPlain, extraDetails, extraLinks, firstName, hasUnsetLinks, instantOutcome, leadStatusLine, isConnectionError, isSessionError, isWeekendIn, safeHref, mentionsIn, mentionTrigger, outcomeLabel, parseTiers, renderTemplate, scriptVars, segmentLabel, tiersParam,
+  dealStageLabel, emailHtml, emailPlain, extraDetails, extraLinks, firstName, hasUnsetLinks, instantOutcome, leadStatusLine, isConnectionError, isSessionError, isWeekendIn, safeHref, mentionsIn, mentionTrigger, outcomeLabel, parseTiers, renderTemplate, scriptVars, segmentLabel, tiersParam,
 } from '../src/lib/dialer-calls';
 
 let failures = 0;
@@ -178,6 +178,7 @@ eq('meeting', L({ status: 'meeting', next_call_at: '2026-10-26T16:00:00Z' }).sta
 eq('the closed ones', ['nurture', 'lost', 'disqualified', 'bad_data', 'exhausted', 'dnc', 'no_phone'].map(st => L({ status: st }).length > 10), [true, true, true, true, true, true, true]);
 eq('an unknown status is shown as it is', L({ status: 'weird' }), 'weird');
 
+eq('deal stages are named for people', [dealStageLabel('proposal_sent'), dealStageLabel('won'), dealStageLabel('odd_stage'), dealStageLabel(null)], ['Proposal sent', 'Won', 'odd stage', null]);
 eq('first names', [firstName('Jodi Smith'), firstName('  Jodi '), firstName(null), firstName('')], ['Jodi', 'Jodi', 'there', 'there']);
 
 /* Links from a CSV cell */

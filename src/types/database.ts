@@ -1073,6 +1073,10 @@ export type Database = {
         Args: { p_lead_id: string };
         Returns: string;
       };
+      lead_deal_view: {
+        Args: { p_lead_id: string };
+        Returns: { stage: string; next_action: string | null } | null;
+      };
       meeting_outcome: {
         Args: { p_lead_id: string; p_outcome: 'held' | 'no_show' | 'cancelled' };
         Returns: { status: string; task_id: string | null; task_type: string };

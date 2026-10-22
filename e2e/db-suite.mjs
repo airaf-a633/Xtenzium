@@ -377,4 +377,17 @@ const tpl32 = Object.fromEntries((await q(`SELECT type, body FROM public.email_t
 expect('both templates exist with the booking link', [Object.keys(tpl32).sort(), tpl32.email_after_meeting.includes('{{booking_link}}'), tpl32.email_noshow.includes('{{booking_link}}')], [['email_after_meeting', 'email_noshow'], true, true]);
 expect('the thank-you asks the sender to add the next steps', tpl32.email_after_meeting.includes('[Add the next steps'), true);
 
+
+console.log('\n— the rep sees the deal stage (033) —');
+const dl = await mk('DealView', { status: 'followup' });
+const dealRow = (await q(`INSERT INTO public.deals (title, company, stage, probability, value, source, next_action) VALUES ('Secret title','DealView','proposal_sent', 40, 12345, 'outbound', 'Follow up on the proposal') RETURNING id`))[0].id;
+await db.exec(`UPDATE public.call_leads SET deal_id = '${dealRow}' WHERE id = '${dl}'`);
+const view = await as(CALLER, 'authenticated', async () => (await q(`SELECT public.lead_deal_view($1) v`, [dl]))[0].v);
+expect('a rep gets the stage and the next action', view, { stage: 'proposal_sent', next_action: 'Follow up on the proposal' });
+expect('and nothing else (no value, probability, title or owner)', Object.keys(view).sort(), ['next_action', 'stage']);
+expect('the deals table itself is still closed to a rep', await as(CALLER, 'authenticated', async () => (await q(`SELECT count(*)::int n FROM public.deals`))[0].n), 0);
+const noDeal = await mk('NoDeal', { status: 'new' });
+expect('a lead with no deal returns nothing', await as(CALLER, 'authenticated', async () => (await q(`SELECT public.lead_deal_view($1) v`, [noDeal]))[0].v), null);
+expect('anonymous cannot', await as(null, 'anon', () => fails(`SELECT public.lead_deal_view('${dl}')`)), true);
+
 console.log(bad ? `\n${bad} FAILED` : "\nALL PASSED"); process.exit(bad ? 1 : 0);

@@ -120,6 +120,20 @@ export function zonedToUtc(local: string, tz: string): Date {
 }
 
 /** Midnight at the start of `now`'s calendar day in `tz`, as an instant. */
+/** The deal's stage, as the team names it. */
+export const DEAL_STAGE_LABEL: Record<string, string> = {
+  new: 'New',
+  contacted: 'Contacted',
+  qualified: 'Qualified',
+  proposal_sent: 'Proposal sent',
+  negotiation: 'Negotiation',
+  won: 'Won',
+  lost: 'Lost',
+};
+
+export const dealStageLabel = (stage: string | null | undefined): string | null =>
+  stage ? (DEAL_STAGE_LABEL[stage] ?? stage.replace(/_/g, ' ')) : null;
+
 /** Where a lead stands, in a sentence the rep can read at a glance when someone rings back. */
 export function leadStatusLine(
   l: { status: string; attempt_count: number; next_call_at: string | null; nudge_count?: number | null; outreach_touches?: number | null },

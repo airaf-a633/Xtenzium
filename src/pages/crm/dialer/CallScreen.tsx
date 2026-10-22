@@ -19,7 +19,7 @@ import TouchTimeline from './TouchTimeline';
 import CallHistory from './CallHistory';
 import LeadFinder from './LeadFinder';
 import IncomingCall from './IncomingCall';
-import LeadContext from './LeadContext';
+import LeadContext, { DealBadge } from './LeadContext';
 import { logOutcome } from './logOutcome';
 
 const ET = 'America/New_York';
@@ -769,6 +769,7 @@ const CallScreen = () => {
                   </label>
                   {lead.score !== null && <Badge tone="neutral">Score {lead.score}</Badge>}
                   {segmentLabel(lead.segment) && <Badge tone="info">{segmentLabel(lead.segment)}</Badge>}
+                  {lead.deal_id && <DealBadge key={`deal-${lead.id}`} lead={lead} />}
                   {lead.source === 'inbound' && <Badge tone="warning" dot>Inbound</Badge>}
                   {lead.status === 'callback' && <Badge tone="warning" dot>Callback due</Badge>}
                   {lead.status === 'retry' && <Badge tone="info" dot>Attempt {lead.attempt_count + 1}</Badge>}
