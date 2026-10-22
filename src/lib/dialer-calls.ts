@@ -397,6 +397,7 @@ export const parseTiers = (raw: string | null): TierChoice[] =>
 export function scriptVars(
   lead: { company_name: string; contact_name: string | null } | null,
   repName: string | null,
+  callerId?: string | null,
 ): Record<string, string> {
   const company = lead?.company_name ?? 'the company';
   const contact = lead?.contact_name?.trim();
@@ -404,5 +405,6 @@ export function scriptVars(
     company,
     who: contact ? `${contact} at ${company}` : `a representative at ${company}`,
     rep: (repName ?? '').trim().split(' ')[0] || 'me',
+    caller_id: callerId ? formatPhone(callerId) : 'this number',
   };
 }

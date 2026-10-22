@@ -140,6 +140,7 @@ eq('text with spaces is not a link', extraLinks({ linkedin: 'not on linkedin' })
 eq('the same link twice shows once', extraLinks({ linkedin: 'https://x.com/a', twitter: 'https://x.com/a' }).length, 1);
 eq('other extras become details, socials do not', extraDetails({ size_confidence: 'high', linkedin: 'https://l.com/x', status: 'verified', blank: '  ' }),
   [{ label: 'size confidence', value: 'high' }, { label: 'status', value: 'verified' }]);
+eq('the caller ID reaches the pitch as {{caller_id}}', [scriptVars(null, 'Sam', '+14072438456').caller_id, scriptVars(null, 'Sam').caller_id], ['(407) 243-8456', 'this number']);
 eq('no extras at all', [extraLinks(null), extraDetails(undefined)], [[], []]);
 eq('usual header names still find the link', extraLinks({ 'LinkedIn URL': 'https://linkedin.com/in/a', 'Instagram Handle': '@acme' }).map(l => l.label), ['LinkedIn', 'Instagram']);
 eq('a dotted handle is a handle, not a domain', extraLinks({ instagram: 'john.smith' }), [{ label: 'Instagram', url: 'https://www.instagram.com/john.smith' }]);

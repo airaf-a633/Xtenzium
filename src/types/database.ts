@@ -327,6 +327,8 @@ export interface DialerSettings {
   meeting_hours_from: number;
   meeting_hours_to: number;
   meeting_default_minutes: number;
+  /* The Google Voice number prospects see, as +1XXXXXXXXXX (migration 029). */
+  caller_id_number: string | null;
   updated_at: string;
 }
 

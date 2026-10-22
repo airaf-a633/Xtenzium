@@ -136,6 +136,7 @@ const CallScreen = () => {
   const [lastCall, setLastCall] = useState<LastCall | null>(null);
   const [script, setScript] = useState<(ScriptBlock & { segment?: string | null })[]>(SCRIPT);
   const [incoming, setIncoming] = useState(false);
+  const [callerId, setCallerId] = useState<string | null>(null);
   const [lastSkip, setLastSkip] = useState<{ id: string; company: string } | null>(null);
   const skipped = useRef<string[]>([]);
   /* True from the moment a log starts until it finishes: React state is a render
@@ -314,6 +315,21 @@ const CallScreen = () => {
         if (!cancelled && rows.length > 0) {
           setScript(rows.map(r => ({ title: r.title, segment: r.segment ?? null, lines: r.body.split('\n').filter(l => l.trim()) })));
         }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  /* The number prospects see. If the setting isn't there yet (migration 029), nothing is shown. */
+  useEffect(() => {
+    let cancelled = false;
+    supabase
+      .from('dialer_settings')
+      .select('caller_id_number')
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!cancelled) setCallerId((data as { caller_id_number: string | null } | null)?.caller_id_number ?? null);
       });
     return () => {
       cancelled = true;
@@ -560,7 +576,7 @@ const CallScreen = () => {
   /* ── render ── */
 
   const clock = lead ? clockFor(lead.timezone, now) : null;
-  const vars = scriptVars(lead ? { company_name: lead.company_name, contact_name: contactName || lead.contact_name } : null, profile?.full_name ?? user?.email?.split('@')[0] ?? null);
+  const vars = scriptVars(lead ? { company_name: lead.company_name, contact_name: contactName || lead.contact_name } : null, profile?.full_name ?? user?.email?.split('@')[0] ?? null, callerId);
 
   return (
     <div className="flex flex-col gap-4">
@@ -654,6 +670,14 @@ const CallScreen = () => {
           <Button size="sm" onClick={undo} disabled={saving}>
             Undo <Kbd>Z</Kbd>
           </Button>
+        </div>
+      )}
+
+      {callerId && (
+        <div className="flex flex-wrap items-center gap-2 rounded-crm-md border border-crm-line bg-crm-surface px-3.5 py-2 text-[13px] text-crm-ink-2">
+          <span>Calling from</span>
+          <strong className="font-crm-mono text-[15px] text-crm-ink">{formatPhone(callerId)}</strong>
+          <span className="text-crm-ink-3">· check Google Voice is set to this number before you dial</span>
         </div>
       )}
 

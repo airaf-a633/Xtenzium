@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
 import type { CallScript, DialerSettings as Settings, EmailTemplate } from '../../../types/database';
+import { formatPhone } from '../../../lib/dialer-calls';
+import { normalizePhone } from '../../../lib/dialer-import';
 import {
   Badge, Button, Card, CardHeader, ErrorState, Input, PageHeader, Select, SkeletonRows, Textarea, useToast,
 } from '../../../components/crm/ui';
@@ -155,6 +157,8 @@ const DialerSettings = () => {
   const [connecting, setConnecting] = useState(false);
   const [meeting, setMeeting] = useState({ tz: 'Asia/Karachi', from: '18', to: '2', minutes: '30' });
   const [meetingSaving, setMeetingSaving] = useState(false);
+  const [callerId, setCallerId] = useState('');
+  const [callerSaving, setCallerSaving] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -171,6 +175,7 @@ const DialerSettings = () => {
         const row = s.data as Settings | null;
         setSettings(row);
         if (row) {
+          setCallerId(row.caller_id_number ? formatPhone(row.caller_id_number) : '');
           setDraft(Object.fromEntries(CADENCE.map(c2 => [c2.key, String(row[c2.key])])));
           setMeeting({
             tz: row.meeting_owner_tz,
@@ -248,6 +253,18 @@ const DialerSettings = () => {
     refresh();
   };
 
+  const saveCallerId = async () => {
+    const raw = callerId.trim();
+    const parsed = raw ? normalizePhone(raw, true) : null;
+    if (raw && !parsed?.e164) return toast('That doesn’t look like a US phone number.', 'danger');
+    setCallerSaving(true);
+    const { error } = await supabase.from('dialer_settings').update({ caller_id_number: parsed?.e164 ?? null }).eq('id', true);
+    setCallerSaving(false);
+    if (error) return toast('That didn’t save — it must be a US number.', 'danger');
+    toast(raw ? 'Caller ID saved — the rep sees it on the call screen' : 'Caller ID cleared', 'success');
+    refresh();
+  };
+
   const saveCadence = async () => {
     const next: Partial<Record<CadenceKey, number>> = {};
     for (const c of CADENCE) {
@@ -308,6 +325,23 @@ const DialerSettings = () => {
               </p>
               {calendar.status?.error && <p className="m-0 text-[12.5px] text-crm-danger">{calendar.status.error}</p>}
             </div>
+          </Card>
+
+          <Card>
+            <CardHeader title="Caller ID" />
+            <div className="flex flex-wrap items-end gap-3 p-4">
+              <Input
+                className="min-w-[220px]"
+                label="The number prospects see (Google Voice)"
+                value={callerId}
+                onChange={e => setCallerId(e.target.value)}
+                placeholder="(407) 243-8456"
+              />
+              <Button variant="primary" loading={callerSaving} onClick={saveCallerId}>Save</Button>
+            </div>
+            <p className="m-0 px-4 pb-4 text-[12.5px] text-crm-ink-3">
+              Shown on the rep’s call screen so they check Google Voice is using it, and available to the pitch as {'{{caller_id}}'}.
+            </p>
           </Card>
 
           <Card>
