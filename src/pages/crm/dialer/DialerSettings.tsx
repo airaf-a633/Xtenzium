@@ -44,6 +44,7 @@ const TEMPLATE_TITLE: Record<string, string> = {
   admin_call: 'Owner call script',
   outreach_first: 'Cold email — first touch',
   outreach_followup: 'Cold email — follow-up',
+  followup_nudge: 'Email — nudge (no reply to the follow-up)',
 };
 
 const TemplateEditor = ({ template, onSaved }: { template: EmailTemplate; onSaved: () => void }) => {
@@ -66,7 +67,7 @@ const TemplateEditor = ({ template, onSaved }: { template: EmailTemplate; onSave
     <div className="flex flex-col gap-2 border-b border-crm-line p-4 last:border-b-0">
       <p className="m-0 text-[13.5px] font-medium text-crm-ink">{TEMPLATE_TITLE[template.type] ?? template.type}</p>
       <Input label="Subject" value={subject} onChange={e => setSubject(e.target.value)} />
-      <Textarea label="Body" rows={10} value={body} onChange={e => setBody(e.target.value)} />
+      <Textarea label="Body — links as [text](https://…)" rows={14} value={body} onChange={e => setBody(e.target.value)} />
       <div>
         <Button variant="primary" loading={saving} disabled={!dirty} onClick={save}>Save template</Button>
       </div>
@@ -158,6 +159,8 @@ const DialerSettings = () => {
   const [meeting, setMeeting] = useState({ tz: 'Asia/Karachi', from: '18', to: '2', minutes: '30' });
   const [meetingSaving, setMeetingSaving] = useState(false);
   const [callerId, setCallerId] = useState('');
+  const [links, setLinks] = useState({ booking: '', portfolio: '' });
+  const [linksSaving, setLinksSaving] = useState(false);
   const [callerSaving, setCallerSaving] = useState(false);
 
   useEffect(() => {
@@ -176,6 +179,7 @@ const DialerSettings = () => {
         setSettings(row);
         if (row) {
           setCallerId(row.caller_id_number ? formatPhone(row.caller_id_number) : '');
+          setLinks({ booking: row.booking_link ?? '', portfolio: row.portfolio_link ?? '' });
           setDraft(Object.fromEntries(CADENCE.map(c2 => [c2.key, String(row[c2.key])])));
           setMeeting({
             tz: row.meeting_owner_tz,
@@ -253,6 +257,21 @@ const DialerSettings = () => {
     refresh();
   };
 
+  const saveLinks = async () => {
+    const clean = (v: string) => v.trim();
+    const ok = (v: string) => v === '' || /^https?:\/\/\S+$/i.test(v);
+    if (!ok(clean(links.booking)) || !ok(clean(links.portfolio))) return toast('Links must start with https:// and have no spaces.', 'danger');
+    setLinksSaving(true);
+    const { error } = await supabase.from('dialer_settings').update({
+      booking_link: clean(links.booking) || null,
+      portfolio_link: clean(links.portfolio) || null,
+    }).eq('id', true);
+    setLinksSaving(false);
+    if (error) return toast('That didn’t save.', 'danger');
+    toast('Links saved — they fill into every follow-up email', 'success');
+    refresh();
+  };
+
   const saveCallerId = async () => {
     const raw = callerId.trim();
     const parsed = raw ? normalizePhone(raw, true) : null;
@@ -324,6 +343,31 @@ const DialerSettings = () => {
                 isn’t available, the rep just types the time and you send the invite yourself.
               </p>
               {calendar.status?.error && <p className="m-0 text-[12.5px] text-crm-danger">{calendar.status.error}</p>}
+            </div>
+          </Card>
+
+          <Card>
+            <CardHeader title="Follow-up email links" />
+            <div className="flex flex-col gap-3 p-4">
+              <Input
+                label="Booking link (your Zoho calendar page)"
+                value={links.booking}
+                onChange={e => setLinks(l => ({ ...l, booking: e.target.value }))}
+                placeholder="https://…"
+              />
+              <Input
+                label="Portfolio link"
+                value={links.portfolio}
+                onChange={e => setLinks(l => ({ ...l, portfolio: e.target.value }))}
+                placeholder="https://xtenzium.com/…"
+              />
+              <div>
+                <Button variant="primary" loading={linksSaving} onClick={saveLinks}>Save links</Button>
+              </div>
+              <p className="m-0 text-[12.5px] text-crm-ink-3">
+                Templates use {'{{booking_link}}'} and {'{{portfolio_link}}'} (write a link as <code>[text]({'{{booking_link}}'})</code>), plus {'{{contact_first}}'}, {'{{company_name}}'} and {'{{contact_name}}'}.
+                Until a link is set, the Inbox warns before you send.
+              </p>
             </div>
           </Card>
 

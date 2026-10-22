@@ -15,8 +15,10 @@ export const useInboxCount = (enabled: boolean): number => {
       Promise.all([
         supabase.from('followup_queue').select('id', { count: 'exact', head: true }).eq('status', 'queued'),
         supabase.from('call_activities').select('id', { count: 'exact', head: true }).eq('flagged', true).is('flag_resolved_at', null),
-      ]).then(([q, f]) => {
-        if (!cancelled && !q.error && !f.error) setCount((q.count ?? 0) + (f.count ?? 0));
+        // Nudges that have come due. Harmless (counts as 0) before migration 031.
+        supabase.from('call_leads').select('id', { count: 'exact', head: true }).eq('status', 'followup').not('nudge_due_at', 'is', null).lte('nudge_due_at', new Date().toISOString()),
+      ]).then(([q, f, n]) => {
+        if (!cancelled && !q.error && !f.error) setCount((q.count ?? 0) + (f.count ?? 0) + (n.error ? 0 : (n.count ?? 0)));
       });
 
     run();

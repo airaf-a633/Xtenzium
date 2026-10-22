@@ -5,7 +5,7 @@ import {
   OUTCOMES, clockFor, dayStartInZone, dayStats, formatInZone, formatPhone,
   isConversation, outcomeByShortcut, voiceLink, zonedToUtc,
   BOARD_COLUMNS, columnForStatus, filterPeople, gmailCompose, insertMention, mentionLabel,
-  extraDetails, extraLinks, instantOutcome, isConnectionError, isSessionError, isWeekendIn, safeHref, mentionsIn, mentionTrigger, outcomeLabel, parseTiers, renderTemplate, scriptVars, segmentLabel, tiersParam,
+  emailHtml, emailPlain, extraDetails, extraLinks, firstName, hasUnsetLinks, instantOutcome, isConnectionError, isSessionError, isWeekendIn, safeHref, mentionsIn, mentionTrigger, outcomeLabel, parseTiers, renderTemplate, scriptVars, segmentLabel, tiersParam,
 } from '../src/lib/dialer-calls';
 
 let failures = 0;
@@ -155,6 +155,16 @@ eq('connection failures are recognised', [isConnectionError('Failed to fetch'), 
 eq('a real refusal is not a connection error', [isConnectionError('This number is on the do-not-call list'), isConnectionError('Another lead already has that number'), isConnectionError(null)], [false, false, false]);
 
 eq('an expired login is recognised', [isSessionError('JWT expired'), isSessionError('invalid JWT: token is expired'), isSessionError('Another lead already has that number')], [true, true, false]);
+
+/* Follow-up emails with embedded links */
+const sample = 'Hi Jodi,\n\nPick a time: [Select a time](https://zoho.example/book?a=1&b=2)\nSee [Portfolio](https://xtenzium.com/work).';
+eq('plain text keeps every link visible', emailPlain(sample), 'Hi Jodi,\n\nPick a time: Select a time: https://zoho.example/book?a=1&b=2\nSee Portfolio: https://xtenzium.com/work.');
+eq('html has real hyperlinks, escaped properly', emailHtml(sample), '<div>Hi Jodi,<br><br>Pick a time: <a href="https://zoho.example/book?a=1&amp;b=2">Select a time</a><br>See <a href="https://xtenzium.com/work">Portfolio</a>.</div>');
+eq('pasted markup is neutralised', emailHtml('<script>alert(1)</script> & done'), '<div>&lt;script&gt;alert(1)&lt;/script&gt; &amp; done</div>');
+eq('a quote in a url cannot break out of the href', emailHtml('[x](https://a.co/"b)'), '<div><a href="https://a.co/&quot;b">x</a></div>');
+eq('javascript: and relative links are not made into hyperlinks', emailHtml('[x](javascript:alert(1)) [y](/local)'), '<div>[x](javascript:alert(1)) [y](/local)</div>');
+eq('an unset link is spotted', [hasUnsetLinks('Pick: [Select a time]({{booking_link}})'), hasUnsetLinks('see {{ portfolio_link }}'), hasUnsetLinks('all filled in https://a.co')], [true, true, false]);
+eq('first names', [firstName('Jodi Smith'), firstName('  Jodi '), firstName(null), firstName('')], ['Jodi', 'Jodi', 'there', 'there']);
 
 /* Links from a CSV cell */
 eq('a bare domain gets https', safeHref('acme.com'), 'https://acme.com');

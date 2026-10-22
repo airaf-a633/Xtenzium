@@ -4,7 +4,9 @@ import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../context/AuthContext';
 import type { CallActivity, CallLead, EmailTemplate, FollowupItem, Meeting, TeamMember } from '../../../types/database';
 import { callGoogle } from '../../../lib/google-api';
-import { formatInZone, formatPhone, gmailCompose, outcomeLabel, renderTemplate, safeHref, voiceLink } from '../../../lib/dialer-calls';
+import {
+  emailHtml, emailPlain, firstName, formatInZone, formatPhone, gmailCompose, hasUnsetLinks, outcomeLabel, renderTemplate, safeHref, voiceLink, zonedToUtc,
+} from '../../../lib/dialer-calls';
 import { mailtoCompose } from '../../../lib/outreach';
 import { icsFileName, meetingIcs } from '../../../lib/ics';
 import {
@@ -15,6 +17,7 @@ import {
 type Tab = 'email' | 'interested' | 'meetings' | 'flags';
 const ET = 'America/New_York';
 const FOLLOWUP_LABEL: Record<FollowupItem['type'], string> = {
+  email_nudge: 'Nudge — no reply yet',
   email_info: 'Send info',
   email_proposal: 'Send proposal',
   linkedin: 'LinkedIn',
@@ -33,9 +36,11 @@ interface Data {
   members: TeamMember[];
   /** The scheduled calendar meeting for a lead, when one was booked through Google. */
   scheduled: Record<string, Meeting>;
+  /** The Zoho booking link and the portfolio, merged into every follow-up. */
+  links: { booking: string | null; portfolio: string | null };
 }
 
-const EMPTY: Data = { queue: [], interested: [], meetings: [], flags: [], leads: {}, reps: {}, templates: {}, notes: {}, members: [], scheduled: {} };
+const EMPTY: Data = { queue: [], interested: [], meetings: [], flags: [], leads: {}, reps: {}, templates: {}, notes: {}, members: [], scheduled: {}, links: { booking: null, portfolio: null } };
 
 const ago = (iso: string) => {
   const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
@@ -47,23 +52,33 @@ const ago = (iso: string) => {
 /* One follow-up email, opened. Everything is editable before it's
    copied or sent: the template is a starting point, not a form letter. */
 const Composer = ({
-  item, lead, template, onDone,
+  item, lead, template, links, onDone,
 }: {
   item: FollowupItem;
   lead: CallLead;
   template: EmailTemplate | undefined;
+  links: { booking: string | null; portfolio: string | null };
   onDone: (status: 'sent' | 'done' | 'cancelled') => void;
 }) => {
   const { toast } = useToast();
+  /* A link that isn't set yet is left as {{booking_link}} on purpose: it shows up in the
+     text, and the warning below says where to set it, instead of sending a blank. */
   const vars = {
     company_name: lead.company_name,
     contact_name: lead.contact_name || 'there',
+    contact_first: firstName(lead.contact_name),
     website: lead.website,
-    rep_note: item.note,
+    rep_note: item.type === 'email_nudge' ? null : item.note,
+    ...(links.booking ? { booking_link: links.booking } : {}),
+    ...(links.portfolio ? { portfolio_link: links.portfolio } : {}),
   };
   const [to, setTo] = useState(lead.email ?? '');
   const [subject, setSubject] = useState(renderTemplate(template?.subject ?? '', vars));
   const [body, setBody] = useState(renderTemplate(template?.body ?? '', vars));
+  const [bookedAt, setBookedAt] = useState('');
+  const [booking, setBooking] = useState(false);
+  const leadZone = lead.timezone ?? ET;
+  const unset = hasUnsetLinks(body) || hasUnsetLinks(subject);
 
   const saveEmail = async () => {
     const email = to.trim().toLowerCase();
@@ -72,14 +87,57 @@ const Composer = ({
     toast(error ? 'Couldn’t save that email.' : 'Email saved to the lead', error ? 'danger' : 'success');
   };
 
-  const copy = async () => {
+  /* Zoho's editor takes pasted HTML, so the links arrive as links. */
+  const copyBody = async () => {
     try {
-      await navigator.clipboard.writeText(`Subject: ${subject}\n\n${body}`);
-      toast('Email copied', 'success');
+      if (typeof ClipboardItem !== 'undefined' && navigator.clipboard.write) {
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            'text/html': new Blob([emailHtml(body)], { type: 'text/html' }),
+            'text/plain': new Blob([emailPlain(body)], { type: 'text/plain' }),
+          }),
+        ]);
+      } else {
+        await navigator.clipboard.writeText(emailPlain(body));
+      }
+      toast('Email body copied — paste it into Zoho (the links stay clickable)', 'success');
     } catch {
       toast('Couldn’t copy.', 'danger');
     }
   };
+
+  const copySubject = async () => {
+    try {
+      await navigator.clipboard.writeText(subject);
+      toast('Subject copied', 'success');
+    } catch {
+      toast('Couldn’t copy.', 'danger');
+    }
+  };
+
+  /* Zoho Bookings isn't connected, so when they pick a time the meeting is logged here by hand. */
+  const logBooked = async () => {
+    if (!bookedAt) return toast('Pick the time they chose.', 'danger');
+    const when = zonedToUtc(bookedAt, leadZone);
+    setBooking(true);
+    const { error } = await supabase.rpc('log_call', {
+      p_lead_id: lead.id,
+      p_outcome: 'meeting_booked',
+      p_tags: [],
+      p_note: 'Booked through the calendar link in the follow-up email.',
+      p_flagged: false,
+      p_at: when.toISOString(),
+      p_contact_name: null,
+      p_contact_title: null,
+      p_contact_email: to.trim() || null,
+    });
+    setBooking(false);
+    if (error) return toast(error.message, 'danger');
+    toast(`Meeting logged for ${formatInZone(when, leadZone)}`, 'success');
+    onDone('done');
+  };
+
+  const plain = emailPlain(body);
 
   return (
     <div className="flex flex-col gap-3 border-t border-crm-line bg-crm-ground p-4">
@@ -88,32 +146,53 @@ const Composer = ({
           No template for “{FOLLOWUP_LABEL[item.type]}” — write it below, or add one in Dialer settings.
         </p>
       )}
+      {unset && (
+        <p role="alert" className="m-0 rounded-crm-md border border-crm-warning/40 bg-crm-warning-quiet px-3 py-2 text-[12.5px] text-crm-ink-2">
+          The booking or portfolio link isn’t set yet, so the email still contains <code>{'{{booking_link}}'}</code> or <code>{'{{portfolio_link}}'}</code>.{' '}
+          <Link to="/crm/calls/settings" className="text-crm-copper">Set them in Dialer settings</Link> before sending.
+        </p>
+      )}
       <div className="grid gap-2 sm:grid-cols-2">
         <Input label="To" type="email" value={to} onChange={e => setTo(e.target.value)} onBlur={saveEmail} placeholder="no email on file" />
         <Input label="Subject" value={subject} onChange={e => setSubject(e.target.value)} />
       </div>
-      <Textarea label="Message" rows={11} value={body} onChange={e => setBody(e.target.value)} />
+      <Textarea label="Message — links are written [text](https://…)" rows={14} value={body} onChange={e => setBody(e.target.value)} />
       <div className="flex flex-wrap gap-2">
+        <Button variant="primary" onClick={copyBody}>Copy for Zoho</Button>
+        <Button onClick={copySubject}>Copy subject</Button>
         <a
-          href={mailtoCompose(to.trim() || null, subject, body)}
-          className="inline-flex h-9 items-center rounded-crm-md bg-crm-copper px-3 text-[13px] font-medium text-crm-copper-ink no-underline"
+          href={mailtoCompose(to.trim() || null, subject, plain)}
+          className="inline-flex h-9 items-center rounded-crm-md border border-crm-line-hi px-3 text-[13px] text-crm-ink no-underline hover:bg-crm-surface"
         >
           Open in mail app
         </a>
         <a
-          href={gmailCompose(to.trim() || null, subject, body)}
+          href={gmailCompose(to.trim() || null, subject, plain)}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex h-9 items-center rounded-crm-md border border-crm-line-hi px-3 text-[13px] text-crm-ink no-underline hover:bg-crm-surface"
         >
           Gmail
         </a>
-        <Button onClick={copy}>Copy for Zoho</Button>
         <span className="flex-1" />
-        <Button variant="primary" onClick={() => onDone('sent')}>Mark sent</Button>
+        <Button variant="primary" disabled={unset} onClick={() => onDone('sent')}>
+          {item.type === 'email_nudge' ? 'Mark nudge sent' : 'Mark sent'}
+        </Button>
         <Button onClick={() => onDone('done')}>Done</Button>
-        <Button variant="ghost" onClick={() => onDone('cancelled')}>Cancel</Button>
+        <Button variant="ghost" onClick={() => onDone('cancelled')}>
+          {item.type === 'email_nudge' ? 'Stop nudging' : 'Cancel'}
+        </Button>
       </div>
+      <details className="rounded-crm-md border border-crm-line px-3 py-2">
+        <summary className="cursor-pointer text-[13px] text-crm-ink">They picked a time? Log the meeting</summary>
+        <div className="mt-3 flex flex-wrap items-end gap-2">
+          <Input label={`Meeting time (their time, ${(leadZone.split('/')[1] ?? leadZone).replace('_', ' ')})`} type="datetime-local" value={bookedAt} onChange={e => setBookedAt(e.target.value)} />
+          <Button variant="primary" loading={booking} onClick={logBooked}>Log meeting</Button>
+        </div>
+        <p className="m-0 mt-2 text-[12px] text-crm-ink-3">
+          Moves the lead to Meetings, the deal to Qualified, and stops the follow-up nudges.
+        </p>
+      </details>
     </div>
   );
 };
@@ -187,7 +266,7 @@ const Inbox = () => {
 
   const fetchAll = useCallback(async (): Promise<Data> => {
     const weekAhead = new Date(Date.now() + 7 * 86400000).toISOString();
-    const [q, i, m, f, t, p, tm, sc] = await Promise.all([
+    const [q, i, m, f, t, p, tm, sc, st, nd] = await Promise.all([
       supabase.from('followup_queue').select('*').eq('status', 'queued').order('created_at'),
       supabase.from('call_leads').select('*').eq('status', 'followup').order('updated_at', { ascending: false }).limit(100),
       supabase.from('call_leads').select('*').eq('status', 'meeting').lte('next_call_at', weekAhead).order('next_call_at'),
@@ -196,18 +275,34 @@ const Inbox = () => {
       supabase.from('profiles').select('id, full_name'),
       supabase.from('team_members').select('*').order('name'),
       supabase.from('meetings').select('*').eq('status', 'scheduled').order('starts_at'),
+      // Either of these fails harmlessly on a database that hasn't had migration 031 yet.
+      supabase.from('dialer_settings').select('booking_link, portfolio_link').maybeSingle(),
+      supabase.from('call_leads').select('*').eq('status', 'followup').not('nudge_due_at', 'is', null).lte('nudge_due_at', new Date().toISOString()).order('nudge_due_at'),
     ]);
     const err = [q, i, m, f, t, p, tm, sc].find(r => r.error)?.error;
     if (err) throw new Error(err.message);
 
-    const queue = (q.data ?? []) as FollowupItem[];
+    const nudgeLeads = (nd.error ? [] : (nd.data ?? [])) as CallLead[];
+    const nudges: FollowupItem[] = nudgeLeads.map(l => ({
+      id: `nudge:${l.id}`,
+      lead_id: l.id,
+      type: 'email_nudge',
+      note: `No reply to our last email yet — nudge ${l.nudge_count + 1} of 2.`,
+      status: 'queued',
+      requested_by: null,
+      assignee_id: null,
+      handled_by: null,
+      handled_at: null,
+      created_at: l.nudge_due_at ?? l.updated_at,
+    }));
+    const queue = [...((q.data ?? []) as FollowupItem[]), ...nudges];
     const flags = (f.data ?? []) as CallActivity[];
     const interested = (i.data ?? []) as CallLead[];
     const meetings = (m.data ?? []) as CallLead[];
 
     // Leads referenced by the queue / flags that aren't already loaded.
     const leads: Record<string, CallLead> = {};
-    [...interested, ...meetings].forEach(l => (leads[l.id] = l));
+    [...interested, ...meetings, ...nudgeLeads].forEach(l => (leads[l.id] = l));
     const missing = [...new Set([...queue.map(x => x.lead_id), ...flags.map(x => x.lead_id)])].filter(id => !leads[id]);
     if (missing.length) {
       const { data: more } = await supabase.from('call_leads').select('*').in('id', missing);
@@ -230,6 +325,10 @@ const Inbox = () => {
       queue, interested, meetings, flags, leads, notes,
       members: (tm.data ?? []) as TeamMember[],
       scheduled: Object.fromEntries(((sc.data ?? []) as Meeting[]).map(x => [x.lead_id, x])),
+      links: {
+        booking: (st.data as { booking_link: string | null } | null)?.booking_link ?? null,
+        portfolio: (st.data as { portfolio_link: string | null } | null)?.portfolio_link ?? null,
+      },
       templates: Object.fromEntries(((t.data ?? []) as EmailTemplate[]).map(x => [x.type, x])),
       reps: Object.fromEntries(((p.data ?? []) as { id: string; full_name: string | null }[]).map(x => [x.id, x.full_name ?? 'Rep'])),
     };
@@ -254,17 +353,40 @@ const Inbox = () => {
   }, [fetchAll]);
 
   const finish = async (item: FollowupItem, status: 'sent' | 'done' | 'cancelled') => {
-    const { error } = await supabase
-      .from('followup_queue')
-      .update({ status, handled_by: user?.id ?? null, handled_at: new Date().toISOString() })
-      .eq('id', item.id);
-    if (error) {
+    let message = status === 'sent' ? 'Marked sent' : status === 'done' ? 'Done' : 'Cancelled';
+    let failedSave = false;
+
+    if (item.id.startsWith('nudge:')) {
+      // A nudge isn't a stored task: sending it schedules the last one; anything else stops the nudging.
+      const r = status === 'sent'
+        ? await supabase.rpc('followup_nudge_sent', { p_lead_id: item.lead_id })
+        : await supabase.from('call_leads').update({ nudge_due_at: null }).eq('id', item.lead_id);
+      failedSave = !!r.error;
+      if (status === 'sent') message = r.data ? 'Nudge sent — one last nudge is scheduled' : 'Nudge sent — no more are scheduled';
+      if (status !== 'sent') message = 'Nudging stopped for this lead';
+    } else if (status === 'sent') {
+      const r = await supabase.rpc('followup_mark_sent', { p_id: item.id });
+      if (r.error) {
+        // Database without migration 031: still record it as sent.
+        const old = await supabase.from('followup_queue').update({ status, handled_by: user?.id ?? null, handled_at: new Date().toISOString() }).eq('id', item.id);
+        failedSave = !!old.error;
+      } else if (r.data) {
+        message = 'Marked sent — a reminder to nudge them is set for ' + formatInZone(new Date(r.data), data.leads[item.lead_id]?.timezone ?? ET).split(',').slice(0, 2).join(',');
+      }
+    } else {
+      const r = await supabase
+        .from('followup_queue')
+        .update({ status, handled_by: user?.id ?? null, handled_at: new Date().toISOString() })
+        .eq('id', item.id);
+      failedSave = !!r.error;
+    }
+    if (failedSave) {
       toast('That didn’t save.', 'danger');
       return;
     }
     setData(d => ({ ...d, queue: d.queue.filter(x => x.id !== item.id) }));
     setOpen(null);
-    toast(status === 'sent' ? 'Marked sent' : status === 'done' ? 'Done' : 'Cancelled', 'success');
+    toast(message, 'success');
   };
 
   /* A meeting booked through Google has a record; one the rep only
@@ -407,7 +529,7 @@ const Inbox = () => {
                     </span>
                     <Badge tone={item.type === 'email_proposal' ? 'copper' : 'neutral'}>{FOLLOWUP_LABEL[item.type]}</Badge>
                     {item.type !== 'admin_call' && !lead.email && <Badge tone="warning">No email</Badge>}
-                    {item.assignee_id ? (
+                    {item.type === 'email_nudge' ? null : item.assignee_id ? (
                       <Badge tone="info" dot>{memberName(item.assignee_id) ?? 'Assigned'}</Badge>
                     ) : (
                       <Badge tone="neutral">Unassigned</Badge>
@@ -416,6 +538,7 @@ const Inbox = () => {
                   </button>
                   {isOpen && (
                     <>
+                      {item.type !== 'email_nudge' && (
                       <div className="flex items-end gap-2 border-t border-crm-line bg-crm-ground px-4 pt-3">
                         <Select
                           className="w-[220px]"
@@ -426,6 +549,7 @@ const Inbox = () => {
                           onChange={e => assign(item, e.target.value || null)}
                         />
                       </div>
+                      )}
                       {item.type === 'admin_call' ? (
                         <CallPlan key={item.id} item={item} lead={lead} onDone={s => finish(item, s)} />
                       ) : (
@@ -433,7 +557,8 @@ const Inbox = () => {
                           key={item.id}
                           item={item}
                           lead={lead}
-                          template={data.templates[item.type]}
+                          template={data.templates[item.type === 'email_nudge' ? 'followup_nudge' : item.type]}
+                          links={data.links}
                           onDone={s => finish(item, s)}
                         />
                       )}

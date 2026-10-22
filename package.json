@@ -8,6 +8,9 @@
     "build": "node scripts/build-all.mjs",
     "build:crm-only": "tsc -b && vite build",
     "lint": "eslint .",
+    "test:db": "node e2e/db-suite.mjs",
+    "e2e:api": "node e2e/shim.mjs",
+    "e2e:web": "vite --mode e2e --port 5180",
     "check": "npm run check:deals && npm run check:tasks && npm run check:views && npm run check:command && npm run check:realtime && npm run check:reporting && npm run check:roles && npm run check:dialer-import && npm run check:dialer-calls && npm run check:meeting-slots && npm run check:google && npm run check:outreach && npm run check:touch-ics-summary && npm run check:summary-api && npm run check:auth-guard && npm run check:auth-health",
     "check:deals": "npx --yes esbuild checks/deals.check.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/deals.check.mjs --log-level=warning && node node_modules/.cache/deals.check.mjs",
     "check:tasks": "npx --yes esbuild checks/tasks.check.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/tasks.check.mjs --log-level=warning && node node_modules/.cache/tasks.check.mjs",
@@ -47,6 +50,7 @@
     "tailwind-merge": "^3.5.0"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.11",
     "@eslint/js": "^9.39.4",
     "@types/node": "^24.12.2",
     "@types/react": "^19.2.14",

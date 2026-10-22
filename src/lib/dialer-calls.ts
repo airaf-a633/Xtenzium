@@ -217,6 +217,37 @@ export function renderTemplate(text: string, vars: Record<string, string | null 
     .trim();
 }
 
+/* ─── Emails with embedded links ──────────────────────────────
+   Templates write a link as [text](https://…). The text box shows exactly that;
+   a mail app that can't carry HTML gets "text: https://…", and "Copy for Zoho"
+   puts real hyperlinks on the clipboard so they paste in as links. */
+
+const MD_LINK = /\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)/g;
+
+const escapeHtml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+/** Plain text: each link becomes "text: url", so nothing is lost where HTML isn't possible. */
+export const emailPlain = (body: string): string => body.replace(MD_LINK, (_, text: string, url: string) => `${text}: ${url}`);
+
+/** HTML with real <a> tags. Everything else is escaped; line breaks are kept. */
+export function emailHtml(body: string): string {
+  let out = '';
+  let last = 0;
+  for (const m of body.matchAll(MD_LINK)) {
+    out += escapeHtml(body.slice(last, m.index));
+    out += `<a href="${escapeHtml(m[2])}">${escapeHtml(m[1])}</a>`;
+    last = (m.index ?? 0) + m[0].length;
+  }
+  out += escapeHtml(body.slice(last));
+  return `<div>${out.replace(/\r?\n/g, '<br>')}</div>`;
+}
+
+/** True while a {{booking_link}} / {{portfolio_link}} is still unfilled — don't send it like that. */
+export const hasUnsetLinks = (body: string): boolean => /\{\{\s*(booking_link|portfolio_link)\s*\}\}/.test(body);
+
+/** "Jodi Smith" → "Jodi"; nobody → "there". */
+export const firstName = (name: string | null | undefined): string => (name ?? '').trim().split(/\s+/)[0] || 'there';
+
 /** Opens Gmail's compose window with everything filled in. */
 export const gmailCompose = (to: string | null, subject: string, body: string) =>
   `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to ?? '')}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;

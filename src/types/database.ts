@@ -239,6 +239,9 @@ export interface CallLead {
   outreach_last_at: string | null;
   /* Skip snoozes a lead until the rep’s next morning (migration 026). */
   snoozed_until: string | null;
+  /* When the next "did you see my email?" nudge is due, and how many have gone (migration 031). */
+  nudge_due_at: string | null;
+  nudge_count: number;
   created_at: string;
   updated_at: string;
 }
@@ -280,7 +283,8 @@ export interface DncEntry {
 export interface FollowupItem {
   id: string;
   lead_id: string;
-  type: 'email_info' | 'email_proposal' | 'linkedin' | 'admin_call';
+  /* 'email_nudge' is not stored: the Inbox builds it from a lead whose nudge is due. */
+  type: 'email_info' | 'email_proposal' | 'linkedin' | 'admin_call' | 'email_nudge';
   note: string | null;
   status: 'queued' | 'sent' | 'done' | 'cancelled';
   requested_by: string | null;
@@ -292,7 +296,7 @@ export interface FollowupItem {
 }
 
 export interface EmailTemplate {
-  type: FollowupItem['type'] | 'outreach_first' | 'outreach_followup';
+  type: FollowupItem['type'] | 'outreach_first' | 'outreach_followup' | 'followup_nudge';
   subject: string;
   body: string;
   updated_by: string | null;
@@ -329,6 +333,9 @@ export interface DialerSettings {
   meeting_default_minutes: number;
   /* The Google Voice number prospects see, as +1XXXXXXXXXX (migration 029). */
   caller_id_number: string | null;
+  /* The Zoho calendar link and the portfolio, merged into follow-up emails (migration 031). */
+  booking_link: string | null;
+  portfolio_link: string | null;
   updated_at: string;
 }
 
@@ -1065,6 +1072,14 @@ export type Database = {
       dialer_skip_lead: {
         Args: { p_lead_id: string };
         Returns: string;
+      };
+      followup_mark_sent: {
+        Args: { p_id: string };
+        Returns: string | null;
+      };
+      followup_nudge_sent: {
+        Args: { p_lead_id: string };
+        Returns: string | null;
       };
       dialer_workday_start: {
         Args: Record<string, never>;
