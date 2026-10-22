@@ -197,7 +197,10 @@ const CallScreen = () => {
   const userId = user?.id ?? null;
   const fetchStats = useCallback(async () => {
     if (!userId) return null;
-    const since = dayStartInZone(new Date(), myTz).toISOString();
+    /* The working day, as the server defines it (a rep calling the US from Pakistan works across
+       midnight). Falls back to the calendar day if the server doesn't have it yet. */
+    const wd = await supabase.rpc('dialer_workday_start');
+    const since = (typeof wd.data === 'string' && !wd.error ? new Date(wd.data) : dayStartInZone(new Date(), myTz)).toISOString();
     const dueQuery = supabase
       .from('call_leads')
       .select('id', { count: 'exact', head: true })
@@ -219,8 +222,8 @@ const CallScreen = () => {
       snoozed: snoozed.count ?? 0,
       day: dayStats(((acts.data ?? []) as { outcome: string }[]).map(a => a.outcome)),
       due: due.count ?? 0,
-      lists: (summary.data ?? []) as DialerListSummary[],
-      tiers: (tierSummary.data ?? null) as { A: number; B: number; C: number; D: number; none: number } | null,
+      lists: (Array.isArray(summary.data) ? summary.data : []) as DialerListSummary[],
+      tiers: (tierSummary.data && typeof tierSummary.data === 'object' && !Array.isArray(tierSummary.data) ? tierSummary.data : null) as { A: number; B: number; C: number; D: number; none: number } | null,
     };
   }, [userId, myTz, listId]);
 

@@ -1066,6 +1066,14 @@ export type Database = {
         Args: { p_lead_id: string };
         Returns: string;
       };
+      dialer_workday_start: {
+        Args: Record<string, never>;
+        Returns: string;
+      };
+      finish_import: {
+        Args: { p_list_id: string; p_imported: number; p_skipped: number };
+        Returns: undefined;
+      };
       dialer_create_lead: {
         Args: {
           p_company: string; p_phone_raw: string | null; p_e164: string | null; p_is_us: boolean | null;

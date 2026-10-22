@@ -120,6 +120,20 @@ export function zonedToUtc(local: string, tz: string): Date {
 }
 
 /** Midnight at the start of `now`'s calendar day in `tz`, as an instant. */
+/** Saturday or Sunday on the wall clock of `tz`. */
+export function isWeekendIn(when: Date, tz: string): boolean {
+  const day = new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'short' }).format(when);
+  return day === 'Sat' || day === 'Sun';
+}
+
+/** A failure that means "couldn't reach the server", as opposed to the server saying no. */
+export const isConnectionError = (message: string | null | undefined): boolean =>
+  /failed to fetch|networkerror|network request|load failed|timed? ?out|\b50[234]\b|unavailable|outage/i.test(message ?? '');
+
+/** The login ran out (the app renews it automatically; the request that hit it must be repeated). */
+export const isSessionError = (message: string | null | undefined): boolean =>
+  /jwt expired|invalid jwt|jwt.{0,20}expired|not authenticated/i.test(message ?? '');
+
 export function dayStartInZone(now: Date, tz: string): Date {
   const v = partsIn(now, tz);
   return zonedToUtc(`${v.year}-${v.month}-${v.day}T00:00`, tz);

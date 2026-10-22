@@ -1,8 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import {
   GENERAL_CHIPS, filterPeople, formatInZone, insertMention, mentionLabel, mentionTrigger, mentionsIn,
-  zonedToUtc, type MentionTrigger, type OutcomeDef,
-} from '../../../lib/dialer-calls';
+  zonedToUtc, type MentionTrigger, type OutcomeDef, isWeekendIn } from '../../../lib/dialer-calls';
 import { useMentionables } from './useMentionables';
 import { useCalendar } from './useCalendar';
 import MeetingBooker, { type BookerState } from './MeetingBooker';
@@ -146,6 +145,7 @@ const OutcomePanel = ({
         onInvalid('That time has already passed.');
         return;
       }
+      if (isWeekendIn(when, leadTz) && !window.confirm('That is a weekend in the prospect’s time zone. Schedule it anyway?')) return;
       if (when.getTime() > Date.now() + 45 * 86_400_000 && !window.confirm('That is more than 6 weeks away. Is the date right?')) return;
       at = when.toISOString();
     }

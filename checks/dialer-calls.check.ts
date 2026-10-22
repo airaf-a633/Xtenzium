@@ -5,7 +5,7 @@ import {
   OUTCOMES, clockFor, dayStartInZone, dayStats, formatInZone, formatPhone,
   isConversation, outcomeByShortcut, voiceLink, zonedToUtc,
   BOARD_COLUMNS, columnForStatus, filterPeople, gmailCompose, insertMention, mentionLabel,
-  extraDetails, extraLinks, instantOutcome, safeHref, mentionsIn, mentionTrigger, outcomeLabel, parseTiers, renderTemplate, scriptVars, segmentLabel, tiersParam,
+  extraDetails, extraLinks, instantOutcome, isConnectionError, isSessionError, isWeekendIn, safeHref, mentionsIn, mentionTrigger, outcomeLabel, parseTiers, renderTemplate, scriptVars, segmentLabel, tiersParam,
 } from '../src/lib/dialer-calls';
 
 let failures = 0;
@@ -146,6 +146,15 @@ eq('usual header names still find the link', extraLinks({ 'LinkedIn URL': 'https
 eq('a dotted handle is a handle, not a domain', extraLinks({ instagram: 'john.smith' }), [{ label: 'Instagram', url: 'https://www.instagram.com/john.smith' }]);
 eq('"x" must be the whole header', [extraLinks({ x: 'acme' }).length, extraLinks({ 'next steps': 'acme' }).length], [1, 0]);
 eq('long extra values are clipped', extraDetails({ notes: 'a'.repeat(500) })[0].value.length, 201);
+
+/* Weekends are the prospect's, not ours */
+eq('Saturday in New York', isWeekendIn(new Date('2026-10-24T16:00:00Z'), 'America/New_York'), true);
+eq('Friday evening in New York is still Friday there (even though it is Saturday in Karachi)', [isWeekendIn(new Date('2026-10-24T01:00:00Z'), 'America/New_York'), isWeekendIn(new Date('2026-10-24T01:00:00Z'), 'Asia/Karachi')], [false, true]);
+eq('a Thursday', isWeekendIn(new Date('2026-10-22T16:00:00Z'), 'America/Chicago'), false);
+eq('connection failures are recognised', [isConnectionError('Failed to fetch'), isConnectionError('e2e: simulated outage'), isConnectionError('NetworkError when attempting to fetch'), isConnectionError('Load failed')], [true, true, true, true]);
+eq('a real refusal is not a connection error', [isConnectionError('This number is on the do-not-call list'), isConnectionError('Another lead already has that number'), isConnectionError(null)], [false, false, false]);
+
+eq('an expired login is recognised', [isSessionError('JWT expired'), isSessionError('invalid JWT: token is expired'), isSessionError('Another lead already has that number')], [true, true, false]);
 
 /* Links from a CSV cell */
 eq('a bare domain gets https', safeHref('acme.com'), 'https://acme.com');

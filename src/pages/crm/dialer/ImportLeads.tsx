@@ -16,7 +16,7 @@ const TIER_OPTIONS = [
   { value: 'A', label: 'Tier A' },
   { value: 'B', label: 'Tier B' },
   { value: 'C', label: 'Tier C' },
-  { value: 'D', label: 'Parked (D) — keep, don’t dial' },
+  { value: 'D', label: 'Parked (D)' },
   { value: 'skip', label: 'Don’t import' },
   { value: '-', label: 'No tier' },
 ];
@@ -72,7 +72,7 @@ const ImportLeads = () => {
   const [segment, setSegment] = useState<'agency' | 'dev_shop' | ''>('');
   const [dragging, setDragging] = useState(false);
   const [progress, setProgress] = useState({ done: 0, total: 0 });
-  const [result, setResult] = useState<{ imported: number; skipped: number; listId: string } | null>(null);
+  const [result, setResult] = useState<{ imported: number; skipped: number; listId: string; why: string[] } | null>(null);
   /* Tier handling for files that don't use A / B / C: the person's
      per-value choices (over the guesses), and an optional rule that
      turns a score into a tier for rows with no tier at all. */
@@ -204,8 +204,17 @@ const ImportLeads = () => {
     }
 
     const skipped = parsed.rows.length - imported;
-    await supabase.from('call_lists').update({ row_count: imported, skipped_count: skipped }).eq('id', list.id);
-    setResult({ imported, skipped, listId: list.id });
+    // A rep can't write call_lists directly; the RPC lets whoever uploaded it save the totals.
+    const saved = await supabase.rpc('finish_import', { p_list_id: list.id, p_imported: imported, p_skipped: skipped });
+    if (saved.error) await supabase.from('call_lists').update({ row_count: imported, skipped_count: skipped }).eq('id', list.id);
+    const why = [
+      summary.dupFile + summary.dupExisting > 0 && `${(summary.dupFile + summary.dupExisting).toLocaleString()} duplicate${summary.dupFile + summary.dupExisting === 1 ? '' : 's'}`,
+      summary.dnc > 0 && `${summary.dnc.toLocaleString()} do-not-call`,
+      summary.noName > 0 && `${summary.noName.toLocaleString()} with no name`,
+      summary.heldBack > 0 && `${summary.heldBack.toLocaleString()} left out by your tier choice`,
+      skipLookalikes && summary.possibleDup > 0 && `${summary.possibleDup.toLocaleString()} look-alike${summary.possibleDup === 1 ? '' : 's'}`,
+    ].filter((x): x is string => !!x);
+    setResult({ imported, skipped, listId: list.id, why });
     setPhase('done');
     toast(`${imported.toLocaleString()} leads imported`, 'success');
   };
@@ -453,7 +462,7 @@ const ImportLeads = () => {
           <div className="flex flex-col gap-3 p-4">
             <p className="m-0 text-[14px] text-crm-ink">
               <strong>{result.imported.toLocaleString()}</strong> leads imported
-              {result.skipped > 0 && <> · {result.skipped.toLocaleString()} skipped (duplicates, do-not-call or missing name)</>}
+              {result.skipped > 0 && <> · {result.skipped.toLocaleString()} skipped{result.why.length ? ` (${result.why.join(', ')})` : ''}</>}
             </p>
             <div className="flex gap-2">
               <ButtonLink to="/crm/dialer" variant="primary">Back to dialer</ButtonLink>

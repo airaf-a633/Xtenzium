@@ -1,6 +1,6 @@
 import { supabase } from '../../../lib/supabase';
 import { callGoogle, type BookResponse } from '../../../lib/google-api';
-import { formatInZone, type OutcomeDef } from '../../../lib/dialer-calls';
+import { formatInZone, isConnectionError, isSessionError, type OutcomeDef } from '../../../lib/dialer-calls';
 import type { OutcomeSubmit } from './OutcomePanel';
 
 export interface Contact {
@@ -54,7 +54,17 @@ export async function logOutcome(
     p_contact_title: contact.title?.trim() || null,
     p_contact_email: contact.email?.trim() || null,
   });
-  if (error) return { ok: false, error: error.message, code: null };
+  if (error) {
+    return {
+      ok: false,
+      error: isConnectionError(error.message)
+        ? 'Couldn’t reach the server — that call is NOT logged yet. Press it again when the connection is back.'
+        : isSessionError(error.message)
+          ? 'Your login was just renewed — that call is NOT logged yet. Press it again.'
+          : error.message,
+      code: null,
+    };
+  }
   const next = data?.next_call_at ? ` · next ${formatInZone(new Date(data.next_call_at), lead.timezone ?? 'America/New_York')}` : '';
   return { ok: true, message: `${lead.company_name}: ${outcome.label}${next}`, activityId: data?.activity_id ?? null };
 }
