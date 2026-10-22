@@ -4,7 +4,7 @@ import { useAuth } from '../../../context/AuthContext';
 import type { CallLead, CallScript, DialerListSummary } from '../../../types/database';
 import {
   INSTANT_HINT, OUTCOMES, SKIP_SHORTCUT, TIER_CHOICES, clockFor, dayStartInZone, dayStats, extraDetails, extraLinks, formatInZone,
-  formatPhone, instantOutcome, outcomeByShortcut, parseTiers, renderTemplate, safeHref, scriptVars, segmentLabel, tiersParam, voiceLink,
+  formatPhone, instantOutcome, outcomeByShortcut, outcomeShown, parseTiers, renderTemplate, safeHref, scriptVars, segmentLabel, tiersParam, voiceLink,
   type DayStats, type OutcomeDef, type OutcomeGroup, type TierChoice,
 } from '../../../lib/dialer-calls';
 import { SCRIPT, type ScriptBlock } from '../../../lib/dialer-script';
@@ -81,6 +81,7 @@ interface LastCall {
 }
 
 const GROUPS: { key: OutcomeGroup; title: string }[] = [
+  { key: 'other', title: 'None of these' },
   { key: 'no_contact', title: 'Couldn’t reach them' },
   { key: 'interested', title: 'Interested' },
   { key: 'not_interested', title: 'Not interested' },
@@ -398,7 +399,7 @@ const CallScreen = () => {
       return;
     }
     toast(emailHint(result.message, lead.email || contactEmail, outcome.group), 'success');
-    remember(lead.company_name, outcome.label, result.activityId);
+    remember(lead.company_name, outcomeShown(outcome, v.tags), result.activityId);
     closePanel();
     advance(true);
   };

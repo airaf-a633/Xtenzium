@@ -390,4 +390,53 @@ const noDeal = await mk('NoDeal', { status: 'new' });
 expect('a lead with no deal returns nothing', await as(CALLER, 'authenticated', async () => (await q(`SELECT public.lead_deal_view($1) v`, [noDeal]))[0].v), null);
 expect('anonymous cannot', await as(null, 'anon', () => fails(`SELECT public.lead_deal_view('${dl}')`)), true);
 
+
+console.log('\n— a custom outcome (034) —');
+const custom = (lead, tags, o = {}) => as(CALLER, 'authenticated', async () => (await q(`SELECT public.log_call($1, 'other', $2::text[], $3, false, $4::timestamptz) r`, [lead, tags, o.note ?? null, o.at ?? null]))[0].r);
+const cl = async name => { const id = await mk(name, { status: 'new' }); return id; };
+const leadRow = async id => (await q(`SELECT status, attempt_count, next_call_at FROM public.call_leads WHERE id = $1`, [id]))[0];
+const lastAct = async id => (await q(`SELECT outcome, reason_tags, note FROM public.call_activities WHERE lead_id = $1 ORDER BY created_at DESC LIMIT 1`, [id]))[0];
+
+const C1 = await cl('CustomCallback');
+await custom(C1, ['effect:callback', 'label:Wants us to call their partner Dana'], { at: new Date(Date.now() + 2 * 86400e3).toISOString(), note: 'partner is Dana, ext 4' });
+expect('callback effect: the lead is a callback at that time', [(await leadRow(C1)).status, (await leadRow(C1)).next_call_at !== null], ['callback', true]);
+const a1 = await lastAct(C1);
+expect('stored as "other" with the rep\'s own words', [a1.outcome, a1.reason_tags, a1.note], ['other', ['Custom: Wants us to call their partner Dana'], 'partner is Dana, ext 4']);
+expect('a callback effect without a time is refused', await as(CALLER, 'authenticated', async () => fails(`SELECT public.log_call('${await cl('NoTime')}', 'other', ARRAY['effect:callback','label:x'])`)), true);
+
+const C2 = await cl('CustomRetry');
+await custom(C2, ['effect:retry', 'label:Line dropped mid-call']);
+expect('retry effect: counts as an attempt and comes back', [(await leadRow(C2)).status, (await leadRow(C2)).attempt_count], ['retry', 1]);
+
+const C3 = await cl('CustomClosed');
+await custom(C3, ['effect:closed', 'label:Company shut down']);
+expect('closed effect: never called again', [(await leadRow(C3)).status, (await next(CALLER)) !== 'CustomClosed'], ['disqualified', true]);
+
+const C4 = await cl('CustomTeam');
+await custom(C4, ['effect:team', 'label:Asked for a custom hardware quote', 'Asked for email'], { note: 'IoT sensor array' });
+const fu = (await q(`SELECT type, note FROM public.followup_queue WHERE lead_id = $1`, [C4]))[0];
+expect('team effect: a task for the owners that carries the words', [(await leadRow(C4)).status, fu.type, /Custom: Asked for a custom hardware quote/.test(fu.note), /IoT sensor array/.test(fu.note)], ['followup', 'admin_call', true, true]);
+expect('the rep\'s other chips are kept alongside', (await lastAct(C4)).reason_tags.includes('Asked for email'), true);
+
+// guards
+const C5 = await cl('CustomGuards');
+expect('no effect → refused', await as(CALLER, 'authenticated', () => fails(`SELECT public.log_call('${C5}', 'other', ARRAY['label:Something'])`)), true);
+expect('an unknown effect → refused', await as(CALLER, 'authenticated', () => fails(`SELECT public.log_call('${C5}', 'other', ARRAY['effect:delete','label:Something'])`)), true);
+expect('no words → refused', await as(CALLER, 'authenticated', () => fails(`SELECT public.log_call('${C5}', 'other', ARRAY['effect:retry'])`)), true);
+expect('blank words → refused', await as(CALLER, 'authenticated', () => fails(`SELECT public.log_call('${C5}', 'other', ARRAY['effect:retry','label:   '])`)), true);
+expect('very long words → refused', await as(CALLER, 'authenticated', () => fails(`SELECT public.log_call('${C5}', 'other', ARRAY['effect:retry','label:${'x'.repeat(130)}'])`)), true);
+expect('nothing was logged by the refused attempts', (await q(`SELECT count(*)::int n FROM public.call_activities WHERE lead_id = $1`, [C5]))[0].n, 0);
+expect('it still refuses a do-not-call lead', await (async () => { const d = await cl('CustomDnc'); await db.exec(`UPDATE public.call_leads SET status = 'dnc' WHERE id = '${d}'`); return as(CALLER, 'authenticated', () => fails(`SELECT public.log_call('${d}', 'other', ARRAY['effect:retry','label:x'])`)); })(), true);
+
+// undo works like any other call
+const U = await cl('CustomUndo');
+const ur = await custom(U, ['effect:retry', 'label:Voicemail box full']);
+await as(CALLER, 'authenticated', async () => q(`SELECT public.undo_last_call($1)`, [ur.activity_id]));
+expect('undo restores the lead and removes the activity', [(await leadRow(U)).status, (await leadRow(U)).attempt_count, (await q(`SELECT count(*)::int n FROM public.call_activities WHERE lead_id = $1`, [U]))[0].n], ['new', 0, 0]);
+
+// standard outcomes are untouched
+const S = await cl('StandardStill');
+await as(CALLER, 'authenticated', async () => q(`SELECT public.log_call($1, 'voicemail')`, [S]));
+expect('a standard outcome still logs as itself', [(await lastAct(S)).outcome, (await leadRow(S)).status], ['voicemail', 'retry']);
+
 console.log(bad ? `\n${bad} FAILED` : "\nALL PASSED"); process.exit(bad ? 1 : 0);

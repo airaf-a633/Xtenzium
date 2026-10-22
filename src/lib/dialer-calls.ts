@@ -11,9 +11,9 @@ export type OutcomeKey =
   | 'no_answer' | 'voicemail' | 'gatekeeper_name' | 'gatekeeper_blocked'
   | 'callback' | 'interested_info' | 'interested_proposal' | 'interested_call' | 'meeting_booked'
   | 'not_interested_inhouse' | 'not_interested_outsources' | 'not_interested_timing'
-  | 'not_fit' | 'wrong_number' | 'dnc';
+  | 'not_fit' | 'wrong_number' | 'dnc' | 'other';
 
-export type OutcomeGroup = 'no_contact' | 'interested' | 'not_interested' | 'dead';
+export type OutcomeGroup = 'no_contact' | 'interested' | 'not_interested' | 'dead' | 'other';
 
 export interface OutcomeDef {
   key: OutcomeKey;
@@ -55,6 +55,7 @@ export const OUTCOMES: OutcomeDef[] = [
   { key: 'not_fit', label: 'Not a fit', shortcut: 'f', group: 'dead', effect: 'Disqualified', chips: ['Not an agency', 'Too small', 'Wrong service'] },
   { key: 'wrong_number', label: 'Wrong / dead number', shortcut: 'w', group: 'dead', effect: 'Marked bad data', chips: ['Disconnected', 'Different business'] },
   { key: 'dnc', label: 'Do not call', shortcut: 'x', group: 'dead', effect: 'Blocked permanently', chips: ['Asked to be removed'] },
+  { key: 'other', label: 'Something else…', shortcut: 'o', group: 'other', effect: 'Write what happened and what should come next' },
 ];
 
 export const SKIP_SHORTCUT = 's';
@@ -231,7 +232,31 @@ export const formatInZone = (date: Date, tz: string) =>
 /* ─── Outcome labels ───────────────────────────────────── */
 
 export const outcomeLabel = (key: string): string =>
-  OUTCOMES.find(o => o.key === key)?.label ?? key.replace(/_/g, ' ');
+  key === 'other' ? 'Other (custom)' : (OUTCOMES.find(o => o.key === key)?.label ?? key.replace(/_/g, ' '));
+
+/* ─── "Something else": an outcome the list doesn't have ─────
+   The rep writes what happened and picks what should happen next. The effect runs through
+   the same rules as the standard outcomes (migration 034). */
+
+export type CustomEffect = 'retry' | 'callback' | 'team' | 'closed';
+
+export const CUSTOM_EFFECTS: { key: CustomEffect; label: string; hint: string }[] = [
+  { key: 'retry', label: 'Try again tomorrow', hint: 'Counts as an attempt; back in the queue' },
+  { key: 'callback', label: 'Call back at a set time', hint: 'You pick the time' },
+  { key: 'team', label: 'Needs the team', hint: 'A task for the owners, plus a deal' },
+  { key: 'closed', label: 'Don’t call again', hint: 'Closed out for good' },
+];
+
+/** The two tags the database reads to run a custom outcome. */
+export const customTags = (effect: CustomEffect, label: string): string[] => [`effect:${effect}`, `label:${label.trim()}`];
+
+/** What the rep wrote, from an activity's saved tags ("Custom: …"), or null for a standard outcome. */
+export const customLabelOf = (tags: string[] | null | undefined): string | null =>
+  (tags ?? []).find(t => t.startsWith('Custom: '))?.slice('Custom: '.length) ?? null;
+
+/** The words to show for a call: the rep's own for a custom outcome, else the standard label. */
+export const outcomeShown = (outcome: { key: string; label: string }, submittedTags: string[]): string =>
+  outcome.key === 'other' ? (submittedTags.find(t => t.startsWith('label:'))?.slice('label:'.length).trim() || outcome.label) : outcome.label;
 
 /* ─── Board ────────────────────────────────────────────────
 

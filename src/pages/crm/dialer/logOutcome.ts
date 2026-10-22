@@ -1,6 +1,6 @@
 import { supabase } from '../../../lib/supabase';
 import { callGoogle, type BookResponse } from '../../../lib/google-api';
-import { formatInZone, isConnectionError, isSessionError, type OutcomeDef } from '../../../lib/dialer-calls';
+import { formatInZone, isConnectionError, isSessionError, outcomeShown, type OutcomeDef } from '../../../lib/dialer-calls';
 import type { OutcomeSubmit } from './OutcomePanel';
 
 export interface Contact {
@@ -66,5 +66,5 @@ export async function logOutcome(
     };
   }
   const next = data?.next_call_at ? ` · next ${formatInZone(new Date(data.next_call_at), lead.timezone ?? 'America/New_York')}` : '';
-  return { ok: true, message: `${lead.company_name}: ${outcome.label}${next}`, activityId: data?.activity_id ?? null };
+  return { ok: true, message: `${lead.company_name}: ${outcomeShown(outcome, v.tags)}${next}`, activityId: data?.activity_id ?? null };
 }

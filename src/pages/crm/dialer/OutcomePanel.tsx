@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import {
   GENERAL_CHIPS, filterPeople, formatInZone, insertMention, mentionLabel, mentionTrigger, mentionsIn,
-  zonedToUtc, type MentionTrigger, type OutcomeDef, isWeekendIn } from '../../../lib/dialer-calls';
+  zonedToUtc, type MentionTrigger, type OutcomeDef, isWeekendIn, CUSTOM_EFFECTS, customTags, type CustomEffect } from '../../../lib/dialer-calls';
 import { useMentionables } from './useMentionables';
 import { useCalendar } from './useCalendar';
 import MeetingBooker, { type BookerState } from './MeetingBooker';
@@ -51,6 +51,10 @@ const OutcomePanel = ({
   const [atLocal, setAtLocal] = useState('');
   /* Do-not-call blocks a number and a website for good; the first press only asks. */
   const [confirmDnc, setConfirmDnc] = useState(false);
+  /* "Something else": what the rep says happened, and what should happen next. */
+  const isOther = outcome.key === 'other';
+  const [customLabel, setCustomLabel] = useState('');
+  const [customEffect, setCustomEffect] = useState<CustomEffect | ''>('');
 
   /* Meetings: pick a real slot when Google Calendar is connected,
      otherwise (or if it fails mid-call) type the time by hand. Calling
@@ -109,12 +113,22 @@ const OutcomePanel = ({
     }
   };
 
-  const wantsTime = outcome.needs === 'callback_time' || outcome.needs === 'meeting_time';
+  const wantsTime = outcome.needs === 'callback_time' || outcome.needs === 'meeting_time' || (isOther && customEffect === 'callback');
   const preview = wantsTime && atLocal ? zonedToUtc(atLocal, leadTz) : null;
   const chips = outcome.chips ?? GENERAL_CHIPS;
 
   const submit = () => {
     if (saving) return;
+    if (isOther) {
+      if (!customLabel.trim()) {
+        onInvalid('Write what happened on the call.');
+        return;
+      }
+      if (!customEffect) {
+        onInvalid('Pick what should happen to this lead next.');
+        return;
+      }
+    }
     if (outcome.key === 'dnc' && !confirmDnc) {
       setConfirmDnc(true);
       return;
@@ -149,13 +163,13 @@ const OutcomePanel = ({
       if (when.getTime() > Date.now() + 45 * 86_400_000 && !window.confirm('That is more than 6 weeks away. Is the date right?')) return;
       at = when.toISOString();
     }
-    onSubmit({ tags, note: note.trim(), flagged, at });
+    onSubmit({ tags: isOther && customEffect ? [...customTags(customEffect, customLabel), ...tags] : tags, note: note.trim(), flagged, at });
   };
 
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
       e.stopPropagation();
-      if (note.trim() && !window.confirm('Discard what you typed?')) return;
+      if ((note.trim() || customLabel.trim()) && !window.confirm('Discard what you typed?')) return;
       onCancel();
       return;
     }
@@ -176,10 +190,40 @@ const OutcomePanel = ({
           The calendar isn’t available right now ({calendarDown.replace(/\.$/, '')}). Enter the time below — the owner will send the invite.
         </p>
       )}
+      {isOther && (
+        <div className="flex flex-col gap-2">
+          <Input
+            label="What happened? (your own words)"
+            value={customLabel}
+            maxLength={120}
+            onChange={e => setCustomLabel(e.target.value)}
+            placeholder="e.g. Asked us to call their partner instead"
+            autoFocus
+          />
+          <fieldset className="m-0 flex flex-col gap-1.5 border-0 p-0">
+            <legend className="mb-1 p-0 text-[12px] text-crm-ink-3">What should happen to this lead next?</legend>
+            {CUSTOM_EFFECTS.map(e => (
+              <label
+                key={e.key}
+                className={cn(
+                  'flex cursor-pointer items-start gap-2 rounded-crm-md border px-3 py-2 text-[13px]',
+                  customEffect === e.key ? 'border-crm-copper bg-crm-copper/10' : 'border-crm-line bg-crm-surface',
+                )}
+              >
+                <input type="radio" name="custom-effect" checked={customEffect === e.key} onChange={() => setCustomEffect(e.key)} className="mt-0.5" />
+                <span>
+                  <span className="block font-medium text-crm-ink">{e.label}</span>
+                  <span className="block text-[11.5px] text-crm-ink-3">{e.hint}</span>
+                </span>
+              </label>
+            ))}
+          </fieldset>
+        </div>
+      )}
       {wantsTime && !useBooker && !(isMeeting && calendar.loading) && (
         <div>
           <Input
-            label={`${outcome.needs === 'callback_time' ? 'Call back' : 'Meeting'} at — their time (${zoneLabel})`}
+            label={`${outcome.needs === 'meeting_time' ? 'Meeting' : 'Call back'} at — their time (${zoneLabel})`}
             type="datetime-local"
             value={atLocal}
             onChange={e => setAtLocal(e.target.value)}
@@ -228,7 +272,7 @@ const OutcomePanel = ({
             watchCaret(e.currentTarget);
           }}
           onClick={e => watchCaret(e.currentTarget)}
-          autoFocus={!wantsTime}
+          autoFocus={!wantsTime && !isOther}
           hint={
             people.length > 0
               ? 'Enter saves · Shift+Enter for a new line · type @ to tag a teammate'

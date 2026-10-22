@@ -5,7 +5,7 @@ import {
   OUTCOMES, clockFor, dayStartInZone, dayStats, formatInZone, formatPhone,
   isConversation, outcomeByShortcut, voiceLink, zonedToUtc,
   BOARD_COLUMNS, columnForStatus, filterPeople, gmailCompose, insertMention, mentionLabel,
-  dealStageLabel, emailHtml, emailPlain, extraDetails, extraLinks, firstName, hasUnsetLinks, instantOutcome, leadStatusLine, isConnectionError, isSessionError, isWeekendIn, safeHref, mentionsIn, mentionTrigger, outcomeLabel, parseTiers, renderTemplate, scriptVars, segmentLabel, tiersParam,
+  dealStageLabel, CUSTOM_EFFECTS, customLabelOf, customTags, emailHtml, emailPlain, extraDetails, extraLinks, firstName, hasUnsetLinks, instantOutcome, leadStatusLine, isConnectionError, isSessionError, isWeekendIn, safeHref, mentionsIn, mentionTrigger, outcomeLabel, outcomeShown, parseTiers, renderTemplate, scriptVars, segmentLabel, tiersParam,
 } from '../src/lib/dialer-calls';
 
 let failures = 0;
@@ -21,6 +21,7 @@ const DB_OUTCOMES = [
   'no_answer', 'voicemail', 'gatekeeper_name', 'gatekeeper_blocked', 'callback',
   'interested_info', 'interested_proposal', 'interested_call', 'meeting_booked', 'not_interested_inhouse',
   'not_interested_outsources', 'not_interested_timing', 'not_fit', 'wrong_number', 'dnc',
+  'other', // a custom outcome (034): the rep's words + one of four effects
 ];
 eq('outcome keys match the database', OUTCOMES.map(o => o.key), DB_OUTCOMES);
 eq('shortcuts are unique', new Set(OUTCOMES.map(o => o.shortcut)).size, OUTCOMES.length);
@@ -67,7 +68,8 @@ const known = new Set<string>(OUTCOMES.map(o => o.key));
 eq('board outcomes are real', BOARD_COLUMNS.flatMap(c => c.outcomes).every(k => known.has(k)), true);
 const placed = BOARD_COLUMNS.flatMap(c => c.outcomes);
 eq('no outcome in two columns', new Set(placed).size, placed.length);
-eq('every outcome has a column', OUTCOMES.every(o => placed.includes(o.key)), true);
+// 'other' has no column on purpose: dragging a card logs a FIXED meaning, and a custom outcome needs the rep's words.
+eq('every outcome has a column (except the custom one)', OUTCOMES.filter(o => o.key !== 'other').every(o => placed.includes(o.key)), true);
 eq('every lead status has a column', ['new','retry','callback','followup','meeting','nurture','lost','disqualified','bad_data','dnc','exhausted'].every(s => columnForStatus(s)), true);
 eq('no_phone leads are not on the board', columnForStatus('no_phone'), undefined);
 eq('exhausted shows under Closed', columnForStatus('exhausted')?.key, 'closed');
@@ -179,6 +181,15 @@ eq('the closed ones', ['nurture', 'lost', 'disqualified', 'bad_data', 'exhausted
 eq('an unknown status is shown as it is', L({ status: 'weird' }), 'weird');
 
 eq('deal stages are named for people', [dealStageLabel('proposal_sent'), dealStageLabel('won'), dealStageLabel('odd_stage'), dealStageLabel(null)], ['Proposal sent', 'Won', 'odd stage', null]);
+/* "Something else" */
+eq('the effects are the four the database knows', CUSTOM_EFFECTS.map(e => e.key), ['retry', 'callback', 'team', 'closed']);
+eq('the tags the database reads', customTags('callback', '  Wants us to call Dana  '), ['effect:callback', 'label:Wants us to call Dana']);
+eq('the rep\'s words come back out of the saved tags', [customLabelOf(['Custom: Line dropped', 'Asked for email']), customLabelOf(['Asked for email']), customLabelOf(null)], ['Line dropped', null, null]);
+eq('a custom call is shown in the rep\'s words', [outcomeShown({ key: 'other', label: 'Something else…' }, ['effect:retry', 'label:Line dropped']), outcomeShown({ key: 'other', label: 'Something else…' }, []), outcomeShown({ key: 'voicemail', label: 'Left voicemail' }, ['label:ignored'])], ['Line dropped', 'Something else…', 'Left voicemail']);
+eq('outcome shortcuts are all different', new Set(OUTCOMES.map(o => o.shortcut)).size, OUTCOMES.length);
+eq('the custom outcome is reachable by O', outcomeByShortcut('o')?.key, 'other');
+eq('it is labelled for reports', outcomeLabel('other'), 'Other (custom)');
+
 eq('first names', [firstName('Jodi Smith'), firstName('  Jodi '), firstName(null), firstName('')], ['Jodi', 'Jodi', 'there', 'there']);
 
 /* Links from a CSV cell */

@@ -18,6 +18,7 @@ Run against the local backend (see README). Times assume it is currently busines
 | 10 | *Incoming call*: type a known number (any format) | The company opens **by itself** (no click): "Incoming call — X is calling you back", a plain-English status ("we emailed them on …, waiting for a reply"), the emails sent/owed, then the usual card with contact, links, earlier calls and the touch plan |
 | 10a | Same, for a company that has a deal | The card says "Deal: <stage> · the team's next step: …" and the lead card carries a "Deal: <stage>" badge. No value, probability or owner anywhere |
 | 10b | *Incoming call*: a do-not-call number / an unknown number | DNC: a warning, nothing opens. Unknown: "No match — add them below", no guess |
+| 10c | Press `O` (*Something else…*), submit empty, then with words but no effect, then complete it with *Call back at a set time* (a weekday) and with *Needs the team* | Each gap is refused with a clear message and nothing is logged; completed, the lead follows the effect (callback / follow-up task + deal), the history, toast, Undo bar and owner's task all carry the rep's own words |
 | 11 | *Incoming call*: unknown number + company + contact | Lead created ("Inbound" badge), contact details carried; logging it returns the queue to the lead the rep was on |
 | 12 | *Wrong number? Edit* with another lead's number, then a free one | Refused with a clear message; then saved |
 | 13 | Tick *Parked (D)* only | The parked lead is served; untick → not served |
