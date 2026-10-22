@@ -11,7 +11,7 @@
     "test:db": "node e2e/db-suite.mjs",
     "e2e:api": "node e2e/shim.mjs",
     "e2e:web": "vite --mode e2e --port 5180",
-    "check": "npm run check:deals && npm run check:tasks && npm run check:views && npm run check:command && npm run check:realtime && npm run check:reporting && npm run check:roles && npm run check:dialer-import && npm run check:dialer-calls && npm run check:meeting-slots && npm run check:google && npm run check:outreach && npm run check:touch-ics-summary && npm run check:summary-api && npm run check:auth-guard && npm run check:auth-health",
+    "check": "npm run check:deals && npm run check:tasks && npm run check:views && npm run check:command && npm run check:realtime && npm run check:reporting && npm run check:roles && npm run check:dialer-import && npm run check:dialer-calls && npm run check:meeting-slots && npm run check:google && npm run check:outreach && npm run check:touch-ics-summary && npm run check:summary-api && npm run check:auth-guard && npm run check:auth-health && npm run check:app-update",
     "check:deals": "npx --yes esbuild checks/deals.check.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/deals.check.mjs --log-level=warning && node node_modules/.cache/deals.check.mjs",
     "check:tasks": "npx --yes esbuild checks/tasks.check.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/tasks.check.mjs --log-level=warning && node node_modules/.cache/tasks.check.mjs",
     "check:views": "npx --yes esbuild checks/views.check.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/views.check.mjs --log-level=warning && node node_modules/.cache/views.check.mjs",
@@ -27,6 +27,7 @@
     "check:touch-ics-summary": "npx --yes esbuild checks/touch-ics-summary.check.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/touch-ics-summary.check.mjs --log-level=warning && node node_modules/.cache/touch-ics-summary.check.mjs",
     "check:summary-api": "npx --yes esbuild checks/summary-api.check.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/summary-api.check.mjs --log-level=warning && node node_modules/.cache/summary-api.check.mjs",
     "check:auth-guard": "npx --yes esbuild checks/auth-guard.check.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/auth-guard.check.mjs --log-level=warning && node node_modules/.cache/auth-guard.check.mjs",
+    "check:app-update": "npx --yes esbuild checks/app-update.check.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/app-update.check.mjs --log-level=warning && node node_modules/.cache/app-update.check.mjs",
     "check:auth-health": "npx --yes esbuild checks/auth-health.check.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/auth-health.check.mjs --log-level=warning && node node_modules/.cache/auth-health.check.mjs",
     "preview": "vite preview"
   },

@@ -7,6 +7,7 @@ import { ToastProvider, Avatar, IconButton, Mark, Menu } from '../../components/
 import { CommandProvider, useCommands } from '../../components/crm/CommandProvider';
 import NotificationBell from '../../components/crm/NotificationBell';
 import ClockWarning from '../../components/crm/ClockWarning';
+import RouteErrorBoundary from '../../components/crm/RouteErrorBoundary';
 import { usePresence } from '../../components/crm/useRealtimeRows';
 import { supabase } from '../../lib/supabase';
 import type { TeamMember } from '../../types/database';
@@ -353,7 +354,9 @@ const Shell = () => {
       </div>
       <main className="min-h-screen p-4 sm:p-6 lg:ml-[212px] lg:p-8">
         <div className="mx-auto max-w-[1440px]">
-          <Outlet />
+          <RouteErrorBoundary key={location.pathname}>
+            <Outlet />
+          </RouteErrorBoundary>
         </div>
       </main>
     </div>
