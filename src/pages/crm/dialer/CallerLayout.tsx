@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import { CrmThemeProvider } from '../../../components/crm/CrmThemeProvider';
 import ClockWarning from '../../../components/crm/ClockWarning';
+import RouteErrorBoundary from '../../../components/crm/RouteErrorBoundary';
 import { ToastProvider, Avatar, Button, Mark } from '../../../components/crm/ui';
 
 /* The caller's whole world: a header and a workspace. No sidebar, no
@@ -13,6 +14,7 @@ import { ToastProvider, Avatar, Button, Mark } from '../../../components/crm/ui'
 const Shell = () => {
   const { user, profile, role, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [signingOut, setSigningOut] = useState(false);
 
   const name = profile?.full_name ?? user?.email?.split('@')[0] ?? 'You';
@@ -47,7 +49,9 @@ const Shell = () => {
       </header>
       <ClockWarning />
       <main className="mx-auto max-w-[960px] px-4 py-6">
-        <Outlet />
+        <RouteErrorBoundary key={location.pathname}>
+          <Outlet />
+        </RouteErrorBoundary>
       </main>
     </div>
   );

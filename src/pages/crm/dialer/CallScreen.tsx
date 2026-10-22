@@ -633,7 +633,8 @@ const CallScreen = () => {
         <span className="font-crm-mono text-[10.5px] uppercase tracking-[0.12em] text-crm-ink-3">Tiers</span>
         {TIER_CHOICES.map(c => {
           const on = tiers.includes(c.value);
-          const n = tierCounts ? (c.value === '-' ? tierCounts.none : tierCounts[c.value]) : null;
+          // A count the database doesn't know yet (D before migration 028) is 0, never undefined.
+          const n = tierCounts ? ((c.value === '-' ? tierCounts.none : tierCounts[c.value]) ?? 0) : null;
           return (
             <button
               key={c.value}
