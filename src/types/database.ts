@@ -284,7 +284,7 @@ export interface FollowupItem {
   id: string;
   lead_id: string;
   /* 'email_nudge' is not stored: the Inbox builds it from a lead whose nudge is due. */
-  type: 'email_info' | 'email_proposal' | 'linkedin' | 'admin_call' | 'email_nudge';
+  type: 'email_info' | 'email_proposal' | 'linkedin' | 'admin_call' | 'email_nudge' | 'email_after_meeting' | 'email_noshow';
   note: string | null;
   status: 'queued' | 'sent' | 'done' | 'cancelled';
   requested_by: string | null;
@@ -1073,8 +1073,12 @@ export type Database = {
         Args: { p_lead_id: string };
         Returns: string;
       };
+      meeting_outcome: {
+        Args: { p_lead_id: string; p_outcome: 'held' | 'no_show' | 'cancelled' };
+        Returns: { status: string; task_id: string | null; task_type: string };
+      };
       followup_mark_sent: {
-        Args: { p_id: string };
+        Args: { p_id: string; p_proposal?: boolean };
         Returns: string | null;
       };
       followup_nudge_sent: {

@@ -39,3 +39,8 @@ To break the queue summary for scenario 17: `CREATE OR REPLACE FUNCTION public.d
 | 25 | When the nudge is due (set `nudge_due_at` in the past) | It appears in the Inbox as "Nudge — no reply yet" with the nudge template; *Mark nudge sent* schedules one last nudge, then none |
 | 26 | *They picked a time? Log the meeting* | Lead → Meetings, deal → Qualified, nudges stop |
 | 27 | Reports, Board, Outreach, Feed, Summary | Render; Reports has *By segment* |
+| 28 | Seed `status='meeting'` leads with deals: one 2 h in the past, one in the future | Nav badge counts only the past one; Meetings tab flags it "Did it happen?" |
+| 29 | Meetings → **Held** | Lead → follow-up; deal gets "Meeting held" + next action; a *Thank-you & next steps* email is waiting in Follow-ups (and the tab switches to it) |
+| 30 | Open that email | Warning and both send buttons blocked while the `[Add the next steps you agreed]` line is unwritten; unlocked once edited |
+| 31 | **Sent — proposal attached** | Deal → Proposal sent (40%), stage change logged, nudge scheduled |
+| 32 | Meetings → **No-show** | Lead → follow-up (NOT back in the rep's queue); a *Reschedule (no-show)* email is waiting; deal next action "Reschedule the meeting" |

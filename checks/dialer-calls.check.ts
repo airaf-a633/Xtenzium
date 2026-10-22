@@ -164,6 +164,7 @@ eq('pasted markup is neutralised', emailHtml('<script>alert(1)</script> & done')
 eq('a quote in a url cannot break out of the href', emailHtml('[x](https://a.co/"b)'), '<div><a href="https://a.co/&quot;b">x</a></div>');
 eq('javascript: and relative links are not made into hyperlinks', emailHtml('[x](javascript:alert(1)) [y](/local)'), '<div>[x](javascript:alert(1)) [y](/local)</div>');
 eq('an unset link is spotted', [hasUnsetLinks('Pick: [Select a time]({{booking_link}})'), hasUnsetLinks('see {{ portfolio_link }}'), hasUnsetLinks('all filled in https://a.co')], [true, true, false]);
+eq('an [Add …] line still to write counts as unfinished', [hasUnsetLinks('Next steps:\n[Add the next steps you agreed]'),hasUnsetLinks('Next steps: send the SOW'), hasUnsetLinks('See [Portfolio](https://xtenzium.com)')], [true, false, false]);
 eq('first names', [firstName('Jodi Smith'), firstName('  Jodi '), firstName(null), firstName('')], ['Jodi', 'Jodi', 'there', 'there']);
 
 /* Links from a CSV cell */

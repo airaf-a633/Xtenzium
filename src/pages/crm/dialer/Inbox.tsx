@@ -17,6 +17,8 @@ import {
 type Tab = 'email' | 'interested' | 'meetings' | 'flags';
 const ET = 'America/New_York';
 const FOLLOWUP_LABEL: Record<FollowupItem['type'], string> = {
+  email_after_meeting: 'Thank-you & next steps',
+  email_noshow: 'Reschedule (no-show)',
   email_nudge: 'Nudge — no reply yet',
   email_info: 'Send info',
   email_proposal: 'Send proposal',
@@ -58,7 +60,7 @@ const Composer = ({
   lead: CallLead;
   template: EmailTemplate | undefined;
   links: { booking: string | null; portfolio: string | null };
-  onDone: (status: 'sent' | 'done' | 'cancelled') => void;
+  onDone: (status: 'sent' | 'done' | 'cancelled', opts?: { proposal?: boolean }) => void;
 }) => {
   const { toast } = useToast();
   /* A link that isn't set yet is left as {{booking_link}} on purpose: it shows up in the
@@ -148,8 +150,8 @@ const Composer = ({
       )}
       {unset && (
         <p role="alert" className="m-0 rounded-crm-md border border-crm-warning/40 bg-crm-warning-quiet px-3 py-2 text-[12.5px] text-crm-ink-2">
-          The booking or portfolio link isn’t set yet, so the email still contains <code>{'{{booking_link}}'}</code> or <code>{'{{portfolio_link}}'}</code>.{' '}
-          <Link to="/crm/calls/settings" className="text-crm-copper">Set them in Dialer settings</Link> before sending.
+          The email still has something to fill in: a link that isn’t set (<code>{'{{booking_link}}'}</code>, <code>{'{{portfolio_link}}'}</code>) or an <code>[Add …]</code> line to write.{' '}
+          <Link to="/crm/calls/settings" className="text-crm-copper">Links are set in Dialer settings</Link>.
         </p>
       )}
       <div className="grid gap-2 sm:grid-cols-2">
@@ -175,6 +177,9 @@ const Composer = ({
           Gmail
         </a>
         <span className="flex-1" />
+        {item.type === 'email_after_meeting' && (
+          <Button disabled={unset} onClick={() => onDone('sent', { proposal: true })}>Sent — proposal attached</Button>
+        )}
         <Button variant="primary" disabled={unset} onClick={() => onDone('sent')}>
           {item.type === 'email_nudge' ? 'Mark nudge sent' : 'Mark sent'}
         </Button>
@@ -352,7 +357,7 @@ const Inbox = () => {
     };
   }, [fetchAll]);
 
-  const finish = async (item: FollowupItem, status: 'sent' | 'done' | 'cancelled') => {
+  const finish = async (item: FollowupItem, status: 'sent' | 'done' | 'cancelled', opts?: { proposal?: boolean }) => {
     let message = status === 'sent' ? 'Marked sent' : status === 'done' ? 'Done' : 'Cancelled';
     let failedSave = false;
 
@@ -365,13 +370,13 @@ const Inbox = () => {
       if (status === 'sent') message = r.data ? 'Nudge sent — one last nudge is scheduled' : 'Nudge sent — no more are scheduled';
       if (status !== 'sent') message = 'Nudging stopped for this lead';
     } else if (status === 'sent') {
-      const r = await supabase.rpc('followup_mark_sent', { p_id: item.id });
+      const r = await supabase.rpc('followup_mark_sent', { p_id: item.id, p_proposal: !!opts?.proposal });
       if (r.error) {
         // Database without migration 031: still record it as sent.
         const old = await supabase.from('followup_queue').update({ status, handled_by: user?.id ?? null, handled_at: new Date().toISOString() }).eq('id', item.id);
         failedSave = !!old.error;
       } else if (r.data) {
-        message = 'Marked sent — a reminder to nudge them is set for ' + formatInZone(new Date(r.data), data.leads[item.lead_id]?.timezone ?? ET).split(',').slice(0, 2).join(',');
+        message = (opts?.proposal ? 'Marked sent — the deal is now at Proposal sent. ' : 'Marked sent. ') + 'A reminder to nudge them is set for ' + formatInZone(new Date(r.data), data.leads[item.lead_id]?.timezone ?? ET).split(',').slice(0, 2).join(',');
       }
     } else {
       const r = await supabase
@@ -393,15 +398,30 @@ const Inbox = () => {
      logged by hand doesn't. Both are handled — the record just carries
      the calendar side too. */
   const setMeeting = async (lead: CallLead, status: 'held' | 'no_show') => {
-    const row = data.scheduled[lead.id];
-    const { error } = row
-      ? await supabase.rpc('meeting_set_status', { p_meeting_id: row.id, p_status: status })
-      : status === 'held'
-        ? await supabase.from('call_leads').update({ next_call_at: null }).eq('id', lead.id)
-        : await supabase.from('call_leads').update({ status: 'callback', next_call_at: new Date().toISOString() }).eq('id', lead.id);
-    if (error) return toast('That didn’t save.', 'danger');
+    const { error } = await supabase.rpc('meeting_outcome', { p_lead_id: lead.id, p_outcome: status });
+    if (error) {
+      // A database without migration 032 keeps the old, manual behaviour.
+      if (!/could not find the function|PGRST202/i.test(error.message + (error.code ?? ''))) return toast(error.message, 'danger');
+      const row = data.scheduled[lead.id];
+      const old = row
+        ? await supabase.rpc('meeting_set_status', { p_meeting_id: row.id, p_status: status })
+        : status === 'held'
+          ? await supabase.from('call_leads').update({ next_call_at: null }).eq('id', lead.id)
+          : await supabase.from('call_leads').update({ status: 'callback', next_call_at: new Date().toISOString() }).eq('id', lead.id);
+      if (old.error) return toast('That didn’t save.', 'danger');
+      setData(d => ({ ...d, meetings: d.meetings.filter(x => x.id !== lead.id) }));
+      return toast(status === 'held' ? 'Marked held' : 'No-show — back in the rep’s queue as a callback', 'success');
+    }
+    // The next step is now waiting in Follow-ups: reload so it is there, and show it.
     setData(d => ({ ...d, meetings: d.meetings.filter(x => x.id !== lead.id) }));
-    toast(status === 'held' ? 'Marked held' : 'No-show — back in the rep’s queue as a callback', status === 'held' ? 'success' : 'info');
+    fetchAll().then(setData).catch(() => undefined);
+    setTab('email');
+    toast(
+      status === 'held'
+        ? `Held — a thank-you email for ${lead.company_name} is waiting in Follow-ups`
+        : `No-show — a reschedule email for ${lead.company_name} is waiting in Follow-ups`,
+      'success',
+    );
   };
 
   const cancelMeeting = async (lead: CallLead) => {
@@ -559,7 +579,7 @@ const Inbox = () => {
                           lead={lead}
                           template={data.templates[item.type === 'email_nudge' ? 'followup_nudge' : item.type]}
                           links={data.links}
-                          onDone={s => finish(item, s)}
+                          onDone={(s, o) => finish(item, s, o)}
                         />
                       )}
                     </>
@@ -606,7 +626,7 @@ const Inbox = () => {
                 <div key={l.id} className="flex flex-wrap items-start gap-3 border-b border-crm-line px-4 py-3 last:border-b-0">
                   <div className="min-w-0 flex-1">
                     <p className="m-0 text-[14px] font-medium text-crm-ink">
-                      {l.company_name} {past && <Badge tone="warning">Past</Badge>}
+                      {l.company_name} {past && <Badge tone="warning" dot>Did it happen?</Badge>}
                     </p>
                     <p className="m-0 text-[13px] text-crm-ink-2">{formatInZone(when, tz)} · {formatInZone(when, 'Asia/Karachi')}</p>
                     <p className="m-0 text-[12.5px] text-crm-ink-3">
@@ -641,7 +661,7 @@ const Inbox = () => {
                   )}
                   <Button size="sm" onClick={() => downloadIcs(l)}>Add to calendar (.ics)</Button>
                   <Button size="sm" onClick={() => copyInvite(l)}>Copy details</Button>
-                  <Button size="sm" variant="primary" onClick={() => setMeeting(l, 'held')}>Held</Button>
+                  <Button size="sm" variant={past ? 'primary' : 'secondary'} onClick={() => setMeeting(l, 'held')}>Held</Button>
                   <Button size="sm" onClick={() => setMeeting(l, 'no_show')}>No-show</Button>
                   {data.scheduled[l.id] && <Button size="sm" variant="ghost" onClick={() => cancelMeeting(l)}>Cancel</Button>}
                 </div>

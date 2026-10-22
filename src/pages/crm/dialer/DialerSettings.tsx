@@ -45,6 +45,8 @@ const TEMPLATE_TITLE: Record<string, string> = {
   outreach_first: 'Cold email — first touch',
   outreach_followup: 'Cold email — follow-up',
   followup_nudge: 'Email — nudge (no reply to the follow-up)',
+  email_after_meeting: 'Email — thank you after the meeting',
+  email_noshow: 'Email — no-show / cancelled: pick a new time',
 };
 
 const TemplateEditor = ({ template, onSaved }: { template: EmailTemplate; onSaved: () => void }) => {

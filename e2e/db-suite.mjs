@@ -306,4 +306,75 @@ expect('a "call them" task does not start a nudge', (await q(`SELECT nudge_due_a
 // permissions
 expect('anonymous cannot', await as(null, 'anon', () => fails(`SELECT public.followup_mark_sent('${fq}')`)), true);
 expect('a rep cannot schedule nudges by hand', await as(CALLER, 'authenticated', () => fails(`UPDATE public.call_leads SET nudge_due_at = now() WHERE id = '${FL3}'`)), true);
+
+console.log('\n— after the meeting (032) —');
+await db.exec(`UPDATE public.call_leads SET status = 'lost' WHERE status IN ('new','retry','nurture','callback')`);
+
+const mkMeeting = async (name, stage = 'qualified') => {
+  const id = await mk(name, { status: 'meeting', due: new Date(Date.now() - 3600e3).toISOString() });
+  const deal = (await q(`INSERT INTO public.deals (title, company, stage, source) VALUES ($1, $1, $2, 'outbound') RETURNING id`, [name, stage]))[0].id;
+  await db.exec(`UPDATE public.call_leads SET deal_id = '${deal}' WHERE id = '${id}'`);
+  return { id, deal };
+};
+const outcome = (uid, id, o) => as(uid, 'authenticated', async () => (await q(`SELECT public.meeting_outcome($1, $2) r`, [id, o]))[0].r);
+const lead = async id => (await q(`SELECT status, next_call_at, nudge_due_at FROM public.call_leads WHERE id = $1`, [id]))[0];
+const tasks = async id => (await q(`SELECT type, status, note FROM public.followup_queue WHERE lead_id = $1 ORDER BY created_at`, [id]));
+
+// held
+const H = await mkMeeting('HeldCo');
+const rh = await outcome(ADMIN, H.id, 'held');
+expect('held → follow-up, meeting time cleared', [rh.status, (await lead(H.id)).status, (await lead(H.id)).next_call_at], ['followup', 'followup', null]);
+const th = await tasks(H.id);
+expect('a thank-you & next-steps email is queued', [th.length, th[0].type, th[0].status, /Meeting held/.test(th[0].note)], [1, 'email_after_meeting', 'queued', true]);
+const da = await q(`SELECT type, content FROM public.deal_activities WHERE deal_id = $1`, [H.deal]);
+expect('the deal records the meeting', da.some(a => a.type === 'meeting' && /Meeting held/.test(a.content)), true);
+expect('the deal has a next action', (await q(`SELECT next_action FROM public.deals WHERE id = $1`, [H.deal]))[0].next_action, 'Send the thank-you and next steps');
+expect('it can only be done once', await as(ADMIN, 'authenticated', () => fails(`SELECT public.meeting_outcome('${H.id}', 'held')`)), true);
+
+// no-show stays with the owners, not the rep's cold queue
+const N = await mkMeeting('NoShowCo');
+await outcome(ADMIN, N.id, 'no_show');
+const tn = await tasks(N.id);
+expect('no-show → a reschedule email is queued', [tn[0].type, (await lead(N.id)).status], ['email_noshow', 'followup']);
+expect('…and the lead is NOT thrown back at the rep', await next(CALLER), null);
+
+// cancelled
+const C = await mkMeeting('CancelCo');
+await outcome(ADMIN, C.id, 'cancelled');
+expect('cancelled → reschedule email', (await tasks(C.id))[0].type, 'email_noshow');
+
+// guards
+const notMeeting = await mk('JustFollowup', { status: 'followup' });
+expect('a lead with no meeting is refused', await as(ADMIN, 'authenticated', () => fails(`SELECT public.meeting_outcome('${notMeeting}', 'held')`)), true);
+const guardMeeting = (await mkMeeting('GuardCo')).id;
+expect('an unknown outcome is refused', await as(ADMIN, 'authenticated', () => fails(`SELECT public.meeting_outcome('${guardMeeting}', 'maybe')`)), true);
+const repMeeting = (await mkMeeting('RepTry')).id;
+expect('a rep cannot', await as(CALLER, 'authenticated', () => fails(`SELECT public.meeting_outcome('${repMeeting}', 'held')`)), true);
+expect('anonymous cannot', await as(null, 'anon', () => fails(`SELECT public.meeting_outcome('${H.id}', 'held')`)), true);
+
+// sending the thank-you
+const tId = th[0].id ?? (await q(`SELECT id FROM public.followup_queue WHERE lead_id = $1`, [H.id]))[0].id;
+await as(ADMIN, 'authenticated', async () => q(`SELECT public.followup_mark_sent($1, true)`, [tId]));
+const dealAfter = (await q(`SELECT stage, probability, next_action FROM public.deals WHERE id = $1`, [H.deal]))[0];
+expect('"sent — proposal attached" moves the deal to Proposal sent', [dealAfter.stage, dealAfter.probability >= 40, dealAfter.next_action], ['proposal_sent', true, 'Follow up on the proposal']);
+expect('…and starts the nudge clock', (await lead(H.id)).nudge_due_at !== null, true);
+expect('the stage change is on the deal', (await q(`SELECT 1 FROM public.deal_activities WHERE deal_id = $1 AND type = 'stage_change'`, [H.deal])).length, 1);
+
+// the plain "mark sent" does not move the deal; a later stage is never pulled back
+const N2 = await mkMeeting('NoProposal');
+await outcome(ADMIN, N2.id, 'held');
+const t2 = (await q(`SELECT id FROM public.followup_queue WHERE lead_id = $1`, [N2.id]))[0].id;
+await as(ADMIN, 'authenticated', async () => q(`SELECT public.followup_mark_sent($1)`, [t2]));
+expect('plain "sent" leaves the deal alone', (await q(`SELECT stage FROM public.deals WHERE id = $1`, [N2.deal]))[0].stage, 'qualified');
+const NG = await mkMeeting('Negotiating', 'negotiation');
+await outcome(ADMIN, NG.id, 'held');
+const t3 = (await q(`SELECT id FROM public.followup_queue WHERE lead_id = $1`, [NG.id]))[0].id;
+await as(ADMIN, 'authenticated', async () => q(`SELECT public.followup_mark_sent($1, true)`, [t3]));
+expect('a deal already further along is never moved back', (await q(`SELECT stage FROM public.deals WHERE id = $1`, [NG.deal]))[0].stage, 'negotiation');
+
+// templates
+const tpl32 = Object.fromEntries((await q(`SELECT type, body FROM public.email_templates WHERE type IN ('email_after_meeting','email_noshow')`)).map(r => [r.type, r.body]));
+expect('both templates exist with the booking link', [Object.keys(tpl32).sort(), tpl32.email_after_meeting.includes('{{booking_link}}'), tpl32.email_noshow.includes('{{booking_link}}')], [['email_after_meeting', 'email_noshow'], true, true]);
+expect('the thank-you asks the sender to add the next steps', tpl32.email_after_meeting.includes('[Add the next steps'), true);
+
 console.log(bad ? `\n${bad} FAILED` : "\nALL PASSED"); process.exit(bad ? 1 : 0);

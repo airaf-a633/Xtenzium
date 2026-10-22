@@ -242,8 +242,10 @@ export function emailHtml(body: string): string {
   return `<div>${out.replace(/\r?\n/g, '<br>')}</div>`;
 }
 
-/** True while a {{booking_link}} / {{portfolio_link}} is still unfilled — don't send it like that. */
-export const hasUnsetLinks = (body: string): boolean => /\{\{\s*(booking_link|portfolio_link)\s*\}\}/.test(body);
+/** True while a {{booking_link}} / {{portfolio_link}} is unfilled, or an "[Add …]" line is still waiting
+    for the sender to write it — don't send it like that. */
+export const hasUnsetLinks = (body: string): boolean =>
+  /\{\{\s*(booking_link|portfolio_link)\s*\}\}|\[Add [^\]\n]*\]/.test(body);
 
 /** "Jodi Smith" → "Jodi"; nobody → "there". */
 export const firstName = (name: string | null | undefined): string => (name ?? '').trim().split(/\s+/)[0] || 'there';
