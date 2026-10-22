@@ -19,6 +19,7 @@ import TouchTimeline from './TouchTimeline';
 import CallHistory from './CallHistory';
 import LeadFinder from './LeadFinder';
 import IncomingCall from './IncomingCall';
+import LeadContext from './LeadContext';
 import { logOutcome } from './logOutcome';
 
 const ET = 'America/New_York';
@@ -137,6 +138,7 @@ const CallScreen = () => {
   const [script, setScript] = useState<(ScriptBlock & { segment?: string | null })[]>(SCRIPT);
   const [incoming, setIncoming] = useState(false);
   const [callerId, setCallerId] = useState<string | null>(null);
+  const [inboundFor, setInboundFor] = useState<{ id: string; fresh: boolean } | null>(null);
   const [lastSkip, setLastSkip] = useState<{ id: string; company: string } | null>(null);
   const skipped = useRef<string[]>([]);
   /* True from the moment a log starts until it finishes: React state is a render
@@ -507,12 +509,13 @@ const CallScreen = () => {
     return () => window.removeEventListener('keydown', h);
   }, []);
 
-  const pickLead = (picked: CallLead, opts?: { confirmed?: boolean; typed?: { name: string; title: string; email: string } }) => {
+  const pickLead = (picked: CallLead, opts?: { confirmed?: boolean; typed?: { name: string; title: string; email: string }; inbound?: boolean; fresh?: boolean }) => {
     if (!opts?.confirmed && !confirmSwitch(picked)) return;
     setIncoming(false);
     skipped.current = skipped.current.filter(id => id !== picked.id);
     setOutcome(null);
     applyLead({ data: [picked], error: null } as Awaited<ReturnType<typeof fetchNext>>);
+    setInboundFor(opts?.inbound ? { id: picked.id, fresh: !!opts.fresh } : null);
     // What the rep typed while the caller was still on the line is kept, over what the file had.
     if (opts?.typed?.name) setContactName(opts.typed.name);
     if (opts?.typed?.title) setContactTitle(opts.typed.title);
@@ -741,6 +744,7 @@ const CallScreen = () => {
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
           {/* ── The lead ── */}
           <div className="flex flex-col gap-4">
+            {inboundFor?.id === lead.id && <LeadContext key={`ctx-${lead.id}`} lead={lead} tz={myTz} fresh={inboundFor.fresh} />}
             <Card>
               <div className="flex flex-col gap-3 p-4">
                 <div className="flex flex-wrap items-center gap-2">

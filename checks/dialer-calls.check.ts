@@ -5,7 +5,7 @@ import {
   OUTCOMES, clockFor, dayStartInZone, dayStats, formatInZone, formatPhone,
   isConversation, outcomeByShortcut, voiceLink, zonedToUtc,
   BOARD_COLUMNS, columnForStatus, filterPeople, gmailCompose, insertMention, mentionLabel,
-  emailHtml, emailPlain, extraDetails, extraLinks, firstName, hasUnsetLinks, instantOutcome, isConnectionError, isSessionError, isWeekendIn, safeHref, mentionsIn, mentionTrigger, outcomeLabel, parseTiers, renderTemplate, scriptVars, segmentLabel, tiersParam,
+  emailHtml, emailPlain, extraDetails, extraLinks, firstName, hasUnsetLinks, instantOutcome, leadStatusLine, isConnectionError, isSessionError, isWeekendIn, safeHref, mentionsIn, mentionTrigger, outcomeLabel, parseTiers, renderTemplate, scriptVars, segmentLabel, tiersParam,
 } from '../src/lib/dialer-calls';
 
 let failures = 0;
@@ -165,6 +165,19 @@ eq('a quote in a url cannot break out of the href', emailHtml('[x](https://a.co/
 eq('javascript: and relative links are not made into hyperlinks', emailHtml('[x](javascript:alert(1)) [y](/local)'), '<div>[x](javascript:alert(1)) [y](/local)</div>');
 eq('an unset link is spotted', [hasUnsetLinks('Pick: [Select a time]({{booking_link}})'), hasUnsetLinks('see {{ portfolio_link }}'), hasUnsetLinks('all filled in https://a.co')], [true, true, false]);
 eq('an [Add …] line still to write counts as unfinished', [hasUnsetLinks('Next steps:\n[Add the next steps you agreed]'),hasUnsetLinks('Next steps: send the SOW'), hasUnsetLinks('See [Portfolio](https://xtenzium.com)')], [true, false, false]);
+/* Where a lead stands, in words */
+const base = { status: 'new', attempt_count: 0, next_call_at: null as string | null, nudge_count: 0, outreach_touches: 0 };
+const L = (o: Partial<typeof base>, tasks: { type: string; status: string; created_at: string }[] = []) => leadStatusLine({ ...base, ...o }, tasks, 'America/Chicago');
+eq('new', L({}), 'New lead — nobody has spoken to them yet.');
+eq('retry counts the calls', [L({ status: 'retry', attempt_count: 1 }), L({ status: 'retry', attempt_count: 3 })], ['We have called 1 time without reaching them.', 'We have called 3 times without reaching them.']);
+eq('callback names the time in their zone', L({ status: 'callback', next_call_at: '2026-10-24T17:00:00Z' }).startsWith('They asked for a callback for Sat, Oct 24'), true);
+eq('interested, email still to send', L({ status: 'followup' }, [{ type: 'email_info', status: 'queued', created_at: '2026-10-23T10:00:00Z' }]), 'Interested — an email to them is waiting to be sent by the team.');
+eq('interested, email sent, waiting', L({ status: 'followup' }, [{ type: 'email_info', status: 'sent', created_at: '2026-10-22T15:00:00Z' }]).startsWith('Interested — we emailed them on Thu, Oct 22 and are waiting for a reply.'), true);
+eq('interested, nothing recorded', L({ status: 'followup' }), 'Interested — the team is following up.');
+eq('meeting', L({ status: 'meeting', next_call_at: '2026-10-26T16:00:00Z' }).startsWith('A meeting is booked for Mon, Oct 26'), true);
+eq('the closed ones', ['nurture', 'lost', 'disqualified', 'bad_data', 'exhausted', 'dnc', 'no_phone'].map(st => L({ status: st }).length > 10), [true, true, true, true, true, true, true]);
+eq('an unknown status is shown as it is', L({ status: 'weird' }), 'weird');
+
 eq('first names', [firstName('Jodi Smith'), firstName('  Jodi '), firstName(null), firstName('')], ['Jodi', 'Jodi', 'there', 'there']);
 
 /* Links from a CSV cell */

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
 import type { CallLead } from '../../../types/database';
 import { formatPhone } from '../../../lib/dialer-calls';
@@ -14,7 +14,7 @@ type Typed = { name: string; title: string; email: string };
 const IncomingCall = ({
   onPick, confirmSwitch, onClose,
 }: {
-  onPick: (lead: CallLead, opts?: { confirmed?: boolean; typed?: Typed }) => void;
+  onPick: (lead: CallLead, opts?: { confirmed?: boolean; typed?: Typed; inbound?: boolean; fresh?: boolean }) => void;
   confirmSwitch: () => boolean;
   onClose: () => void;
 }) => {
@@ -59,6 +59,22 @@ const IncomingCall = ({
   const shown = digits.length >= 7 || companyTerm.length >= 3 ? hits : null;
   const typed: Typed = { name: contact.trim(), title: title.trim(), email: email.trim() };
 
+  /* A full, valid number that belongs to exactly one lead IS the answer: open that company
+     now, with everything we know, instead of making the rep click a result. */
+  const opened = useRef<string | null>(null);
+  const exact = Array.isArray(hits) && parsed.e164 ? hits.filter(h => h.phone_e164 === parsed.e164) : [];
+  const blocked = exact.length === 1 && exact[0].status === 'dnc';
+  const sure = exact.length === 1 && exact[0].status !== 'dnc' ? exact[0] : null;
+  useEffect(() => {
+    if (!sure || opened.current === sure.id) return;
+    opened.current = sure.id;
+    if (confirmSwitch()) onPick(sure, { confirmed: true, typed, inbound: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sure?.id]);
+  useEffect(() => {
+    if (!parsed.e164) opened.current = null;
+  }, [parsed.e164]);
+
   const create = async () => {
     if (saving) return;
     if (!confirmSwitch()) return;
@@ -101,7 +117,7 @@ const IncomingCall = ({
         'info',
       );
     }
-    onPick(data.lead, { confirmed: true, typed });
+    onPick(data.lead, { confirmed: true, typed, inbound: true, fresh: !data.existing });
   };
 
   return (
@@ -109,7 +125,7 @@ const IncomingCall = ({
       <CardHeader title="Incoming call · who's calling?" action={<Button variant="ghost" onClick={onClose}>Close</Button>} />
       <div className="flex flex-col gap-3 p-4">
         <p className="m-0 text-[13px] text-crm-ink-3">
-          Type their number or company. If they're already in the list you'll get their history; if not, add them and log the call as usual.
+          Type the number they called from. If we know them, their company opens straight away with the full history; if not, add them below.
           The lead you were on stays in your queue.
         </p>
         <div className="grid gap-2 sm:grid-cols-2">
@@ -117,6 +133,11 @@ const IncomingCall = ({
           <Input label="Company" value={company} onChange={e => setCompany(e.target.value)} />
         </div>
 
+        {blocked && (
+          <p role="alert" className="m-0 text-[13px] text-crm-danger">
+            That number is on the do-not-call list. Don’t continue the conversation; say so politely and end the call.
+          </p>
+        )}
         {shown === 'error' && (
           <p className="m-0 text-[13px] text-crm-danger">The search failed (connection?). Don’t add them yet — try again, or they may already be in the list.</p>
         )}
@@ -131,7 +152,7 @@ const IncomingCall = ({
                   <span className="font-crm-mono text-crm-ink-2">{formatPhone(l.phone_e164, l.phone_raw)}</span>
                   <Badge tone="neutral">{l.status}</Badge>
                   {l.status !== 'dnc' && (
-                    <Button variant="ghost" className="ml-auto" onClick={() => { if (confirmSwitch()) onPick(l, { confirmed: true, typed }); }}>Work this lead</Button>
+                    <Button variant="ghost" className="ml-auto" onClick={() => { if (confirmSwitch()) onPick(l, { confirmed: true, typed, inbound: true }); }}>Work this lead</Button>
                   )}
                 </li>
               ))

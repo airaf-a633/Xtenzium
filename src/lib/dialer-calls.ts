@@ -120,6 +120,48 @@ export function zonedToUtc(local: string, tz: string): Date {
 }
 
 /** Midnight at the start of `now`'s calendar day in `tz`, as an instant. */
+/** Where a lead stands, in a sentence the rep can read at a glance when someone rings back. */
+export function leadStatusLine(
+  l: { status: string; attempt_count: number; next_call_at: string | null; nudge_count?: number | null; outreach_touches?: number | null },
+  tasks: { type: string; status: string; created_at: string }[],
+  tz: string,
+): string {
+  const when = (iso: string) => formatInZone(new Date(iso), tz).split(',').slice(0, 2).join(',');
+  switch (l.status) {
+    case 'new':
+      return 'New lead — nobody has spoken to them yet.';
+    case 'retry':
+      return `We have called ${l.attempt_count} time${l.attempt_count === 1 ? '' : 's'} without reaching them.`;
+    case 'callback':
+      return `They asked for a callback${l.next_call_at ? ` for ${when(l.next_call_at)}` : ''}.`;
+    case 'followup': {
+      const sent = tasks.find(t => t.status === 'sent');
+      const waiting = tasks.find(t => t.status === 'queued');
+      if (waiting) return 'Interested — an email to them is waiting to be sent by the team.';
+      if (sent) return `Interested — we emailed them on ${when(sent.created_at)} and are waiting for a reply.`;
+      return 'Interested — the team is following up.';
+    }
+    case 'meeting':
+      return `A meeting is booked${l.next_call_at ? ` for ${when(l.next_call_at)}` : ''}.`;
+    case 'nurture':
+      return 'Said not now — we agreed to check back later.';
+    case 'lost':
+      return 'Said no (they handle it in-house).';
+    case 'disqualified':
+      return 'Not a fit for us.';
+    case 'bad_data':
+      return 'The number we had was wrong.';
+    case 'exhausted':
+      return 'We stopped calling after several attempts with no answer.';
+    case 'dnc':
+      return 'On the do-not-call list.';
+    case 'no_phone':
+      return 'We only had an email for them until now.';
+    default:
+      return l.status;
+  }
+}
+
 /** Saturday or Sunday on the wall clock of `tz`. */
 export function isWeekendIn(when: Date, tz: string): boolean {
   const day = new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'short' }).format(when);
