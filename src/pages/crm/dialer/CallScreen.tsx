@@ -3,8 +3,8 @@ import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../context/AuthContext';
 import type { CallLead, CallScript, DialerListSummary } from '../../../types/database';
 import {
-  INSTANT_HINT, OUTCOMES, SKIP_SHORTCUT, TIER_CHOICES, clockFor, dayStartInZone, dayStats, formatInZone,
-  formatPhone, instantOutcome, outcomeByShortcut, parseTiers, renderTemplate, scriptVars, tiersParam, voiceLink,
+  INSTANT_HINT, OUTCOMES, SKIP_SHORTCUT, TIER_CHOICES, clockFor, dayStartInZone, dayStats, extraDetails, extraLinks, formatInZone,
+  formatPhone, instantOutcome, outcomeByShortcut, parseTiers, renderTemplate, safeHref, scriptVars, segmentLabel, tiersParam, voiceLink,
   type DayStats, type OutcomeDef, type OutcomeGroup, type TierChoice,
 } from '../../../lib/dialer-calls';
 import { SCRIPT, type ScriptBlock } from '../../../lib/dialer-script';
@@ -18,6 +18,7 @@ import OutcomePanel, { type OutcomeSubmit } from './OutcomePanel';
 import TouchTimeline from './TouchTimeline';
 import CallHistory from './CallHistory';
 import LeadFinder from './LeadFinder';
+import IncomingCall from './IncomingCall';
 import { logOutcome } from './logOutcome';
 
 const ET = 'America/New_York';
@@ -101,10 +102,21 @@ const Stat = ({ label, value, sub }: { label: string; value: string | number; su
   </div>
 );
 
+/* A mistyped profile timezone would make every date calculation throw. */
+const validZone = (tz: string | null | undefined): string => {
+  if (!tz) return 'Asia/Karachi';
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: tz });
+    return tz;
+  } catch {
+    return 'Asia/Karachi';
+  }
+};
+
 const CallScreen = () => {
   const { user, profile, role } = useAuth();
   const { toast } = useToast();
-  const myTz = profile?.timezone ?? 'Asia/Karachi';
+  const myTz = validZone(profile?.timezone);
   const target = profile?.daily_dial_target ?? 80;
 
   const [lead, setLead] = useState<CallLead | null>(null);
@@ -118,11 +130,13 @@ const CallScreen = () => {
   const [listId, setListId] = useState<string | null>(savedList);
   const [showScript, setShowScript] = useState(true);
   const [tiers, setTiers] = useState<TierChoice[]>(savedTiers);
-  const [tierCounts, setTierCounts] = useState<{ A: number; B: number; C: number; none: number } | null>(null);
+  const [tierCounts, setTierCounts] = useState<{ A: number; B: number; C: number; D: number; none: number } | null>(null);
   const [autoCopy, setAutoCopy] = useState(savedAutoCopy);
   const [copiedFor, setCopiedFor] = useState<string | null>(null);
   const [lastCall, setLastCall] = useState<LastCall | null>(null);
-  const [script, setScript] = useState<ScriptBlock[]>(SCRIPT);
+  const [script, setScript] = useState<(ScriptBlock & { segment?: string | null })[]>(SCRIPT);
+  const [incoming, setIncoming] = useState(false);
+  const [lastSkip, setLastSkip] = useState<{ id: string; company: string } | null>(null);
   const skipped = useRef<string[]>([]);
   /* True from the moment a log starts until it finishes: React state is a render
      behind, and a held-down key fires faster than that. */
@@ -144,6 +158,7 @@ const CallScreen = () => {
 
   const leadTz = lead?.timezone ?? ET;
   const waiting = lists.filter(l => !listId || l.id === listId).reduce((n, l) => n + l.in_play, 0);
+  const parkedTotal = lists.filter(l => !listId || l.id === listId).reduce((n, l) => n + (l.parked ?? 0), 0);
 
   /* ── data ── */
 
@@ -204,7 +219,7 @@ const CallScreen = () => {
       day: dayStats(((acts.data ?? []) as { outcome: string }[]).map(a => a.outcome)),
       due: due.count ?? 0,
       lists: (summary.data ?? []) as DialerListSummary[],
-      tiers: (tierSummary.data ?? null) as { A: number; B: number; C: number; none: number } | null,
+      tiers: (tierSummary.data ?? null) as { A: number; B: number; C: number; D: number; none: number } | null,
     };
   }, [userId, myTz, listId]);
 
@@ -297,7 +312,7 @@ const CallScreen = () => {
       .then(({ data }) => {
         const rows = (data ?? []) as CallScript[];
         if (!cancelled && rows.length > 0) {
-          setScript(rows.map(r => ({ title: r.title, lines: r.body.split('\n').filter(l => l.trim()) })));
+          setScript(rows.map(r => ({ title: r.title, segment: r.segment ?? null, lines: r.body.split('\n').filter(l => l.trim()) })));
         }
       });
     return () => {
@@ -321,7 +336,7 @@ const CallScreen = () => {
   const advance = (afterLoggedCall = false) => {
     const pre = preloaded.current;
     const key = `${lead?.id}|${ignoreHours}|${listId}|${tiersKey}`;
-    if (afterLoggedCall && pre && pre.key === key && pre.result && Date.now() - pre.at < 10 * 60_000) {
+    if (afterLoggedCall && pre && pre.key === key && pre.result && Date.now() - pre.at < 60_000) {
       applyLead(pre.result);
     } else {
       setLoading(true);
@@ -337,6 +352,7 @@ const CallScreen = () => {
       (contactEmail.trim() && contactEmail !== (lead.email ?? ''));
     if (typed && !window.confirm('You typed contact details for this lead. Skip anyway and lose them?')) return;
     const skippedId = lead.id;
+    setLastSkip({ id: skippedId, company: lead.company_name });
     skipped.current = [...skipped.current, skippedId];
     advance(false);
     /* Remembered on the server, so a reload or a new filter doesn't serve it again today. */
@@ -383,9 +399,19 @@ const CallScreen = () => {
     advance(true);
   };
 
+  /* Switching the lead on screen throws away contact details typed on it, so ask first. */
+  const confirmSwitch = (picked?: CallLead): boolean => {
+    const typed = lead && (!picked || lead.id !== picked.id) && (
+      (contactName.trim() && contactName !== (lead.contact_name ?? '')) ||
+      (contactTitle.trim() && contactTitle !== (lead.contact_title ?? '')) ||
+      (contactEmail.trim() && contactEmail !== (lead.email ?? '')));
+    return !typed || window.confirm('You typed contact details on the current lead. Switch anyway and lose them?');
+  };
+
   /* Put the last call back as it was, and bring that lead back up. */
   const undo = async () => {
     if (!lastCall || saving || busy.current) return;
+    if (!confirmSwitch()) return;
     busy.current = true;
     setSaving(true);
     const { data, error } = await supabase.rpc('undo_last_call', { p_activity_id: lastCall.activityId });
@@ -402,13 +428,16 @@ const CallScreen = () => {
     toast(`Undid ${lastCall.company}: ${lastCall.label}`, 'info');
     setLastCall(null);
     skipped.current = skipped.current.filter(id => id !== data.lead_id);
-    if (row) applyLead({ data: [row as CallLead], error: null } as Awaited<ReturnType<typeof fetchNext>>);
+    if (row) {
+      setOutcome(null);
+      applyLead({ data: [row as CallLead], error: null } as Awaited<ReturnType<typeof fetchNext>>);
+    }
     fetchStats().then(applyStats);
   };
 
   const setTier = async (value: string) => {
     if (!lead) return;
-    const tier = value === '-' ? null : (value as 'A' | 'B' | 'C');
+    const tier = value === '-' ? null : (value as 'A' | 'B' | 'C' | 'D');
     const { error } = await supabase.from('call_leads').update({ tier }).eq('id', lead.id);
     if (error) {
       toast('Couldn’t change the tier.', 'danger');
@@ -459,10 +488,29 @@ const CallScreen = () => {
     return () => window.removeEventListener('keydown', h);
   }, []);
 
-  const pickLead = (picked: CallLead) => {
+  const pickLead = (picked: CallLead, opts?: { confirmed?: boolean; typed?: { name: string; title: string; email: string } }) => {
+    if (!opts?.confirmed && !confirmSwitch(picked)) return;
+    setIncoming(false);
     skipped.current = skipped.current.filter(id => id !== picked.id);
     setOutcome(null);
     applyLead({ data: [picked], error: null } as Awaited<ReturnType<typeof fetchNext>>);
+    // What the rep typed while the caller was still on the line is kept, over what the file had.
+    if (opts?.typed?.name) setContactName(opts.typed.name);
+    if (opts?.typed?.title) setContactTitle(opts.typed.title);
+    if (opts?.typed?.email) setContactEmail(opts.typed.email);
+  };
+
+  const unskip = async () => {
+    if (!lastSkip) return;
+    const { id } = lastSkip;
+    setLastSkip(null);
+    const { error } = await supabase.rpc('dialer_unskip_lead', { p_lead_id: id });
+    if (error) {
+      toast(error.message, 'danger');
+      return;
+    }
+    const { data: row } = await supabase.from('call_leads').select('*').eq('id', id).maybeSingle();
+    if (row) pickLead(row as CallLead);
   };
 
   const savePhone = async () => {
@@ -591,8 +639,11 @@ const CallScreen = () => {
             </button>
           );
         })}
-        <span className="text-[12px] text-crm-ink-3">{tiers.length === 0 ? 'All tiers, best first' : 'Only the ticked tiers'}</span>
+        <Button className="ml-auto" onClick={() => setIncoming(o => !o)}>{incoming ? 'Close incoming call' : 'Incoming call'}</Button>
+        <span className="text-[12px] text-crm-ink-3">{tiers.length === 0 ? 'A, B, C and untiered, best first · parked (D) left out' : 'Only the ticked tiers'}</span>
       </div>
+
+      {incoming && <IncomingCall onPick={pickLead} confirmSwitch={() => confirmSwitch()} onClose={() => setIncoming(false)} />}
 
       {/* Undo — for the 30 minutes after a call it can still be taken back. */}
       {lastCall && now.getTime() - lastCall.at < UNDO_WINDOW_MS && (
@@ -603,6 +654,15 @@ const CallScreen = () => {
           <Button size="sm" onClick={undo} disabled={saving}>
             Undo <Kbd>Z</Kbd>
           </Button>
+        </div>
+      )}
+
+      {lastSkip && (
+        <div className="flex flex-wrap items-center gap-3 rounded-crm-md border border-crm-line bg-crm-surface px-3.5 py-2 text-[13px] text-crm-ink-2">
+          <span>
+            Skipped <strong className="text-crm-ink">{lastSkip.company}</strong> — back tomorrow
+          </span>
+          <Button size="sm" onClick={unskip}>Undo skip</Button>
         </div>
       )}
 
@@ -634,6 +694,8 @@ const CallScreen = () => {
               ? 'The queue couldn’t be checked just now (a connection problem, not an empty list). Try again.'
               : waiting > 0
               ? `${waiting.toLocaleString()} lead${waiting === 1 ? ' is' : 's are'} ${listId ? 'in this list' : 'queued'}, but ${tiers.length ? 'none matching the ticked tiers is ready — they may be outside their business hours, not due for a retry, or in another tier. ' : 'outside their business hours or not due for a retry yet. '}Check back later${listId ? ', or switch to another list' : ''}${tiers.length ? ', or tick more tiers' : ''}.${snoozedCount ? ` ${snoozedCount} you skipped will return tomorrow.` : ''}`
+              : parkedTotal > 0
+              ? `Only parked (D) leads are left (${parkedTotal.toLocaleString()}). Tick “Parked (D)” above to call them.`
               : snoozedCount
               ? `Everything left is a lead you skipped (${snoozedCount}). They return tomorrow.`
               : 'Import a CSV to load leads.'
@@ -669,10 +731,13 @@ const CallScreen = () => {
                       <option value="A">Tier A</option>
                       <option value="B">Tier B</option>
                       <option value="C">Tier C</option>
+                      <option value="D">Parked (D)</option>
                       <option value="-">No tier</option>
                     </select>
                   </label>
                   {lead.score !== null && <Badge tone="neutral">Score {lead.score}</Badge>}
+                  {segmentLabel(lead.segment) && <Badge tone="info">{segmentLabel(lead.segment)}</Badge>}
+                  {lead.source === 'inbound' && <Badge tone="warning" dot>Inbound</Badge>}
                   {lead.status === 'callback' && <Badge tone="warning" dot>Callback due</Badge>}
                   {lead.status === 'retry' && <Badge tone="info" dot>Attempt {lead.attempt_count + 1}</Badge>}
                   {lead.outreach_touches > 0 && (
@@ -724,9 +789,9 @@ const CallScreen = () => {
                 </div>
 
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-[13px]">
-                  {lead.website && <a className="text-crm-copper" href={lead.website} target="_blank" rel="noopener noreferrer">Website</a>}
-                  {lead.profile_url && <a className="text-crm-copper" href={lead.profile_url} target="_blank" rel="noopener noreferrer">Profile</a>}
-                  {lead.contact_url && <a className="text-crm-copper" href={lead.contact_url} target="_blank" rel="noopener noreferrer">Contact page</a>}
+                  {safeHref(lead.website) && <a className="text-crm-copper" href={safeHref(lead.website) ?? undefined} target="_blank" rel="noopener noreferrer">Website</a>}
+                  {safeHref(lead.profile_url) && <a className="text-crm-copper" href={safeHref(lead.profile_url) ?? undefined} target="_blank" rel="noopener noreferrer">Profile</a>}
+                  {safeHref(lead.contact_url) && <a className="text-crm-copper" href={safeHref(lead.contact_url) ?? undefined} target="_blank" rel="noopener noreferrer">Contact page</a>}
                 </div>
 
                 {lead.services && (
@@ -734,6 +799,23 @@ const CallScreen = () => {
                     {lead.services.split(',').map(s => s.trim()).filter(Boolean).slice(0, 8).map(s => (
                       <Badge key={s} tone="neutral">{s}</Badge>
                     ))}
+                  </div>
+                )}
+
+                {(extraLinks(lead.extra).length > 0 || extraDetails(lead.extra).length > 0) && (
+                  <div className="flex flex-col gap-1.5 text-[13px]">
+                    {extraLinks(lead.extra).length > 0 && (
+                      <div className="flex flex-wrap gap-x-4 gap-y-1">
+                        {extraLinks(lead.extra).map(l => (
+                          <a key={l.url} className="text-crm-copper" href={l.url} target="_blank" rel="noopener noreferrer">{l.label}</a>
+                        ))}
+                      </div>
+                    )}
+                    {extraDetails(lead.extra).length > 0 && (
+                      <p className="m-0 break-words text-crm-ink-3">
+                        {extraDetails(lead.extra).map(d => `${d.label}: ${d.value}`).join(' · ')}
+                      </p>
+                    )}
                   </div>
                 )}
 
@@ -770,7 +852,7 @@ const CallScreen = () => {
               </button>
               {showScript && (
                 <div className="flex flex-col gap-4 border-t border-crm-line p-4">
-                  {script.map(b => (
+                  {script.filter(b => !b.segment || b.segment === lead.segment).map(b => (
                     <div key={b.title}>
                       <p className="m-0 font-crm-mono text-[10px] uppercase tracking-[0.12em] text-crm-ink-3">{b.title}</p>
                       {b.lines.map((line, i) => (

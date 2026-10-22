@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
 import type { DialerReport } from '../../../types/database';
-import { dayStartInZone, outcomeLabel } from '../../../lib/dialer-calls';
+import { dayStartInZone, outcomeLabel, segmentLabel } from '../../../lib/dialer-calls';
 import {
   Card, CardHeader, EmptyState, ErrorState, PageHeader, SegmentedControl, Skeleton, Stat,
   TableShell, Td, Th, Tr,
@@ -34,6 +34,7 @@ const Bar = ({ label, value, max, sub }: { label: string; value: number; max: nu
 
 const Reports = () => {
   const [range, setRange] = useState<Range>('7d');
+  const [segments, setSegments] = useState<{ segment: string; dials: number; conversations: number; meetings: number }[]>([]);
   const [report, setReport] = useState<DialerReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState<string | null>(null);
@@ -47,8 +48,9 @@ const Reports = () => {
       : range === '30d' ? new Date(now - 30 * 86400000)
       : new Date(0);
 
+    const to = new Date(now + 86400000).toISOString();
     supabase
-      .rpc('dialer_report', { p_from: from.toISOString(), p_to: new Date(now + 86400000).toISOString(), p_tz: PKT })
+      .rpc('dialer_report', { p_from: from.toISOString(), p_to: to, p_tz: PKT })
       .then(({ data, error }) => {
         if (cancelled) return;
         if (error) setFailed(error.message);
@@ -58,6 +60,10 @@ const Reports = () => {
         }
         setLoading(false);
       });
+    // A separate call, so a database that hasn't had migration 028 yet still shows the rest.
+    supabase.rpc('dialer_report_segments', { p_from: from.toISOString(), p_to: to }).then(({ data }) => {
+      if (!cancelled) setSegments(Array.isArray(data) ? data : []);
+    });
     return () => {
       cancelled = true;
     };
@@ -171,6 +177,28 @@ const Reports = () => {
                       <Td align="right">{r.meetings}</Td>
                     </Tr>
                   ))}
+                </tbody>
+              </TableShell>
+            </Card>
+            <Card>
+              <CardHeader title="By segment" />
+              <TableShell className="border-0">
+                <thead>
+                  <tr><Th>Segment</Th><Th align="right">Dials</Th><Th align="right">Talk</Th><Th align="right">Mtgs</Th></tr>
+                </thead>
+                <tbody>
+                  {segments.length === 0 ? (
+                    <Tr><Td className="text-crm-ink-3">Nothing yet</Td><Td align="right">–</Td><Td align="right">–</Td><Td align="right">–</Td></Tr>
+                  ) : (
+                    segments.map(r => (
+                      <Tr key={r.segment}>
+                        <Td className="font-medium text-crm-ink">{segmentLabel(r.segment) ?? 'Not set'}</Td>
+                        <Td align="right">{r.dials}</Td>
+                        <Td align="right">{r.conversations}</Td>
+                        <Td align="right">{r.meetings}</Td>
+                      </Tr>
+                    ))
+                  )}
                 </tbody>
               </TableShell>
             </Card>

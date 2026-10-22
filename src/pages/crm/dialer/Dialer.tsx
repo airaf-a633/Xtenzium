@@ -73,7 +73,9 @@ const Dialer = () => {
     let cancelled = false;
     const count = (status?: CallLeadStatus) => {
       const q = supabase.from('call_leads').select('id', { count: 'exact', head: true });
-      return status ? q.eq('status', status) : q;
+      if (!status) return q;
+      // Parked (tier D) leads are kept but never dialled, so they aren't "ready".
+      return status === 'new' ? q.eq('status', status).or('tier.is.null,tier.neq.D') : q.eq('status', status);
     };
     Promise.all([
       supabase.from('call_lists').select('*').order('created_at', { ascending: false }),

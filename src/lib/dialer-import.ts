@@ -120,6 +120,35 @@ export function domainOf(url: string | null | undefined): string | null {
   }
 }
 
+/* A company whose "website" is a social or directory page would share a
+   domain with every other company on that platform, and all but the first
+   would be thrown out as duplicates. Those hosts are not a dedupe key. */
+const PLATFORM_DOMAINS = [
+  'facebook.com', 'fb.com', 'instagram.com', 'linkedin.com', 'twitter.com', 'x.com', 'youtube.com', 'tiktok.com',
+  'pinterest.com', 'linktr.ee', 'behance.net', 'dribbble.com', 'clutch.co', 'upwork.com', 'fiverr.com', 'yelp.com',
+  'google.com', 'g.page', 'goo.gl', 'bbb.org', 'crunchbase.com', 'github.com', 'medium.com', 'goodfirms.co',
+  'designrush.com', 'themanifest.com', 'wa.me', 'bit.ly',
+];
+
+export const isPlatformDomain = (host: string | null): boolean =>
+  !!host && PLATFORM_DOMAINS.some(d => host === d || host.endsWith(`.${d}`));
+
+const dedupeDomain = (host: string | null): string | null => (isPlatformDomain(host) ? null : host);
+
+/** "2.12555E+09": a phone number after a spreadsheet got hold of it. The digits are gone. */
+export const looksExcelDamaged = (raw: string | null): boolean =>
+  !!raw && /^\s*[+-]?\d(\.\d+)?\s*e\s*[+-]?\d+\s*$/i.test(raw);
+
+export function segmentFrom(raw: string | null): 'agency' | 'dev_shop' | null {
+  const v = (raw ?? '').toLowerCase();
+  if (!v) return null;
+  const dev = /\b(dev|devs|developer|developers|development|software|engineering|engineers?)\b/.test(v);
+  const agency = /\b(agency|agencies|design|creative|marketing|branding|brand)\b/.test(v);
+  // Both ("Web Design & Development Agency") is a coin toss: say nothing and let the import's choice apply.
+  if (dev === agency) return null;
+  return dev ? 'dev_shop' : 'agency';
+}
+
 /* ─── Column mapping ───────────────────────────────────────
 
    A header is matched on its letters only, so "Phone Number",
@@ -130,7 +159,7 @@ export function domainOf(url: string | null | undefined): string | null {
 export type FieldKey =
   | 'company_name' | 'phone' | 'email' | 'website' | 'contact_url' | 'profile_url'
   | 'hq' | 'team_size' | 'hourly_rate_usd' | 'services' | 'works_count'
-  | 'tier' | 'score' | 'why' | 'source' | 'contact_name' | 'contact_title';
+  | 'tier' | 'score' | 'why' | 'source' | 'contact_name' | 'contact_title' | 'segment';
 
 export interface FieldDef {
   key: FieldKey;
@@ -158,6 +187,7 @@ export const FIELDS: FieldDef[] = [
   { key: 'source', label: 'Source', synonyms: ['source', 'origin'] },
   { key: 'contact_name', label: 'Contact name', synonyms: ['contactname', 'contactperson', 'decisionmaker'] },
   { key: 'contact_title', label: 'Contact title', synonyms: ['contacttitle', 'jobtitle', 'title', 'role'] },
+  { key: 'segment', label: 'Segment (agency / dev shop)', synonyms: ['segment', 'leadtype', 'companytype'] },
 ];
 
 const letters = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -212,7 +242,8 @@ export interface LeadRecord {
   hourly_rate_usd: number | null;
   services: string | null;
   works_count: number | null;
-  tier: 'A' | 'B' | 'C' | null;
+  tier: 'A' | 'B' | 'C' | 'D' | null;
+  segment: 'agency' | 'dev_shop' | null;
   score: number | null;
   why: string | null;
   source: string | null;
@@ -225,6 +256,7 @@ export type Verdict =
   | 'no_phone'      // will import, nothing to dial (outreach by email / contact form)
   | 'bad_phone'     // will import as bad_data: had a phone we couldn't read, and no email
   | 'dup_file'      // same phone/domain earlier in this file
+  | 'held_back'     // the person chose not to import this tier value
   | 'dup_existing'  // already in the CRM
   | 'dnc'           // on the do-not-call list
   | 'no_name';      // nothing to call it
@@ -234,6 +266,8 @@ export interface PreparedRow {
   rowNumber: number;
   verdict: Verdict;
   record: LeadRecord | null;
+  /** A phone cell that Excel/Sheets turned into 2.12E+09. Nothing usable is left in it. */
+  excelDamaged?: boolean;
   /** Set when a different phone/domain hides what looks like the same company. It is still imported. */
   possibleDup?: 'existing' | 'file';
 }
@@ -281,7 +315,8 @@ const toInt = (v: string | null): number | null => {
    anything it can't read is left for the person importing to decide in
    the preview, never guessed silently. */
 
-export type TierValue = 'A' | 'B' | 'C' | null;
+/** 'D' = parked (kept, never dialled unless asked for). 'skip' = don't import the row at all. */
+export type TierValue = 'A' | 'B' | 'C' | 'D' | 'skip' | null;
 /** What to do with each distinct value in the file's tier column. Keyed by the trimmed raw value. */
 export type TierMap = Record<string, TierValue>;
 /** For files with a score but no tier: A at or above `a`, B at or above `b`, otherwise C. */
@@ -299,8 +334,8 @@ const TIER_WORDS: Record<string, TierValue> = {
 export function guessTier(raw: string | null | undefined): TierValue {
   const v = (raw ?? '').trim().toLowerCase().replace(/^tier[\s:_-]*/, '');
   if (!v) return null;
-  const letter = /^([abc])\b/.exec(v);
-  if (letter) return letter[1].toUpperCase() as 'A' | 'B' | 'C';
+  const letter = /^([abcd])\b/.exec(v);
+  if (letter) return letter[1].toUpperCase() as 'A' | 'B' | 'C' | 'D';
   const first = v.replace(/[^a-z0-9 ]/g, ' ').split(' ').filter(Boolean)[0] ?? '';
   return TIER_WORDS[v] ?? TIER_WORDS[first] ?? null;
 }
@@ -318,6 +353,8 @@ export function distinctValues(rows: string[][], col: number): { value: string; 
 export interface TierOptions {
   tierMap?: TierMap;
   scoreRule?: ScoreRule | null;
+  /** Applied to every row that doesn't carry its own segment column. */
+  segment?: 'agency' | 'dev_shop' | null;
 }
 
 /** The tier for one row: the person's mapping, else the guess; the score rule only fills in rows with NO tier value at all. */
@@ -368,9 +405,10 @@ export function prepareRows(
 
     const phoneRaw = get(r, 'phone');
     const hintedUs = usFlagColumn !== null && /^(yes|true|y|1)$/i.test((r[usFlagColumn] ?? '').trim());
-    const phone = normalizePhone(phoneRaw, hintedUs);
+    const damaged = looksExcelDamaged(phoneRaw);
+    const phone = damaged ? NONE : normalizePhone(phoneRaw, hintedUs);
     const website = get(r, 'website');
-    const domain = domainOf(website);
+    const domain = dedupeDomain(domainOf(website));
     const email = get(r, 'email')?.toLowerCase() ?? null;
     const hq = get(r, 'hq');
     const geo = stateFromHq(hq);
@@ -384,6 +422,9 @@ export function prepareRows(
        "bad data". A lead with no number at all is simply not callable. */
     const score = toInt(get(r, 'score'));
     const status: LeadStatus = phone.e164 ? 'new' : phoneRaw && !email ? 'bad_data' : 'no_phone';
+
+    const tier = tierFor(get(r, 'tier'), score, tierOptions);
+    if (tier === 'skip') return { rowNumber, verdict: 'held_back', record: null };
 
     const record: LeadRecord = {
       company_name: name,
@@ -402,7 +443,8 @@ export function prepareRows(
       hourly_rate_usd: toNumber(get(r, 'hourly_rate_usd')),
       services: get(r, 'services'),
       works_count: toInt(get(r, 'works_count')),
-      tier: tierFor(get(r, 'tier'), score, tierOptions),
+      tier,
+      segment: segmentFrom(get(r, 'segment')) ?? tierOptions.segment ?? null,
       score,
       why: get(r, 'why'),
       source: get(r, 'source'),
@@ -431,7 +473,7 @@ export function prepareRows(
     }
 
     const verdict: Verdict = status === 'new' ? 'ok' : status === 'no_phone' ? 'no_phone' : 'bad_phone';
-    return { rowNumber, verdict, record, ...(possibleDup ? { possibleDup } : {}) };
+    return { rowNumber, verdict, record, ...(possibleDup ? { possibleDup } : {}), ...(damaged ? { excelDamaged: true } : {}) };
   });
 }
 
@@ -447,16 +489,20 @@ export interface Summary {
   /** Rows that will actually be written. */
   toImport: number;
   nonUs: number;
+  /** Rows left out because their tier value was set to "don't import". */
+  heldBack: number;
+  /** Phone cells a spreadsheet had already ruined (2.1E+09). */
+  excelDamaged: number;
   /** Rows that will be imported but look like a company already in the CRM or earlier in the file. */
   possibleDup: number;
-  byTier: { A: number; B: number; C: number; none: number };
+  byTier: { A: number; B: number; C: number; D: number; none: number };
 }
 
 export function summarize(prepared: PreparedRow[]): Summary {
   const s: Summary = {
     total: prepared.length, callable: 0, noPhone: 0, badPhone: 0, dupFile: 0,
-    dupExisting: 0, dnc: 0, noName: 0, toImport: 0, nonUs: 0, possibleDup: 0,
-    byTier: { A: 0, B: 0, C: 0, none: 0 },
+    dupExisting: 0, dnc: 0, noName: 0, toImport: 0, nonUs: 0, possibleDup: 0, heldBack: 0, excelDamaged: 0,
+    byTier: { A: 0, B: 0, C: 0, D: 0, none: 0 },
   };
   for (const p of prepared) {
     switch (p.verdict) {
@@ -467,6 +513,7 @@ export function summarize(prepared: PreparedRow[]): Summary {
       case 'dup_existing': s.dupExisting++; break;
       case 'dnc': s.dnc++; break;
       case 'no_name': s.noName++; break;
+      case 'held_back': s.heldBack++; break;
     }
     if (p.record) {
       s.toImport++;
@@ -474,6 +521,7 @@ export function summarize(prepared: PreparedRow[]): Summary {
       s.byTier[p.record.tier ?? 'none']++;
       if (p.possibleDup) s.possibleDup++;
     }
+    if (p.excelDamaged) s.excelDamaged++;
   }
   return s;
 }

@@ -8,12 +8,14 @@ const FROM = [
   { value: 'A', label: 'Tier A' },
   { value: 'B', label: 'Tier B' },
   { value: 'C', label: 'Tier C' },
+  { value: 'D', label: 'Parked (D)' },
   { value: '-', label: 'Leads with no tier' },
 ];
 const TO = [
   { value: 'A', label: 'Tier A' },
   { value: 'B', label: 'Tier B' },
   { value: 'C', label: 'Tier C' },
+  { value: 'D', label: 'Parked (D)' },
   { value: '-', label: 'No tier' },
 ];
 

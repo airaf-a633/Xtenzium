@@ -78,12 +78,13 @@ const ScriptEditor = ({
   const { toast } = useToast();
   const [title, setTitle] = useState(script.title);
   const [body, setBody] = useState(script.body);
+  const [segment, setSegment] = useState<string>(script.segment ?? '');
   const [busy, setBusy] = useState(false);
-  const dirty = title !== script.title || body !== script.body;
+  const dirty = title !== script.title || body !== script.body || segment !== (script.segment ?? '');
 
   const save = async () => {
     setBusy(true);
-    const { error } = await supabase.from('call_scripts').update({ title, body }).eq('id', script.id);
+    const { error } = await supabase.from('call_scripts').update({ title, body, segment: (segment || null) as CallScript['segment'] }).eq('id', script.id);
     setBusy(false);
     if (error) return toast('That didn’t save.', 'danger');
     toast('Script saved', 'success');
@@ -101,6 +102,13 @@ const ScriptEditor = ({
     <div className="flex flex-col gap-2 border-b border-crm-line p-4 last:border-b-0">
       <Input label="Section title" value={title} onChange={e => setTitle(e.target.value)} />
       <Textarea label="Lines (one per line)" rows={6} value={body} onChange={e => setBody(e.target.value)} />
+      <Select
+        label="Show this section for"
+        className="w-[220px]"
+        options={[{ value: '', label: 'Every call' }, { value: 'agency', label: 'Agencies only' }, { value: 'dev_shop', label: 'Dev shops only' }]}
+        value={segment}
+        onChange={e => setSegment(e.target.value)}
+      />
       <div className="flex flex-wrap gap-2">
         <Button variant="primary" loading={busy} disabled={!dirty} onClick={save}>Save</Button>
         <Button disabled={first} onClick={() => move(script, -1, onChanged, toast)}>Move up</Button>

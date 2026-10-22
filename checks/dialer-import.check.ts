@@ -7,7 +7,7 @@
 import { readFileSync } from 'node:fs';
 import { parseCsv } from '../src/lib/csv';
 import {
-  autoMap, companyKey, distinctValues, domainOf, guessTier, normalizePhone, prepareRows, stateFromHq, summarize, tierFor,
+  autoMap, companyKey, distinctValues, domainOf, isPlatformDomain, looksExcelDamaged, segmentFrom, guessTier, normalizePhone, prepareRows, stateFromHq, summarize, tierFor,
   type KnownKeys,
 } from '../src/lib/dialer-import';
 
@@ -166,6 +166,35 @@ eq('too short to compare', companyKey('AB', 'NY'), null);
   eq('the summary counts them', summarize(r).possibleDup, 2);
   eq('no companies supplied (older server) → nothing flagged', run([row({ name: 'ACME LLC', phone: '(212) 380-1761', phone_is_us: 'yes', hq: 'New York City, New York' })])[0].possibleDup, undefined);
 }
+
+
+/* Parked tier, "don't import", segment, platform domains, Excel damage */
+eq('D is a tier', [guessTier('D'), guessTier('Tier D'), guessTier('d - skip')], ['D', 'D', 'D']);
+eq('E is not', guessTier('E'), null);
+{
+  const t = (extra: Partial<Record<string, string>>, opts = {}) => prepareRows(H, [row({ name: 'Acme', phone: '(212) 380-1761', phone_is_us: 'yes', ...extra })], m, none, 2, opts)[0];
+  eq('a D row imports as tier D', t({ tier: 'D' }).record?.tier, 'D');
+  eq('"skip" held back, with no record', [t({ tier: 'D' }, { tierMap: { D: 'skip' } }).verdict, t({ tier: 'D' }, { tierMap: { D: 'skip' } }).record], ['held_back', null]);
+  eq('mapping D to parked keeps it', t({ tier: 'D' }, { tierMap: { D: 'D' } }).record?.tier, 'D');
+  eq('segment from the import choice', t({}, { segment: 'dev_shop' }).record?.segment, 'dev_shop');
+  eq('no segment chosen', t({}).record?.segment, null);
+  eq('a social page as the website is not a dedupe key', [t({ website: 'https://www.facebook.com/acme' }).record?.domain, t({ website: 'https://www.facebook.com/acme' }).record?.website], [null, 'https://www.facebook.com/acme']);
+  eq('a real site still is', t({ website: 'https://www.acme.com/about' }).record?.domain, 'acme.com');
+  const two = run([
+    row({ name: 'One Studio', phone: '(212) 380-1761', phone_is_us: 'yes', website: 'https://facebook.com/one' }),
+    row({ name: 'Two Works', phone: '(212) 380-1762', phone_is_us: 'yes', website: 'https://facebook.com/two' }),
+  ]);
+  eq('two companies on the same social platform are both kept', two.map(r => r.verdict), ['ok', 'ok']);
+  const dmg = t({ phone: '2.12555E+09', role_email: '' });
+  eq('an Excel-ruined phone is flagged, no bogus number made', [dmg.excelDamaged, dmg.record?.phone_e164, dmg.verdict], [true, null, 'bad_phone']);
+  eq('…and counted in the summary', summarize([dmg]).excelDamaged, 1);
+}
+eq('platform domains', [isPlatformDomain('facebook.com'), isPlatformDomain('m.facebook.com'), isPlatformDomain('notfacebook.com'), isPlatformDomain('acme.com'), isPlatformDomain(null)], [true, true, false, false, false]);
+eq('Excel damage patterns', [looksExcelDamaged('2.12555E+09'), looksExcelDamaged('1E+10'), looksExcelDamaged('(212) 380-1761'), looksExcelDamaged('2125551234'), looksExcelDamaged(null)], [true, true, false, false, false]);
+eq('segment words', [segmentFrom('Dev Shop'), segmentFrom('software house'), segmentFrom('Design Agency'), segmentFrom('marketing'), segmentFrom('plumber'), segmentFrom('')], ['dev_shop', 'dev_shop', 'agency', 'agency', null, null]);
+eq('both kinds of word is ambiguous: no answer, so the import-wide choice applies',
+  [segmentFrom('dev agency'), segmentFrom('Web Design & Development Agency')], [null, null]);
+eq('whole words only', [segmentFrom("Brandon's Studio"), segmentFrom('Rebuilders'), segmentFrom('Marketing Agency')], [null, null, 'agency']);
 
 /* The real file, when pointed at it. */
 const file = process.env.CALL_LIST_CSV;

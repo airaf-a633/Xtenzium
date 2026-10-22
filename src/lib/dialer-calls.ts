@@ -303,18 +303,91 @@ export const INSTANT_HINT: Partial<Record<OutcomeKey, string>> = { no_answer: '�
 
 /* ─── Tier filter ──────────────────────────────────────────── */
 
-export type TierChoice = 'A' | 'B' | 'C' | '-';
+export type TierChoice = 'A' | 'B' | 'C' | 'D' | '-';
 
 export const TIER_CHOICES: { value: TierChoice; label: string }[] = [
   { value: 'A', label: 'Tier A' },
   { value: 'B', label: 'Tier B' },
   { value: 'C', label: 'Tier C' },
   { value: '-', label: 'No tier' },
+  { value: 'D', label: 'Parked (D)' },
 ];
 
-/** What to send the database: nothing picked, or everything picked, means "no filter". */
-export const tiersParam = (picked: TierChoice[]): TierChoice[] | null =>
-  picked.length === 0 || picked.length === TIER_CHOICES.length ? null : picked;
+/** What to send the database. Nothing picked means "the usual queue" — which leaves parked (D) leads out. */
+export const tiersParam = (picked: TierChoice[]): TierChoice[] | null => (picked.length === 0 ? null : picked);
+
+/* ─── Segments ─────────────────────────────────────────────── */
+
+export type Segment = 'agency' | 'dev_shop';
+
+export const SEGMENTS: { value: Segment; label: string }[] = [
+  { value: 'agency', label: 'Agency' },
+  { value: 'dev_shop', label: 'Dev shop' },
+];
+
+export const segmentLabel = (s: string | null | undefined): string | null =>
+  SEGMENTS.find(x => x.value === s)?.label ?? null;
+
+/* ─── Extra columns a file carried ─────────────────────────────
+   Anything the importer didn't map is kept on the lead. Social links
+   become clickable; the rest is shown as plain details. */
+
+const SOCIALS: { key: string; label: string; base: string }[] = [
+  { key: 'linkedin', label: 'LinkedIn', base: 'https://www.linkedin.com/' },
+  { key: 'instagram', label: 'Instagram', base: 'https://www.instagram.com/' },
+  { key: 'facebook', label: 'Facebook', base: 'https://www.facebook.com/' },
+  { key: 'twitter', label: 'Twitter / X', base: 'https://x.com/' },
+  { key: 'x', label: 'Twitter / X', base: 'https://x.com/' },
+];
+
+const letterKey = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+/** A link that is safe to put in an href: http(s) only, and a bare "acme.com" gets its scheme
+    (otherwise the browser reads it as a path inside this app). Anything else is no link. */
+export const safeHref = (raw: string | null | undefined): string | null => {
+  const v = (raw ?? '').trim();
+  if (!v || /\s/.test(v)) return null;
+  if (/^https?:\/\//i.test(v)) return v;
+  if (/^[a-z][a-z0-9+.-]*:/i.test(v)) return null;
+  return v.includes('.') ? `https://${v}` : null;
+};
+
+/** "LinkedIn", "linkedin_url" and "Instagram handle" all count; the one-letter "x" must match exactly. */
+const socialFor = (header: string) => {
+  const k = letterKey(header);
+  return SOCIALS.find(s => k === s.key || (s.key.length > 1 && k.includes(s.key)));
+};
+
+const clip = (v: string, n = 200) => (v.length > n ? `${v.slice(0, n)}…` : v);
+
+/** Only ever http(s): a cell in a CSV is not to be trusted with a javascript: link. */
+const asUrl = (value: string, base: string): string | null => {
+  const v = value.trim();
+  if (!v || /\s/.test(v)) return null;
+  if (/^https?:\/\//i.test(v)) return v;
+  if (/^[a-z][a-z0-9+.-]*:/i.test(v)) return null;
+  const host = new URL(base).hostname.replace(/^www\./, '');
+  // A path or the platform's own domain is a link; anything else ("john.smith") is a handle.
+  if (v.includes('/') || /^www\./i.test(v) || v.toLowerCase().includes(host)) return `https://${v}`;
+  return `${base}${v.replace(/^@/, '')}`;
+};
+
+export function extraLinks(extra: Record<string, unknown> | null | undefined): { label: string; url: string }[] {
+  const out: { label: string; url: string }[] = [];
+  for (const [header, raw] of Object.entries(extra ?? {})) {
+    const social = socialFor(header);
+    if (!social || typeof raw !== 'string') continue;
+    const url = asUrl(raw, social.base);
+    if (url && !out.some(o => o.url === url)) out.push({ label: social.label, url });
+  }
+  return out;
+}
+
+export function extraDetails(extra: Record<string, unknown> | null | undefined): { label: string; value: string }[] {
+  return Object.entries(extra ?? {})
+    .filter(([header, v]) => typeof v === 'string' && v.trim() && !socialFor(header))
+    .map(([header, v]) => ({ label: header.replace(/[_-]+/g, ' '), value: clip(String(v).trim()) }));
+}
 
 export const parseTiers = (raw: string | null): TierChoice[] =>
   (raw ?? '').split(',').filter((t): t is TierChoice => TIER_CHOICES.some(c => c.value === t));

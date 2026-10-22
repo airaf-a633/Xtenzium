@@ -5,7 +5,7 @@ import {
   OUTCOMES, clockFor, dayStartInZone, dayStats, formatInZone, formatPhone,
   isConversation, outcomeByShortcut, voiceLink, zonedToUtc,
   BOARD_COLUMNS, columnForStatus, filterPeople, gmailCompose, insertMention, mentionLabel,
-  instantOutcome, mentionsIn, mentionTrigger, outcomeLabel, parseTiers, renderTemplate, scriptVars, tiersParam,
+  extraDetails, extraLinks, instantOutcome, safeHref, mentionsIn, mentionTrigger, outcomeLabel, parseTiers, renderTemplate, scriptVars, segmentLabel, tiersParam,
 } from '../src/lib/dialer-calls';
 
 let failures = 0;
@@ -118,10 +118,40 @@ eq('other digits are not instant', [instantOutcome('Digit3', true), instantOutco
 
 /* Tier filter */
 eq('nothing picked = no filter', tiersParam([]), null);
-eq('everything picked = no filter', tiersParam(['A', 'B', 'C', '-']), null);
+eq('A, B, C and none picked stays an explicit list, so parked D stays out', tiersParam(['A', 'B', 'C', '-']), ['A', 'B', 'C', '-']);
+eq('D is only served when picked', tiersParam(['D']), ['D']);
 eq('some picked', tiersParam(['A', 'B']), ['A', 'B']);
 eq('parse saved tiers', parseTiers('A,-,C'), ['A', '-', 'C']);
 eq('parse drops junk', parseTiers('A,Z,,x'), ['A']);
+eq('parse knows D', parseTiers('A,D'), ['A', 'D']);
+
+/* Segments and the extra columns a file carried */
+eq('segment labels', [segmentLabel('agency'), segmentLabel('dev_shop'), segmentLabel(null), segmentLabel('nope')], ['Agency', 'Dev shop', null, null]);
+eq('social links: full urls, handles and bare domains',
+  extraLinks({ linkedin: 'https://linkedin.com/company/acme', Instagram: '@acme', facebook: 'facebook.com/acme', Twitter: 'acme_co' }),
+  [
+    { label: 'LinkedIn', url: 'https://linkedin.com/company/acme' },
+    { label: 'Instagram', url: 'https://www.instagram.com/acme' },
+    { label: 'Facebook', url: 'https://facebook.com/acme' },
+    { label: 'Twitter / X', url: 'https://x.com/acme_co' },
+  ]);
+eq('a javascript: link in a cell is never made clickable', extraLinks({ linkedin: 'javascript:alert(1)' }), []);
+eq('text with spaces is not a link', extraLinks({ linkedin: 'not on linkedin' }), []);
+eq('the same link twice shows once', extraLinks({ linkedin: 'https://x.com/a', twitter: 'https://x.com/a' }).length, 1);
+eq('other extras become details, socials do not', extraDetails({ size_confidence: 'high', linkedin: 'https://l.com/x', status: 'verified', blank: '  ' }),
+  [{ label: 'size confidence', value: 'high' }, { label: 'status', value: 'verified' }]);
+eq('no extras at all', [extraLinks(null), extraDetails(undefined)], [[], []]);
+eq('usual header names still find the link', extraLinks({ 'LinkedIn URL': 'https://linkedin.com/in/a', 'Instagram Handle': '@acme' }).map(l => l.label), ['LinkedIn', 'Instagram']);
+eq('a dotted handle is a handle, not a domain', extraLinks({ instagram: 'john.smith' }), [{ label: 'Instagram', url: 'https://www.instagram.com/john.smith' }]);
+eq('"x" must be the whole header', [extraLinks({ x: 'acme' }).length, extraLinks({ 'next steps': 'acme' }).length], [1, 0]);
+eq('long extra values are clipped', extraDetails({ notes: 'a'.repeat(500) })[0].value.length, 201);
+
+/* Links from a CSV cell */
+eq('a bare domain gets https', safeHref('acme.com'), 'https://acme.com');
+eq('www. too', safeHref('www.acme.com/about'), 'https://www.acme.com/about');
+eq('http(s) is kept', [safeHref('https://a.co'), safeHref('http://a.co')], ['https://a.co', 'http://a.co']);
+eq('other schemes are no link', [safeHref('javascript:alert(1)'), safeHref('mailto:a@b.co'), safeHref('tel:+1212'), safeHref('data:text/html,x')], [null, null, null, null]);
+eq('junk and empty', [safeHref(''), safeHref(null), safeHref('not a url'), safeHref('plainword')], [null, null, null, null]);
 eq('parse empty / null', [parseTiers(''), parseTiers(null)], [[], []]);
 
 /* Script placeholders */

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../context/AuthContext';
 import type { CallLead, EmailTemplate } from '../../../types/database';
-import { TIER_CHOICES, formatInZone, gmailCompose, renderTemplate, tiersParam, type TierChoice } from '../../../lib/dialer-calls';
+import { TIER_CHOICES, formatInZone, gmailCompose, renderTemplate, safeHref, tiersParam, type TierChoice } from '../../../lib/dialer-calls';
 import {
   ACTION_LABEL, MAILTO_SAFE_LENGTH, OUTREACH_TABS, mailtoCompose, sendActionFor, templateFor, touchLabel,
   type OutreachAction, type OutreachTab,
@@ -18,10 +18,12 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 type Counts = Record<OutreachTab | 'sent_today', number>;
 
-const ExternalLink = ({ href, children }: { href: string | null; children: string }) =>
-  href ? (
+const ExternalLink = ({ href: raw, children }: { href: string | null; children: string }) => {
+  const href = safeHref(raw);
+  return href ? (
     <a className="text-crm-copper" href={href} target="_blank" rel="noopener noreferrer">{children}</a>
   ) : null;
+};
 
 /* One lead, opened: the email to send, and every way it can turn out. */
 const Work = ({

@@ -218,7 +218,9 @@ export interface CallLead {
   hourly_rate_usd: number | null;
   services: string | null;
   works_count: number | null;
-  tier: 'A' | 'B' | 'C' | null;
+  tier: 'A' | 'B' | 'C' | 'D' | null;
+  /* Which kind of company this is (migration 028). */
+  segment: 'agency' | 'dev_shop' | null;
   score: number | null;
   why: string | null;
   source: string | null;
@@ -301,6 +303,8 @@ export interface CallScript {
   id: string;
   title: string;
   body: string;
+  /* null = shown for every segment. */
+  segment: 'agency' | 'dev_shop' | null;
   sort_order: number;
   updated_at: string;
 }
@@ -359,6 +363,8 @@ export interface DialerListSummary {
   in_play: number;
   /** Of those, how many the queue would offer this minute. */
   callable_now: number;
+  /** Tier D leads: kept, never dialled unless asked for. */
+  parked: number;
 }
 
 export interface DialerReport {
@@ -668,8 +674,8 @@ export type Database = {
       };
       call_scripts: {
         Row: CallScript & Record<string, unknown>;
-        Insert: Pick<CallScript, 'title'> & Partial<Pick<CallScript, 'body' | 'sort_order'>>;
-        Update: Partial<Pick<CallScript, 'title' | 'body' | 'sort_order'>>;
+        Insert: Pick<CallScript, 'title'> & Partial<Pick<CallScript, 'body' | 'sort_order' | 'segment'>>;
+        Update: Partial<Pick<CallScript, 'title' | 'body' | 'sort_order' | 'segment'>>;
         Relationships: [];
       };
       dialer_settings: {
@@ -1057,6 +1063,18 @@ export type Database = {
       dialer_skip_lead: {
         Args: { p_lead_id: string };
         Returns: string;
+      };
+      dialer_create_lead: {
+        Args: {
+          p_company: string; p_phone_raw: string | null; p_e164: string | null; p_is_us: boolean | null;
+          p_contact_name?: string | null; p_contact_title?: string | null; p_email?: string | null;
+          p_website?: string | null; p_domain?: string | null;
+        };
+        Returns: { lead: CallLead; existing: boolean };
+      };
+      dialer_report_segments: {
+        Args: { p_from: string; p_to: string };
+        Returns: { segment: string; dials: number; conversations: number; meetings: number }[];
       };
       dialer_fix_phone: {
         Args: { p_lead_id: string; p_raw: string; p_e164: string; p_is_us: boolean };

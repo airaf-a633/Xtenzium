@@ -16,7 +16,14 @@ const TIER_OPTIONS = [
   { value: 'A', label: 'Tier A' },
   { value: 'B', label: 'Tier B' },
   { value: 'C', label: 'Tier C' },
+  { value: 'D', label: 'Parked (D) — keep, don’t dial' },
+  { value: 'skip', label: 'Don’t import' },
   { value: '-', label: 'No tier' },
+];
+const SEGMENT_OPTIONS = [
+  { value: '', label: 'Not set' },
+  { value: 'agency', label: 'Agency' },
+  { value: 'dev_shop', label: 'Dev shop' },
 ];
 const MAX_TIER_VALUES = 30;
 
@@ -62,6 +69,7 @@ const ImportLeads = () => {
   const [known, setKnown] = useState<KnownKeys>({ phones: [], domains: [], dnc_phones: [], dnc_domains: [] });
   const [listName, setListName] = useState('');
   const [skipLookalikes, setSkipLookalikes] = useState(false);
+  const [segment, setSegment] = useState<'agency' | 'dev_shop' | ''>('');
   const [dragging, setDragging] = useState(false);
   const [progress, setProgress] = useState({ done: 0, total: 0 });
   const [result, setResult] = useState<{ imported: number; skipped: number; listId: string } | null>(null);
@@ -108,8 +116,8 @@ const ImportLeads = () => {
   }, [useRule, ruleA, ruleB, scores]);
 
   const prepared = useMemo(
-    () => (parsed ? prepareRows(parsed.headers, parsed.rows, mapping, known, usFlagColumn, { tierMap: effectiveTierMap, scoreRule }) : []),
-    [parsed, mapping, known, usFlagColumn, effectiveTierMap, scoreRule],
+    () => (parsed ? prepareRows(parsed.headers, parsed.rows, mapping, known, usFlagColumn, { tierMap: effectiveTierMap, scoreRule, segment: segment || null }) : []),
+    [parsed, mapping, known, usFlagColumn, effectiveTierMap, scoreRule, segment],
   );
   const summary = useMemo(() => summarize(prepared), [prepared]);
   const willImport = summary.toImport - (skipLookalikes ? summary.possibleDup : 0);
@@ -265,7 +273,15 @@ const ImportLeads = () => {
               <Count label="Do not call" value={summary.dnc} tone="warn" />
               <Count label="Missing name" value={summary.noName} tone="warn" />
               <Count label="Look like an existing company" value={summary.possibleDup} tone="warn" />
+              <Count label="Not imported (tier choice)" value={summary.heldBack} tone="muted" />
+              <Count label="Phone ruined by Excel" value={summary.excelDamaged} tone="warn" />
             </div>
+            {summary.excelDamaged > 0 && (
+              <p className="m-0 border-t border-crm-line px-4 py-3 text-[12.5px] text-crm-warning">
+                {summary.excelDamaged.toLocaleString()} phone number{summary.excelDamaged === 1 ? ' was' : 's were'} already turned into scientific notation (like 2.12555E+09) by Excel or Sheets before this file reached us, so the digits are gone.
+                Re-export from the original data with the phone column formatted as Text. Those rows import without a number.
+              </p>
+            )}
             {summary.possibleDup > 0 && (
               <label className="m-0 flex cursor-pointer items-start gap-2 border-t border-crm-line px-4 py-3 text-[12.5px] text-crm-ink-2">
                 <input type="checkbox" className="mt-0.5" checked={skipLookalikes} onChange={e => setSkipLookalikes(e.target.checked)} />
@@ -277,7 +293,7 @@ const ImportLeads = () => {
             )}
             <p className="m-0 border-t border-crm-line px-4 py-3 text-[12.5px] text-crm-ink-3">
               <strong className="text-crm-ink">{willImport.toLocaleString()}</strong> will be imported ·
-              Tier A {summary.byTier.A} · B {summary.byTier.B} · C {summary.byTier.C}
+              Tier A {summary.byTier.A} · B {summary.byTier.B} · C {summary.byTier.C}{summary.byTier.D ? ` · parked D ${summary.byTier.D}` : ''}
               {summary.byTier.none ? ` · untiered ${summary.byTier.none}` : ''}
             </p>
           </Card>
@@ -407,6 +423,13 @@ const ImportLeads = () => {
                 label="List name"
                 value={listName}
                 onChange={e => setListName(e.target.value)}
+              />
+              <Select
+                label="These are"
+                className="w-[170px]"
+                options={SEGMENT_OPTIONS}
+                value={segment}
+                onChange={e => setSegment(e.target.value as 'agency' | 'dev_shop' | '')}
               />
               <Button onClick={reset} disabled={phase === 'importing'}>Start over</Button>
               <Button

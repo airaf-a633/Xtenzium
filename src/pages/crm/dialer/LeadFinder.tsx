@@ -13,9 +13,9 @@ const LeadFinder = ({ tz, refreshKey, onPick }: { tz: string; refreshKey: number
   const [open, setOpen] = useState(false);
   const [callbacks, setCallbacks] = useState<CallLead[]>([]);
   const [q, setQ] = useState('');
-  const [hits, setHits] = useState<CallLead[] | null>(null);
+  const [hits, setHits] = useState<CallLead[] | 'error' | null>(null);
   // Characters that mean something to the filter syntax are dropped, not escaped.
-  const term = q.trim().replace(/[%,()*\\]/g, ' ').trim();
+  const term = q.trim().replace(/[%,()*"\\]/g, ' ').trim();
 
   useEffect(() => {
     if (!open) return undefined;
@@ -45,8 +45,8 @@ const LeadFinder = ({ tz, refreshKey, onPick }: { tz: string; refreshKey: number
         .select('*')
         .or(filter)
         .limit(8)
-        .then(({ data }) => {
-          if (!cancelled) setHits((data ?? []) as CallLead[]);
+        .then(({ data, error }) => {
+          if (!cancelled) setHits(error ? 'error' : ((data ?? []) as CallLead[]));
         });
     }, 250);
     return () => {
@@ -80,7 +80,13 @@ const LeadFinder = ({ tz, refreshKey, onPick }: { tz: string; refreshKey: number
           </div>
           {term.length >= 3 && hits && (
             <ul className="m-0 list-none divide-y divide-crm-line p-0">
-              {hits.length === 0 ? <li className="px-4 py-2.5 text-[13px] text-crm-ink-3">No match.</li> : hits.map(l => row(l))}
+              {hits === 'error' ? (
+                <li className="px-4 py-2.5 text-[13px] text-crm-danger">The search failed — try again.</li>
+              ) : hits.length === 0 ? (
+                <li className="px-4 py-2.5 text-[13px] text-crm-ink-3">No match.</li>
+              ) : (
+                hits.map(l => row(l))
+              )}
             </ul>
           )}
           <p className="m-0 border-t border-crm-line px-4 pt-3 font-crm-mono text-[10px] uppercase tracking-[0.12em] text-crm-ink-3">
