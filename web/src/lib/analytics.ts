@@ -220,9 +220,9 @@ export function initAnalytics() {
   cleanup.push(() => window.removeEventListener('scroll', onScroll));
 
   // ── Outbound clicks ─────────────────────────────────────────────
-  // Host only, and only genuinely external ones. The credits rows and
-  // the case-study source links are the interesting case: knowing the
-  // work is being clicked through to is a signal about the work.
+  // Host only, and only genuinely external ones. The case-study source
+  // links are the interesting case: knowing the work is being clicked
+  // through to is a signal about the work.
   const onClick = (e: MouseEvent) => {
     const link = (e.target as Element | null)?.closest?.('a');
     if (!link) return;

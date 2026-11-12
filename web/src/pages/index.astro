@@ -14,7 +14,6 @@ import { getTestimonials, pickTestimonial, attributionOf } from '../lib/testimon
 // exists that is both published and consented to — see 014_testimonials.sql.
 const testimonial = pickTestimonial(await getTestimonials(), 'home');
 import { getWork, publishable } from '../lib/content';
-import { credits } from '../data/credits';
 import { services as servicesData } from '../data/services';
 import { imagery } from '../data/imagery';
 import { serviceImage } from '../data/imagery';
@@ -65,10 +64,9 @@ const process = [
  * `unverified()`, so they were shipping to production with made-up client
  * names attached to made-up percentages.
  *
- * Published case studies lead when there are any. Until then the section
- * shows real client work from data/credits.ts: named, live, linked, and
- * carrying the contribution rather than an outcome, because none of those
- * outcomes was measured by us.
+ * Only Xtenzium's own published case studies appear here. The section
+ * hides itself when there are none rather than showing a heading over an
+ * empty grid.
  */
 const published = await getWork();
 
@@ -81,14 +79,7 @@ const work = published.length
       href: `/work/${e.id}`,
       external: false,
     }))
-  : credits.slice(0, 3).map((c) => ({
-      name: c.name,
-      sector: c.sector,
-      note: c.contribution,
-      body: c.what,
-      href: c.site,
-      external: true,
-    }));
+  : [];
 
 const differentiators = [
   { title: 'We learn the business first', body: 'Before any code, we map how your team actually operates. Most agencies skip this and build the wrong thing beautifully.' },
@@ -305,6 +296,7 @@ const stats = [
     />
 
     <!-- ═══ 06 · Selected work ══════════════════════════════════ -->
+    {work.length > 0 && (
     <section class="bg-bg py-24 md:py-32">
       <div class="container-x" data-exit>
         <div
@@ -357,6 +349,7 @@ const stats = [
         </div>
       </div>
     </section>
+    )}
 
     <!-- ═══ 06b · Testimonial ═════════════════════════════════ -->
     {testimonial && (

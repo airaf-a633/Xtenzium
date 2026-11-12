@@ -13,16 +13,8 @@ import { getTestimonials, pickTestimonial, attributionOf } from '../../lib/testi
 // Real client quotes, fetched at build time. Nothing renders until one
 // exists that is both published and consented to — see 014_testimonials.sql.
 const testimonial = pickTestimonial(await getTestimonials(), 'work');
-import { credits, studios } from '../../data/credits';
 
 const entries = await getWork();
-
-// Grouped by sector, in the order the sectors first appear in the data,
-// so adding a credit never silently reorders the section.
-const creditSectors = [...new Set(credits.map((c) => c.sector))].map((sector) => ({
-  sector,
-  items: credits.filter((c) => c.sector === sector),
-}));
 
 /**
  * The proof bar, counted rather than claimed.
@@ -41,11 +33,8 @@ const creditSectors = [...new Set(credits.map((c) => c.sector))].map((sector) =>
  * behaviour even though it reads lower — the claim is about what you can
  * see, not what we have in a folder.
  */
-const named = entries.length + credits.length;
-const sectorsShipped = new Set([
-  ...entries.map((e) => e.data.sector),
-  ...credits.map((c) => c.sector),
-]).size;
+const named = entries.length;
+const sectorsShipped = new Set(entries.map((e) => e.data.sector)).size;
 
 const proof = [
   { v: `${named}`, count: named, suffix: '', l: 'Projects named on this page' },
@@ -293,75 +282,6 @@ const faqs = [
             </ol>
           )
         }
-      </div>
-    </section>
-
-    <!-- ── Earlier work, credited ───────────────────────────── -->
-    <!-- This section has to justify itself against "no logo walls" two
-         screens further up. It does it by saying the sentence a logo wall
-         exists to avoid: what our part actually was. A mark on its own
-         invites the reader to assume ownership; a row that reads
-         "Front-end build" cannot be misread that way. Nothing here
-         carries an outcome number, because none of it was measured by
-         us — those live in case studies or nowhere. -->
-    <section class="border-t border-line bg-bg py-20 md:py-28">
-      <div class="container-x" data-exit>
-        <div class="max-w-2xl" data-reveal-group>
-          <p class="eyebrow" data-reveal="eyebrow">Earlier work</p>
-          <h2
-            class="mt-3 font-display text-[clamp(1.6rem,3.4vw,2.25rem)] font-bold tracking-[-0.03em] text-ink"
-          >
-            <span class="block" data-reveal="line">Projects we contributed</span>
-            <span class="block" data-reveal="line">to, and what we did.</span>
-          </h2>
-          <p class="mt-5 leading-relaxed text-ink-2" data-reveal="body">
-            These shipped under {studios.slice(0, -1).join(', ')} and{' '}
-            {studios.at(-1)}, not under our own name. They are listed with the
-            part we actually built, because a list of clients that leaves that
-            out is claiming more than it earned.
-          </p>
-        </div>
-
-        <div class="mt-14 flex flex-col gap-12" data-reveal-cards>
-          {
-            creditSectors.map(({ sector, items }) => (
-              <div data-reveal="card">
-                <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-copper">
-                  {sector}
-                </p>
-                <ul class="mt-4 flex flex-col">
-                  {items.map((c) => (
-                    <li>
-                      <a
-                        href={c.site}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        class="row-link grid gap-x-8 gap-y-2 border-t border-line py-5 md:grid-cols-[minmax(0,14rem)_1fr_auto] md:items-baseline"
-                      >
-                        <p class="font-display text-base font-bold tracking-[-0.02em] text-ink">
-                          {c.name}
-                          <span aria-hidden="true" class="row-arrow ml-1.5 text-ink-3">
-                            &#8599;
-                          </span>
-                        </p>
-                        <p class="text-[0.95rem] leading-relaxed text-ink-2">{c.what}</p>
-                        <div class="flex flex-wrap items-center gap-2 md:justify-end">
-                          <span class="font-mono text-[11px] text-ink-3">{c.contribution}</span>
-                          {c.deliveredUnder && (
-                            <span class="font-mono text-[11px] text-ink-3">
-                              · {c.deliveredUnder}
-                            </span>
-                          )}
-                        </div>
-                      </a>
-                    </li>
-                  ))}
-                  <li class="border-t border-line" />
-                </ul>
-              </div>
-            ))
-          }
-        </div>
       </div>
     </section>
 
